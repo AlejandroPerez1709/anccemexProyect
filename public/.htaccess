@@ -1,0 +1,9 @@
+# RewriteEngine On
+
+# Redirige las solicitudes que NO son para un archivo existente
+# RewriteCond %{REQUEST_FILENAME} !-f
+# Redirige las solicitudes que NO son para un directorio existente
+# RewriteCond %{REQUEST_FILENAME} !-d
+
+# Redirige todas esas solicitudes a index.php
+# RewriteRule ^ index.php [QSA,L]
