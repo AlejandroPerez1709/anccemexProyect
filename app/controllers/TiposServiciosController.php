@@ -4,17 +4,12 @@ require_once __DIR__ . '/../models/TipoServicio.php';
 
 class TiposServiciosController {
 
-    private function checkAdmin() {
-        if (session_status() === PHP_SESSION_NONE) { session_start(); }
-        if (!isset($_SESSION['user']) || $_SESSION['user']['rol'] !== 'superusuario') {
-            $_SESSION['error'] = "Acceso denegado. Permisos insuficientes.";
-            header("Location: index.php?route=dashboard");
-            exit;
-        }
-    }
+    // CORREGIDO: ELIMINADO el método privado checkAdmin() para usar la función global check_permission()
 
     public function index() {
-        $this->checkAdmin();
+        // CORREGIDO: Se usa la función estándar check_permission
+        check_permission('superusuario'); 
+    
         // Pasamos la variable $tiposServicios a la vista master/content include
         $tiposServicios = TipoServicio::getAll();
         $pageTitle = 'Catálogo de Tipos de Servicio';
@@ -24,7 +19,8 @@ class TiposServiciosController {
     }
 
     public function create() {
-        $this->checkAdmin();
+        // CORREGIDO: Se usa la función estándar check_permission
+        check_permission('superusuario');
         $pageTitle = 'Registrar Nuevo Tipo de Servicio';
         $currentRoute = 'tipos_servicios/create';
         $contentView = __DIR__ . '/../views/tipos_servicios/create.php';
@@ -32,12 +28,14 @@ class TiposServiciosController {
     }
 
     public function store() {
-        $this->checkAdmin();
+        // CORREGIDO: Se usa la función estándar check_permission
+        check_permission('superusuario');
         if (isset($_POST)) {
             $nombre = trim($_POST['nombre']);
             $codigo_servicio = trim($_POST['codigo_servicio'] ?? '');
             $descripcion = trim($_POST['descripcion'] ?? '');
-            $requiere_medico = isset($_POST['requiere_medico']); // Checkbox presente o no
+            $requiere_medico = isset($_POST['requiere_medico']);
+            // Checkbox presente o no
             // requiere_ejemplar ya no se envía/recibe
             $documentos_requeridos = trim($_POST['documentos_requeridos'] ?? '');
             $estado = trim($_POST['estado'] ?? 'activo');
@@ -45,7 +43,6 @@ class TiposServiciosController {
             $errors = [];
             if (empty($nombre)) $errors[] = "El nombre del tipo de servicio es obligatorio.";
             if (!in_array($estado, ['activo', 'inactivo'])) $errors[] = "El estado seleccionado no es válido.";
-
             if (!empty($errors)) {
                  $_SESSION['error'] = implode("<br>", $errors);
                  $_SESSION['form_data'] = $_POST;
@@ -62,7 +59,6 @@ class TiposServiciosController {
                 'documentos_requeridos' => $documentos_requeridos,
                 'estado' => $estado
             ];
-
             $result = TipoServicio::store($data);
 
             if ($result !== false) {
@@ -86,11 +82,13 @@ class TiposServiciosController {
     }
 
     public function edit($id = null) {
-        $this->checkAdmin();
+        // CORREGIDO: Se usa la función estándar check_permission
+        check_permission('superusuario');
         $tipoId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if (!$tipoId) { $_SESSION['error'] = "ID inválido."; header("Location: index.php?route=tipos_servicios_index"); exit; }
 
-        $tipoServicio = TipoServicio::getById($tipoId); // $tipoServicio se pasará a la vista
+        $tipoServicio = TipoServicio::getById($tipoId);
+        // $tipoServicio se pasará a la vista
         if (!$tipoServicio) { $_SESSION['error'] = "Tipo de servicio no encontrado."; header("Location: index.php?route=tipos_servicios_index"); exit; }
 
         $pageTitle = 'Editar Tipo de Servicio';
@@ -100,7 +98,8 @@ class TiposServiciosController {
     }
 
     public function update() {
-        $this->checkAdmin();
+        // CORREGIDO: Se usa la función estándar check_permission
+        check_permission('superusuario');
         if (isset($_POST['id_tipo_servicio'])) {
             $id = filter_input(INPUT_POST, 'id_tipo_servicio', FILTER_VALIDATE_INT);
             if (!$id) { $_SESSION['error'] = "ID inválido."; header("Location: index.php?route=tipos_servicios_index"); exit; }
@@ -115,7 +114,7 @@ class TiposServiciosController {
 
              $errors = [];
              if (empty($nombre)) $errors[] = "El nombre es obligatorio.";
-             if (!in_array($estado, ['activo', 'inactivo'])) $errors[] = "Estado inválido.";
+            if (!in_array($estado, ['activo', 'inactivo'])) $errors[] = "Estado inválido.";
 
              if (!empty($errors)) {
                  $_SESSION['error'] = implode("<br>", $errors);
@@ -132,16 +131,15 @@ class TiposServiciosController {
                 'documentos_requeridos' => $documentos_requeridos,
                 'estado' => $estado
              ];
-
-             if (TipoServicio::update($id, $data)) {
+            if (TipoServicio::update($id, $data)) {
                  $_SESSION['message'] = "Tipo de servicio actualizado exitosamente.";
-             } else {
+            } else {
                   $error_detail = $_SESSION['error_details'] ?? 'Error desconocido.';
                   unset($_SESSION['error_details']);
                   $_SESSION['error'] = "Error al actualizar el tipo de servicio. " . $error_detail;
                   header("Location: index.php?route=tipos_servicios/edit&id=" . $id);
                   exit;
-             }
+            }
 
         } else {
              $_SESSION['error'] = "Falta ID del tipo de servicio.";
@@ -151,7 +149,8 @@ class TiposServiciosController {
     }
 
     public function delete($id = null) {
-         $this->checkAdmin();
+         // CORREGIDO: Se usa la función estándar check_permission
+         check_permission('superusuario');
          $tipoId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
          if ($tipoId) {
              if (TipoServicio::delete($tipoId)) {

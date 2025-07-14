@@ -6,16 +6,22 @@ class TipoServicio {
 
     /**
      * Obtiene todos los tipos de servicio.
+     * @param string $orderBy Columna por la cual ordenar.
+     * @return array Lista de tipos de servicio.
      */
     public static function getAll($orderBy = 'nombre') {
         $conn = dbConnect();
-        $allowedOrderBy = ['id_tipo_servicio', 'nombre', 'codigo_servicio', 'estado'];
-        $orderBy = in_array($orderBy, $allowedOrderBy) ? $orderBy : 'nombre';
-
-        // Quitado requiere_ejemplar del SELECT
-        $query = "SELECT id_tipo_servicio, nombre, codigo_servicio, descripcion, requiere_medico, documentos_requeridos, estado FROM tipos_servicios ORDER BY $orderBy ASC";
-        $result = $conn->query($query);
         $tipos = [];
+        if (!$conn) {
+            $_SESSION['error_details'] = 'Error de conexión a la base de datos al obtener tipos de servicio.';
+            return $tipos;
+        }
+        $allowedOrderBy = ['id_tipo_servicio', 'nombre', 'codigo_servicio', 'estado'];
+        $orderBy = in_array($orderBy, $allowedOrderBy) ? $orderBy : 'nombre'; // Asegurar que el orden sea una columna válida
+        
+        // CORREGIDO: Ordenar por id_tipo_servicio ASC para reflejar el orden de captura (número)
+        $query = "SELECT id_tipo_servicio, nombre, codigo_servicio, descripcion, requiere_medico, documentos_requeridos, estado FROM tipos_servicios ORDER BY id_tipo_servicio ASC"; 
+        $result = $conn->query($query);
         if($result) {
             while($row = $result->fetch_assoc()){
                 $tipos[] = $row;
@@ -23,6 +29,7 @@ class TipoServicio {
             $result->free();
         } else {
             error_log("Error al obtener tipos de servicio: " . $conn->error);
+            $_SESSION['error_details'] = 'Error de base de datos al obtener tipos de servicio: ' . $conn->error;
         }
         $conn->close();
         return $tipos;
@@ -30,13 +37,19 @@ class TipoServicio {
 
     /**
      * Obtiene un tipo de servicio específico por su ID.
+     * @param int $id ID del tipo de servicio.
+     * @return array|null Datos del tipo de servicio o null si no se encuentra.
      */
     public static function getById($id) {
         $conn = dbConnect();
-        // Quitado requiere_ejemplar del SELECT
+        if (!$conn) {
+            $_SESSION['error_details'] = 'Error de conexión a la base de datos al obtener tipo de servicio por ID.';
+            return null;
+        }
         $stmt = $conn->prepare("SELECT id_tipo_servicio, nombre, codigo_servicio, descripcion, requiere_medico, documentos_requeridos, estado FROM tipos_servicios WHERE id_tipo_servicio = ? LIMIT 1");
         if (!$stmt) {
-             error_log("Error al preparar la consulta (tipoServicio getById): " . $conn->error);
+             error_log("Error al preparar la consulta (TipoServicio getById): " . $conn->error);
+             $_SESSION['error_details'] = 'Error interno al preparar la obtención del tipo de servicio.';
              $conn->close();
              return null;
         }
@@ -46,6 +59,9 @@ class TipoServicio {
         $tipo = null;
         if($result && $result->num_rows == 1){
             $tipo = $result->fetch_assoc();
+        } else {
+            error_log("Tipo de servicio con ID $id no encontrado.");
+            $_SESSION['error_details'] = "Tipo de servicio no encontrado con el ID proporcionado.";
         }
         $stmt->close();
         $conn->close();
@@ -54,15 +70,21 @@ class TipoServicio {
 
     /**
      * Guarda un nuevo tipo de servicio.
+     * @param array $data Datos del tipo de servicio.
+     * @return int|false ID del nuevo tipo de servicio o false si falla.
      */
     public static function store($data) {
         $conn = dbConnect();
-        // Quitado requiere_ejemplar de la consulta
+        if (!$conn) {
+            $_SESSION['error_details'] = 'Error de conexión a la base de datos al intentar guardar el tipo de servicio.';
+            return false;
+        }
         $sql = "INSERT INTO tipos_servicios (nombre, codigo_servicio, descripcion, requiere_medico, documentos_requeridos, estado)
                 VALUES (?, ?, ?, ?, ?, ?)"; // 6 placeholders
         $stmt = $conn->prepare($sql);
-         if (!$stmt) {
-              error_log("Error al preparar la consulta (tipoServicio store): " . $conn->error);
+        if (!$stmt) {
+              error_log("Error al preparar la consulta (TipoServicio store): " . $conn->error);
+              $_SESSION['error_details'] = 'Error interno al preparar la inserción del tipo de servicio.';
               $conn->close();
               return false;
          }
@@ -71,26 +93,30 @@ class TipoServicio {
         $codigo = $data['codigo_servicio'] ?: null;
         $descripcion = $data['descripcion'] ?: null;
         $reqMedico = !empty($data['requiere_medico']) ? 1 : 0;
-        // $reqEjemplar ya no existe
         $docsReq = $data['documentos_requeridos'] ?: null;
         $estado = $data['estado'];
 
-        // Tipos: s, s, s, i, s, s (6 datos)
-        $types = "sssiss";
+        $types = "sssiss"; // 6 datos
         $stmt->bind_param($types,
             $nombre, $codigo, $descripcion, $reqMedico, $docsReq, $estado
         );
-
         $result = false;
         $newId = false;
         try {
             $result = $stmt->execute();
-            if ($result) { $newId = $conn->insert_id; }
-            else { error_log("Error al ejecutar (tipoServicio store): " . $stmt->error); }
+            if ($result) { 
+                $newId = $conn->insert_id; 
+            } else { 
+                error_log("Error al ejecutar (TipoServicio store): " . $stmt->error);
+                if ($conn->errno == 1062) { // Error de duplicado (si nombre o codigo_servicio fueran UNIQUE)
+                    $_SESSION['error_details'] = 'El Nombre o Código de Servicio ya existe.';
+                } else {
+                    $_SESSION['error_details'] = 'Error de base de datos al guardar el tipo de servicio: ' . $stmt->error;
+                }
+            }
         } catch (mysqli_sql_exception $e) {
              error_log("Error al insertar tipo de servicio: " . $e->getMessage());
-             if ($e->getCode() == 1062) { $_SESSION['error_details'] = 'El Nombre o Código de Servicio ya existe.'; }
-             else { $_SESSION['error_details'] = 'Error de base de datos.'; }
+             $_SESSION['error_details'] = 'Error de base de datos al guardar el tipo de servicio (' . $e->getCode() . '): ' . $e->getMessage();
              $result = false;
         }
         $stmt->close();
@@ -100,17 +126,24 @@ class TipoServicio {
 
     /**
      * Actualiza un tipo de servicio existente.
+     * @param int $id ID del tipo de servicio a actualizar.
+     * @param array $data Nuevos datos del tipo de servicio.
+     * @return bool True si se actualizó correctamente, False en caso contrario.
      */
     public static function update($id, $data) {
         $conn = dbConnect();
-         // Quitado requiere_ejemplar de la consulta
+        if (!$conn) {
+            $_SESSION['error_details'] = 'Error de conexión a la base de datos al intentar actualizar el tipo de servicio.';
+            return false;
+        }
         $sql = "UPDATE tipos_servicios SET
                 nombre = ?, codigo_servicio = ?, descripcion = ?, requiere_medico = ?,
                 documentos_requeridos = ?, estado = ?
                 WHERE id_tipo_servicio = ?"; // 6 placeholders + ID
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
-              error_log("Error al preparar la consulta (tipoServicio update): " . $conn->error);
+              error_log("Error al preparar la consulta (TipoServicio update): " . $conn->error);
+              $_SESSION['error_details'] = 'Error interno al preparar la actualización del tipo de servicio.';
               $conn->close();
               return false;
          }
@@ -119,25 +152,28 @@ class TipoServicio {
         $codigo = $data['codigo_servicio'] ?: null;
         $descripcion = $data['descripcion'] ?: null;
         $reqMedico = !empty($data['requiere_medico']) ? 1 : 0;
-        // $reqEjemplar ya no existe
         $docsReq = $data['documentos_requeridos'] ?: null;
         $estado = $data['estado'];
         $tipoId = $id;
 
-        // Tipos: s,s,s, i, s, s, i (6 datos + ID)
-        $types = "sssissi";
+        $types = "sssissi"; // 6 datos + ID
         $stmt->bind_param($types,
             $nombre, $codigo, $descripcion, $reqMedico, $docsReq, $estado, $tipoId
         );
-
-         $result = false;
+        $result = false;
         try {
             $result = $stmt->execute();
-            if (!$result) { error_log("Error al ejecutar (tipoServicio update): " . $stmt->error); }
+            if (!$result) { 
+                error_log("Error al ejecutar (TipoServicio update): " . $stmt->error);
+                if ($conn->errno == 1062) { // Error de duplicado
+                    $_SESSION['error_details'] = 'El Nombre o Código de Servicio ya existe para otro tipo.';
+                } else {
+                    $_SESSION['error_details'] = 'Error de base de datos al actualizar el tipo de servicio: ' . $stmt->error;
+                }
+            }
         } catch (mysqli_sql_exception $e) {
              error_log("Error al actualizar tipo servicio ID $id: " . $e->getMessage());
-             if ($e->getCode() == 1062) { $_SESSION['error_details'] = 'El Nombre o Código de Servicio ya existe para otro tipo.'; }
-             else { $_SESSION['error_details'] = 'Error de base de datos al actualizar.'; }
+             $_SESSION['error_details'] = 'Error de base de datos al actualizar el tipo de servicio (' . $e->getCode() . '): ' . $e->getMessage();
              $result = false;
         }
         $stmt->close();
@@ -146,25 +182,39 @@ class TipoServicio {
     }
 
     /**
-     * Elimina un tipo de servicio por su ID. (Sin cambios)
+     * Elimina un tipo de servicio por su ID.
+     * @param int $id ID del tipo de servicio a eliminar.
+     * @return bool True si se eliminó correctamente, False en caso contrario.
      */
     public static function delete($id) {
         $conn = dbConnect();
+        if (!$conn) {
+            $_SESSION['error_details'] = 'Error de conexión a la base de datos al intentar eliminar el tipo de servicio.';
+            return false;
+        }
         $sql = "DELETE FROM tipos_servicios WHERE id_tipo_servicio = ?";
         $stmt = $conn->prepare($sql);
-        if (!$stmt) { error_log("Error al preparar la consulta (tipoServicio delete): " . $conn->error); $conn->close(); return false; }
+        if (!$stmt) { 
+            error_log("Error al preparar la consulta (TipoServicio delete): " . $conn->error); 
+            $_SESSION['error_details'] = 'Error interno al preparar la eliminación del tipo de servicio.'; 
+            $conn->close(); 
+            return false;
+        }
         $stmt->bind_param("i", $id);
         $result = false;
-         try {
+        try {
              $result = $stmt->execute();
-              if (!$result) {
-                  error_log("Error al ejecutar (tipoServicio delete): " . $stmt->error);
-                  if ($conn->errno == 1451) { $_SESSION['error_details'] = 'No se puede eliminar, este tipo está siendo usado por servicios existentes.'; }
-                  else { $_SESSION['error_details'] = 'Error de base de datos al eliminar.'; }
+            if (!$result) {
+                  error_log("Error al ejecutar (TipoServicio delete): " . $stmt->error);
+                  if ($conn->errno == 1451) { // Código de error para FK
+                      $_SESSION['error_details'] = 'No se puede eliminar el tipo de servicio, está siendo usado por servicios existentes.';
+                  } else {
+                      $_SESSION['error_details'] = 'Error de base de datos al eliminar el tipo de servicio: ' . $stmt->error;
+                  }
               }
          } catch (mysqli_sql_exception $e) {
              error_log("Excepción al eliminar tipo servicio ID $id: " . $e->getMessage());
-             $_SESSION['error_details'] = 'Error general al eliminar.';
+             $_SESSION['error_details'] = 'Error de base de datos al eliminar el tipo de servicio (' . $e->getCode() . '): ' . $e->getMessage();
              $result = false;
          }
         $stmt->close();
@@ -173,16 +223,21 @@ class TipoServicio {
     }
 
      /**
-     * Obtiene tipos de servicio activos para usar en selects. (Sin cambios)
+     * Obtiene tipos de servicio activos para usar en selects.
+     * @return array Array asociativo [id_tipo_servicio => 'Nombre Tipo (Código)'].
      */
     public static function getActiveForSelect() {
         $conn = dbConnect();
+        $list = [];
+        if (!$conn) {
+            $_SESSION['error_details'] = 'Error de conexión a la base de datos al obtener tipos de servicio activos para select.';
+            return $list;
+        }
         $query = "SELECT id_tipo_servicio, nombre, codigo_servicio
                   FROM tipos_servicios
                   WHERE estado = 'activo'
-                  ORDER BY nombre";
+                  ORDER BY nombre ASC"; // Mantener orden alfabético para select
         $result = $conn->query($query);
-        $list = [];
         if($result) {
             while($row = $result->fetch_assoc()){
                 $displayText = $row['nombre'];
@@ -194,10 +249,10 @@ class TipoServicio {
             $result->free();
         } else {
             error_log("Error al obtener tipos de servicio activos para select: " . $conn->error);
+            $_SESSION['error_details'] = 'Error de base de datos al obtener tipos de servicio activos para select: ' . $conn->error;
         }
         $conn->close();
         return $list;
     }
 
-} // Fin clase TipoServicio
-?>
+}

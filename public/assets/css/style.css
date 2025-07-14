@@ -47,7 +47,7 @@ h2{
 
 .login-container {
     max-width: 500px;
-    height: 500px;
+    height: auto;
     width: 100%;
     padding: 30px;
     background: rgba(255, 255, 255, 0.05);
@@ -611,4 +611,59 @@ th {
     margin: 8px 15px;
     border: none;
     border-top: 1px solid #e0e0e0;
+}
+
+
+
+/* --- NUEVOS ESTILOS PARA CAPTCHA EN LOGIN --- */
+
+/* public/assets/css/style.css */
+
+/* --- NUEVOS ESTILOS PARA CAPTCHA EN LOGIN --- */
+
+.login-container .captcha-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra los elementos horizontalmente */
+    margin-bottom: 20px;
+    /* Ajustado: Quitar el padding y el fondo para que el captcha se "funda" más con el formulario. */
+    /* padding: 10px; */
+    /* background: rgba(255, 255, 255, 0.1); */
+    border-radius: 8px;
+    /* Ajustado: Quitar el borde del grupo para que se vea más integrado. */
+    /* border: 1px solid rgba(255, 255, 255, 0.2); */
+}
+
+.login-container .captcha-group label {
+    font-size: 0.95rem;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+
+.login-container .captcha-img {
+    border: 1px solid #ccc;
+    background-color: #f0f0f0; /* Un fondo claro para la imagen */
+    margin-bottom: 10px;
+    width: 120px; /* Asegura un ancho fijo para la imagen del captcha */
+    height: 40px; /* Asegura una altura fija para la imagen del captcha */
+    border-radius: 4px;
+}
+
+.login-container .captcha-group input[type="text"] {
+    text-align: center; /* Centra el texto dentro del input */
+    font-size: 1.2rem; /* Haz el texto más grande para facilitar la lectura */
+    font-weight: bold;
+    color: #333; /* Color oscuro para el texto del Captcha */
+    background: #fff; /* Fondo blanco para el input */
+    border: 1px solid #2E7D32; /* Borde del color de tu tema */
+    max-width: 150px; /* Limita el ancho del input */
+}
+
+.login-container .captcha-group small {
+    /* Ajustado: Aumentar tamaño de fuente y hacerla blanca para que se vea más */
+    color: black; /* Blanco puro para mayor contraste */
+    font-size: 0.9em; /* Ligeramente más grande */
+    margin-top: 5px;
+    text-align: center;
+    font-weight: bold; /* Hacerla negrita para que se vea más */
 }

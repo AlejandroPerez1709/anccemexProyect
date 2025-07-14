@@ -4,16 +4,33 @@ require_once __DIR__ . '/../../config/config.php';
 
 class User {
 
-    // --- Métodos existentes ---
     public static function getByUsername($username) {
         $conn = dbConnect();
+        if (!$conn) {
+            $_SESSION['error_details'] = 'Error de conexión a la base de datos al buscar usuario por nombre de usuario.';
+            return null;
+        }
         $stmt = $conn->prepare("SELECT * FROM usuarios WHERE username = ? AND estado = 'activo' LIMIT 1");
+        if (!$stmt) {
+            error_log("Prepare failed (User getByUsername): " . $conn->error);
+            $_SESSION['error_details'] = 'Error interno al preparar la búsqueda de usuario por nombre de usuario.';
+            $conn->close();
+            return null;
+        }
         $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $executeResult = $stmt->execute();
         $user = null;
-        if($result->num_rows == 1){
-            $user = $result->fetch_assoc();
+        if ($executeResult) {
+            $result = $stmt->get_result();
+            if($result->num_rows == 1){
+                $user = $result->fetch_assoc();
+            } else {
+                error_log("Usuario con username '$username' no encontrado o inactivo.");
+            }
+            if ($result) $result->free(); // Liberar memoria
+        } else {
+            error_log("Execute failed (User getByUsername): " . $stmt->error);
+            $_SESSION['error_details'] = 'Error de base de datos al buscar usuario por nombre de usuario: ' . $stmt->error;
         }
         $stmt->close();
         $conn->close();
@@ -22,14 +39,23 @@ class User {
 
     public static function updateLastLogin($user_id){
         $conn = dbConnect();
+        if (!$conn) {
+            error_log("Error de conexión a la base de datos al actualizar último login para user ID $user_id.");
+            return;
+        }
         $stmt = $conn->prepare("UPDATE usuarios SET ultimo_login = NOW() WHERE id_usuario = ?");
+        if (!$stmt) {
+            error_log("Prepare failed (User updateLastLogin): " . $conn->error);
+            $conn->close();
+            return;
+        }
         $stmt->bind_param("i", $user_id);
-        $stmt->execute();
+        if (!$stmt->execute()) {
+            error_log("Execute failed (User updateLastLogin): " . $stmt->error);
+        }
         $stmt->close();
         $conn->close();
     }
-
-    // --- NUEVOS Métodos CRUD ---
 
     /**
      * Guarda un nuevo usuario en la base de datos.
@@ -38,20 +64,26 @@ class User {
      */
     public static function store($data) {
         $conn = dbConnect();
-
+        if (!$conn) {
+            $_SESSION['error_details'] = 'Error de conexión a la base de datos al intentar guardar el usuario.';
+            return false;
+        }
         // Hashear la contraseña antes de guardarla
-        // ¡IMPORTANTE! Asegúrate de que tu servidor PHP tenga habilitada la extensión de hashing.
         $hashed_password = password_hash($data['password'], PASSWORD_DEFAULT);
         if (!$hashed_password) {
-             // Manejar error de hashing si es necesario
              error_log("Error al hashear la contraseña para el usuario: " . $data['username']);
+             $_SESSION['error_details'] = 'Error interno al procesar la contraseña.';
              $conn->close();
              return false;
         }
 
-
-        $stmt = $conn->prepare("INSERT INTO usuarios (nombre, apellido_paterno, apellido_materno, email, username, password, rol, estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        // 'ssssssss' corresponde a los tipos de datos: string, string, string, string, string, string, string, string
+        $stmt = $conn->prepare("INSERT INTO usuarios (nombre, apellido_paterno, apellido_materno, email, username, password, rol, estado, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())"); // Añadido created_at
+        if (!$stmt) {
+            error_log("Prepare failed (User store): " . $conn->error);
+            $_SESSION['error_details'] = 'Error interno al preparar la inserción del usuario.';
+            $conn->close();
+            return false;
+        }
         $stmt->bind_param("ssssssss",
             $data['nombre'],
             $data['apellido_paterno'],
@@ -62,14 +94,20 @@ class User {
             $data['rol'],
             $data['estado']
         );
-
         $result = false;
         try {
             $result = $stmt->execute();
+            if (!$result) {
+                error_log("Execute failed (User store): " . $stmt->error);
+                if ($conn->errno == 1062) { // Error de duplicado
+                    $_SESSION['error_details'] = 'Ya existe un usuario con el mismo Email o Nombre de Usuario.';
+                } else {
+                    $_SESSION['error_details'] = 'Error de base de datos al guardar el usuario: ' . $stmt->error;
+                }
+            }
         } catch (mysqli_sql_exception $e) {
-            // Capturar errores de duplicados (email o username)
              error_log("Error al insertar usuario: " . $e->getMessage());
-             // Podrías verificar $e->getCode() si necesitas diferenciar errores específicos (ej. 1062 para duplicados)
+             $_SESSION['error_details'] = 'Error de base de datos al guardar el usuario (' . $e->getCode() . '): ' . $e->getMessage();
         }
 
         $stmt->close();
@@ -83,9 +121,14 @@ class User {
      */
     public static function getAll() {
         $conn = dbConnect();
-        $query = "SELECT id_usuario, nombre, apellido_paterno, apellido_materno, email, username, rol, estado, created_at, ultimo_login FROM usuarios"; // No seleccionamos la contraseña
-        $result = $conn->query($query);
         $usuarios = [];
+        if (!$conn) {
+            $_SESSION['error_details'] = 'Error de conexión a la base de datos al obtener usuarios.';
+            return $usuarios;
+        }
+        // CORREGIDO: Ordenar por id_usuario ASC (del más bajo al más alto) para reflejar orden de captura
+        $query = "SELECT id_usuario, nombre, apellido_paterno, apellido_materno, email, username, rol, estado, created_at, ultimo_login FROM usuarios ORDER BY id_usuario ASC"; 
+        $result = $conn->query($query);
         if($result) {
             while($row = $result->fetch_assoc()){
                 $usuarios[] = $row;
@@ -93,6 +136,7 @@ class User {
             $result->free(); // Liberar memoria del resultado
         } else {
             error_log("Error al obtener usuarios: " . $conn->error);
+            $_SESSION['error_details'] = 'Error de base de datos al obtener usuarios: ' . $conn->error;
         }
         $conn->close();
         return $usuarios;
@@ -105,14 +149,27 @@ class User {
      */
     public static function getById($id) {
         $conn = dbConnect();
+        if (!$conn) {
+            $_SESSION['error_details'] = 'Error de conexión a la base de datos al obtener usuario por ID.';
+            return null;
+        }
         // No seleccionamos la contraseña por seguridad
         $stmt = $conn->prepare("SELECT id_usuario, nombre, apellido_paterno, apellido_materno, email, username, rol, estado FROM usuarios WHERE id_usuario = ? LIMIT 1");
+        if (!$stmt) {
+            error_log("Prepare failed (User getById): " . $conn->error);
+            $_SESSION['error_details'] = 'Error interno al preparar la obtención del usuario.';
+            $conn->close();
+            return null;
+        }
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $result = $stmt->get_result();
         $usuario = null;
         if($result->num_rows == 1){
             $usuario = $result->fetch_assoc();
+        } else {
+            error_log("Usuario con ID $id no encontrado.");
+            $_SESSION['error_details'] = "Usuario no encontrado con el ID proporcionado.";
         }
         $stmt->close();
         $conn->close();
@@ -127,20 +184,24 @@ class User {
      */
     public static function update($id, $data) {
         $conn = dbConnect();
-
+        if (!$conn) {
+            $_SESSION['error_details'] = 'Error de conexión a la base de datos al intentar actualizar el usuario.';
+            return false;
+        }
         // Verificar si se proporcionó una nueva contraseña
         if (isset($data['password']) && !empty($data['password'])) {
             // Hay una nueva contraseña, hashearla
             $hashed_password = password_hash($data['password'], PASSWORD_DEFAULT);
-             if (!$hashed_password) {
+            if (!$hashed_password) {
                  error_log("Error al hashear la nueva contraseña para el usuario ID: " . $id);
+                 $_SESSION['error_details'] = 'Error interno al procesar la nueva contraseña.';
                  $conn->close();
                  return false;
             }
             // Actualizar con contraseña
             $stmt = $conn->prepare("UPDATE usuarios SET nombre = ?, apellido_paterno = ?, apellido_materno = ?, email = ?, username = ?, password = ?, rol = ?, estado = ? WHERE id_usuario = ?");
-            // 'ssssssssi' corresponde a los tipos de datos
-            $stmt->bind_param("ssssssssi",
+            $types = "ssssssssi"; // 9 tipos de datos
+            $bind_params = [
                 $data['nombre'],
                 $data['apellido_paterno'],
                 $data['apellido_materno'],
@@ -150,12 +211,12 @@ class User {
                 $data['rol'],
                 $data['estado'],
                 $id
-            );
+            ];
         } else {
             // No se proporcionó contraseña nueva, actualizar sin ella
             $stmt = $conn->prepare("UPDATE usuarios SET nombre = ?, apellido_paterno = ?, apellido_materno = ?, email = ?, username = ?, rol = ?, estado = ? WHERE id_usuario = ?");
-             // 'sssssssi' corresponde a los tipos de datos (sin password)
-            $stmt->bind_param("sssssssi",
+            $types = "sssssssi"; // 8 tipos de datos
+            $bind_params = [
                 $data['nombre'],
                 $data['apellido_paterno'],
                 $data['apellido_materno'],
@@ -164,15 +225,32 @@ class User {
                 $data['rol'],
                 $data['estado'],
                 $id
-            );
+            ];
         }
 
+        if (!$stmt) {
+            error_log("Prepare failed (User update): " . $conn->error);
+            $_SESSION['error_details'] = 'Error interno al preparar la actualización del usuario.';
+            $conn->close();
+            return false;
+        }
+
+        $stmt->bind_param($types, ...$bind_params);
         $result = false;
         try {
             $result = $stmt->execute();
+            if (!$result) {
+                 error_log("Execute failed (User update): " . $stmt->error);
+                 if ($conn->errno == 1062) { // Error de duplicado
+                     $_SESSION['error_details'] = 'Ya existe un usuario con el mismo Email o Nombre de Usuario.';
+                 } else {
+                     $_SESSION['error_details'] = 'Error de base de datos al actualizar el usuario: ' . $stmt->error;
+                 }
+            }
         } catch (mysqli_sql_exception $e) {
-             // Capturar errores de duplicados (email o username)
              error_log("Error al actualizar usuario ID $id: " . $e->getMessage());
+             $_SESSION['error_details'] = 'Error de base de datos al actualizar el usuario (' . $e->getCode() . '): ' . $e->getMessage();
+             $result = false;
         }
 
         $stmt->close();
@@ -187,24 +265,38 @@ class User {
      */
     public static function delete($id) {
         $conn = dbConnect();
-        // Considerar si realmente se quiere eliminar o solo marcar como 'inactivo'
+        if (!$conn) {
+            $_SESSION['error_details'] = 'Error de conexión a la base de datos al intentar eliminar el usuario.';
+            return false;
+        }
         // Aquí implementamos la eliminación física:
         $stmt = $conn->prepare("DELETE FROM usuarios WHERE id_usuario = ?");
+        if (!$stmt) {
+            error_log("Prepare failed (User delete): " . $conn->error);
+            $_SESSION['error_details'] = 'Error interno al preparar la eliminación del usuario.';
+            $conn->close();
+            return false;
+        }
         $stmt->bind_param("i", $id);
 
         $result = false;
-         try {
-             $result = $stmt->execute();
-         } catch (mysqli_sql_exception $e) {
-             // Capturar errores (ej. si el usuario tiene registros relacionados que impiden borrarlo por FK)
-             error_log("Error al eliminar usuario ID $id: " . $e->getMessage());
-         }
+        try {
+            $result = $stmt->execute();
+            if (!$result) {
+                error_log("Execute failed (User delete): " . $stmt->error);
+                if ($conn->errno == 1451) { // Código de error para Foreign Key Constraint
+                    $_SESSION['error_details'] = 'No se puede eliminar el usuario porque tiene registros asociados en otras tablas (ej. es responsable de registros).';
+                } else {
+                    $_SESSION['error_details'] = 'Error de base de datos al eliminar el usuario: ' . $stmt->error;
+                }
+            }
+        } catch (mysqli_sql_exception $e) {
+             error_log("Exception (User delete): " . $e->getMessage());
+             $_SESSION['error_details'] = 'Error de base de datos al eliminar el usuario (' . $e->getCode() . '): ' . $e->getMessage();
+        }
 
         $stmt->close();
         $conn->close();
         return $result;
     }
-
-    // --- Fin de Métodos CRUD ---
 }
-?>

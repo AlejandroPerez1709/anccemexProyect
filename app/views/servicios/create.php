@@ -1,31 +1,13 @@
-<!-- app/views/servicios/create.php -->
+<?php
+// app/views/servicios/create.php
 
+// Recuperar datos del formulario si hubo error. Viene del controlador.
+$formData = $formData ?? []; // Asegurar que $formData exista
+
+// Mensajes de error y warning ya se gestionan en master.php.
+?>
 
 <h2>Registrar Nueva Solicitud de Servicio</h2>
-
-<?php
-// Recuperar datos del formulario y mensajes
-$formData = $_SESSION['form_data'] ?? []; unset($_SESSION['form_data']);
-if (isset($_SESSION['error'])) { echo "<div class='alert alert-error'>" . $_SESSION['error'] . "</div>"; unset($_SESSION['error']); }
-if (isset($_SESSION['warning'])) { echo "<div class='alert alert-warning'>" . $_SESSION['warning'] . "</div>"; unset($_SESSION['warning']); }
-
-// Asegurar que las listas existan
-$tiposServicioList = $tiposServicioList ?? [];
-$sociosList = $sociosList ?? [];
-$ejemplares = $ejemplares ?? [];
-$medicosList = $medicosList ?? [];
-$tiposServicioDataJS = [];
-if (!empty($tiposServicioList)) {
-     $allTiposData = TipoServicio::getAll();
-     foreach($allTiposData as $tipo) {
-         if(isset($tiposServicioList[$tipo['id_tipo_servicio']])) {
-             $tiposServicioDataJS[$tipo['id_tipo_servicio']] = [
-                 'req_medico' => !empty($tipo['requiere_medico'])
-             ];
-         }
-     }
-}
-?>
 
 <div class="form-container">
      <form action="index.php?route=servicios_store" method="POST" id="servicioForm" enctype="multipart/form-data">
@@ -34,10 +16,10 @@ if (!empty($tiposServicioList)) {
              <legend>Datos de la Solicitud</legend>
              <div class="form-group">
                  <label for="tipo_servicio_id">Tipo de Servicio: <span class="text-danger">*</span></label>
-                 <select class="form-control" name="tipo_servicio_id" id="tipo_servicio_id" required>
+                 <select class="form-control" name="tipo_servicio_id" id="tipo_servicio_id" required <?php echo empty($tiposServicioList) ? 'disabled' : ''; ?>>
                      <option value="" disabled <?php echo empty($formData['tipo_servicio_id']) ? 'selected' : ''; ?>>-- Seleccione Tipo --</option>
                      <?php foreach ($tiposServicioList as $id => $display): ?>
-                         <option value="<?php echo $id; ?>"
+                         <option value="<?php echo htmlspecialchars($id); ?>"
                                  <?php echo (isset($formData['tipo_servicio_id']) && $formData['tipo_servicio_id'] == $id) ? 'selected' : ''; ?>
                                  data-req-medico="<?php echo isset($tiposServicioDataJS[$id]) && $tiposServicioDataJS[$id]['req_medico'] ? '1' : '0'; ?>">
                              <?php echo htmlspecialchars($display); ?>
@@ -52,7 +34,7 @@ if (!empty($tiposServicioList)) {
                  <select class="form-control" name="socio_id" id="socio_id" required <?php echo empty($sociosList) ? 'disabled' : ''; ?>>
                       <option value="" disabled <?php echo empty($formData['socio_id']) ? 'selected' : ''; ?>>-- Seleccione Socio --</option>
                       <?php foreach ($sociosList as $id => $display): ?>
-                         <option value="<?php echo $id; ?>" <?php echo (isset($formData['socio_id']) && $formData['socio_id'] == $id) ? 'selected' : ''; ?>>
+                         <option value="<?php echo htmlspecialchars($id); ?>" <?php echo (isset($formData['socio_id']) && $formData['socio_id'] == $id) ? 'selected' : ''; ?>>
                              <?php echo htmlspecialchars($display); ?>
                          </option>
                      <?php endforeach; ?>
@@ -64,10 +46,10 @@ if (!empty($tiposServicioList)) {
                  <label for="ejemplar_id">Ejemplar: <span class="text-danger">*</span></label>
                  <select class="form-control" name="ejemplar_id" id="ejemplar_id" required disabled>
                      <option value="" selected disabled>-- Seleccione un Socio Primero --</option>
-                      <?php foreach ($ejemplares as $ejemplar): ?>
-                          <option value="<?php echo $ejemplar['id_ejemplar']; ?>"
-                                  data-socio="<?php echo $ejemplar['socio_id']; ?>"
-                                  class="hidden" /* CORREGIDO: se usa clase en lugar de style */
+                     <?php foreach ($ejemplares as $ejemplar): ?>
+                          <option value="<?php echo htmlspecialchars($ejemplar['id_ejemplar']); ?>"
+                                  data-socio="<?php echo htmlspecialchars($ejemplar['socio_id']); ?>"
+                                  class="hidden" /* Se usa clase para ocultar/mostrar con JS */
                                   <?php echo (isset($formData['ejemplar_id']) && $formData['ejemplar_id'] == $ejemplar['id_ejemplar']) ? 'selected' : ''; ?>>
                               <?php echo htmlspecialchars($ejemplar['nombre'] . ' (' . ($ejemplar['codigo_ejemplar'] ?: 'S/C') . ')'); ?>
                           </option>
@@ -82,7 +64,7 @@ if (!empty($tiposServicioList)) {
                   <select class="form-control" name="medico_id" id="medico_id">
                       <option value="" selected>-- Sin Asignar --</option>
                        <?php foreach ($medicosList as $id => $display): ?>
-                         <option value="<?php echo $id; ?>" <?php echo (isset($formData['medico_id']) && $formData['medico_id'] == $id) ? 'selected' : ''; ?>>
+                         <option value="<?php echo htmlspecialchars($id); ?>" <?php echo (isset($formData['medico_id']) && $formData['medico_id'] == $id) ? 'selected' : ''; ?>>
                              <?php echo htmlspecialchars($display); ?>
                          </option>
                      <?php endforeach; ?>
@@ -91,7 +73,9 @@ if (!empty($tiposServicioList)) {
 
               <div class="form-group">
                  <label for="fechaSolicitud">Fecha de Solicitud: <span class="text-danger">*</span></label>
-                 <input type="date" class="form-control" name="fechaSolicitud" id="fechaSolicitud" value="<?php echo htmlspecialchars($formData['fechaSolicitud'] ?? date('Y-m-d')); ?>" required max="<?php echo date('Y-m-d'); ?>">
+                 <input type="date" class="form-control" name="fechaSolicitud" id="fechaSolicitud" 
+                        value="<?php echo htmlspecialchars($formData['fechaSolicitud'] ?? date('Y-m-d')); ?>" 
+                        required max="<?php echo date('Y-m-d'); ?>">
               </div>
 
              <div class="form-group">
@@ -113,7 +97,9 @@ if (!empty($tiposServicioList)) {
              </div>
               <div class="form-group">
                  <label for="referencia_pago">Referencia de Pago (Folio, Transacción, etc.):</label>
-                 <input type="text" class="form-control" name="referencia_pago" id="referencia_pago" value="<?php echo htmlspecialchars($formData['referencia_pago'] ?? ''); ?>" maxlength="100">
+                 <input type="text" class="form-control" name="referencia_pago" id="referencia_pago" 
+                        value="<?php echo htmlspecialchars($formData['referencia_pago'] ?? ''); ?>" 
+                        maxlength="100" pattern="[A-Za-z0-9\-]+" title="Solo letras, números y guiones">
              </div>
          </fieldset>
 
@@ -128,9 +114,12 @@ if (!empty($tiposServicioList)) {
         const tipoServicioSelect = document.getElementById('tipo_servicio_id');
         const socioSelect = document.getElementById('socio_id');
         const ejemplarSelect = document.getElementById('ejemplar_id');
+        const medicoSelect = document.getElementById('medico_id');
         const grupoMedico = document.getElementById('grupo_medico');
         const ejemplarMsg = document.getElementById('ejemplar_msg');
         const noEjemplaresOption = ejemplarSelect.querySelector('.no-ejemplares-option');
+        
+        // Convertir datos PHP a JS de forma segura
         const tiposServicioInfo = <?php echo json_encode($tiposServicioDataJS); ?>;
 
         function actualizarVisibilidadYFiltros() {
@@ -142,51 +131,53 @@ if (!empty($tiposServicioList)) {
             if (tipoId && tiposServicioInfo[tipoId]) {
                 requiereMedico = tiposServicioInfo[tipoId].req_medico;
             }
-            // Se usan clases para ocultar/mostrar
-            if (requiereMedico) {
-                grupoMedico.classList.remove('hidden');
-            } else {
-                grupoMedico.classList.add('hidden');
+            grupoMedico.classList.toggle('hidden', !requiereMedico); // Usa toggle para añadir/quitar clase 'hidden'
+            // Si el médico ya no es requerido, asegurar que el campo medico_id no tenga un valor previo
+            if (!requiereMedico) {
+                medicoSelect.value = ''; // Resetea la selección si se oculta
             }
 
-            // Filtrar Ejemplares
+            // Habilitar/Deshabilitar y Filtrar Ejemplares
             if (socioId) {
                 ejemplarSelect.disabled = false;
                 ejemplarMsg.textContent = 'Seleccione el ejemplar para el servicio.';
                 ejemplarMsg.classList.remove('text-danger');
                 let opcionesVisibles = 0;
-
+                
+                // Mostrar/ocultar opciones de ejemplares
                 Array.from(ejemplarSelect.options).forEach(option => {
                     if (option.value === "" || option.classList.contains('no-ejemplares-option')) {
-                        option.classList.add('hidden'); return;
+                        option.classList.add('hidden'); 
+                        return;
                     }
                     if (option.dataset.socio == socioId) {
                         option.classList.remove('hidden');
                         opcionesVisibles++;
                     } else {
                         option.classList.add('hidden');
-                        if (option.selected) { ejemplarSelect.value = ""; }
+                        // Si la opción seleccionada actualmente se oculta, deseleccionar
+                        if (option.selected) { ejemplarSelect.value = ""; } 
                     }
                 });
                 
+                // Manejar caso donde no hay ejemplares para el socio
                 if (opcionesVisibles === 0) {
                     ejemplarSelect.disabled = true;
                     if(noEjemplaresOption) noEjemplaresOption.classList.remove('hidden');
-                    ejemplarSelect.value = "";
+                    ejemplarSelect.value = ""; // Asegurarse de que no haya nada seleccionado
                     ejemplarMsg.textContent = 'Este socio no tiene ejemplares registrados.';
                     ejemplarMsg.classList.add('text-danger');
                 } else {
-                    if (ejemplarSelect.dataset.lastSocio != socioId) {
-                         ejemplarSelect.value = "";
-                    }
+                    // Si el socio ha cambiado y había un ejemplar seleccionado que ya no pertenece
+                    // o si el ejemplar actual no es del nuevo socio, deseleccionar
                     const selectedOption = ejemplarSelect.options[ejemplarSelect.selectedIndex];
                     if(selectedOption && selectedOption.classList.contains('hidden')){
                            ejemplarSelect.value = "";
                     }
                     if(noEjemplaresOption) noEjemplaresOption.classList.add('hidden');
                 }
-                ejemplarSelect.dataset.lastSocio = socioId;
             } else {
+                // Si no hay socio seleccionado, deshabilitar ejemplares y resetear
                 ejemplarSelect.disabled = true;
                 ejemplarSelect.value = "";
                 ejemplarMsg.textContent = 'Seleccione un socio para ver sus ejemplares.';
@@ -195,13 +186,21 @@ if (!empty($tiposServicioList)) {
                      if(option.value !== "" && !option.disabled) option.classList.add('hidden');
                 });
                 if(noEjemplaresOption) noEjemplaresOption.classList.add('hidden');
-                ejemplarSelect.dataset.lastSocio = "";
             }
-        }
+        } // Fin de la función
 
+        // Event listeners
         if (tipoServicioSelect) tipoServicioSelect.addEventListener('change', actualizarVisibilidadYFiltros);
         if (socioSelect) socioSelect.addEventListener('change', actualizarVisibilidadYFiltros);
         
+        // Ejecutar al cargar por si hay valores preseleccionados (ej. si hubo error y se repobló)
         actualizarVisibilidadYFiltros();
+
+        // Validar fecha solicitud no futura
+        var today = new Date().toISOString().split('T')[0];
+        var fechaSolInput = document.getElementById('fechaSolicitud');
+        if(fechaSolInput) {
+            fechaSolInput.setAttribute('max', today);
+        }
     });
 </script>

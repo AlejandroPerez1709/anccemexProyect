@@ -1,3 +1,6 @@
+
+<!-- app/views/servicios/index.php  -->
+
 <h2>Listado de Servicios Solicitados</h2>
 
 <a href="index.php?route=servicios/create" class="btn btn-primary margin-bottom-15">Registrar Nuevo Servicio</a>

@@ -1,4 +1,3 @@
-
 <?php
 // app/views/auth/login.php
 ?>
@@ -30,6 +29,12 @@
             <label for="password">Contraseña:</label>
             <input type="password" name="password" id="password" required>
 
+            <div class="form-group captcha-group">
+                <label for="captcha">Ingresa el código:</label>
+                <img src="<?php echo BASE_URL; ?>/captcha.php" alt="Captcha Code" class="captcha-img">
+                <input type="text" name="captcha" id="captcha" required maxlength="6" pattern="[A-Za-z0-9]+" title="Solo letras y números">
+                <small>Actualiza la página si no ves el código o para generar uno nuevo.</small>
+            </div>
             <button type="submit">Ingresar</button>
         </form>
     </div>

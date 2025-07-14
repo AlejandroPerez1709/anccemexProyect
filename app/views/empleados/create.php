@@ -1,53 +1,65 @@
-<!--app/views/empleados/create.php -->
 <?php
-// Recuperar datos si hubo error y calcular fechas min/max
-$formData = $_SESSION['form_data'] ?? []; unset($_SESSION['form_data']);
-$minFechaIngreso = date('Y-m-d', strtotime('-40 years'));
-$maxFechaIngreso = date('Y-m-d');
-?>
-<h2>Registrar Nuevo Empleado</h2>
+// app/views/empleados/create.php
 
-<?php // Mostrar errores
-if (isset($_SESSION['error'])) { echo "<div class='alert alert-error'>" . $_SESSION['error'] . "</div>"; unset($_SESSION['error']);
-}
+// Recuperar datos del formulario si hubo error. Viene del controlador.
+$formData = $formData ?? []; // Asegurar que $formData exista
+
+// Mensajes de error y warning ya se gestionan en master.php.
+// Eliminamos la lógica duplicada aquí.
 ?>
+
+<h2>Registrar Nuevo Empleado</h2>
 
 <div class="form-container">
     <form action="index.php?route=empleados_store" method="POST" id="empleadoForm">
         <div class="form-group">
             <label for="nombre">Nombre: <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" name="nombre" id="nombre" value="<?php echo htmlspecialchars($formData['nombre'] ?? ''); ?>" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
+            <input type="text" class="form-control" name="nombre" id="nombre" 
+                   value="<?php echo htmlspecialchars($formData['nombre'] ?? ''); ?>" 
+                   required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
         </div>
         <div class="form-group">
             <label for="apellido_paterno">Apellido Paterno: <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" name="apellido_paterno" id="apellido_paterno" value="<?php echo htmlspecialchars($formData['apellido_paterno'] ?? ''); ?>" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
+            <input type="text" class="form-control" name="apellido_paterno" id="apellido_paterno" 
+                   value="<?php echo htmlspecialchars($formData['apellido_paterno'] ?? ''); ?>" 
+                   required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
         </div>
         <div class="form-group">
             <label for="apellido_materno">Apellido Materno: <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" name="apellido_materno" id="apellido_materno" value="<?php echo htmlspecialchars($formData['apellido_materno'] ?? ''); ?>" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
+            <input type="text" class="form-control" name="apellido_materno" id="apellido_materno" 
+                   value="<?php echo htmlspecialchars($formData['apellido_materno'] ?? ''); ?>" 
+                   required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
         </div>
         <div class="form-group">
             <label for="email">Email:<span class="text-danger">*</span></label>
-            <input type="email" class="form-control" name="email" id="email" value="<?php echo htmlspecialchars($formData['email'] ?? ''); ?>" required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Ingrese un email válido">
+            <input type="email" class="form-control" name="email" id="email" 
+                   value="<?php echo htmlspecialchars($formData['email'] ?? ''); ?>" 
+                   required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Ingrese un email válido">
         </div>
         <div class="form-group">
             <label for="direccion">Dirección:<span class="text-danger">*</span></label>
-            <input type="text" class="form-control" name="direccion" id="direccion" value="<?php echo htmlspecialchars($formData['direccion'] ?? ''); ?>" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\.#°,\-]+" title="Caracteres permitidos: letras, números, espacios, #, °, ., - y coma">
+            <input type="text" class="form-control" name="direccion" id="direccion" 
+                   value="<?php echo htmlspecialchars($formData['direccion'] ?? ''); ?>" 
+                   required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\.#°,\-]+" title="Caracteres permitidos: letras, números, espacios, #, °, ., - y coma">
         </div>
          <div class="form-group">
              <label for="telefono">Teléfono:<span class="text-danger">*</span></label>
-             <input type="tel" class="form-control" name="telefono" id="telefono" value="<?php echo htmlspecialchars($formData['telefono'] ?? ''); ?>" required pattern="[0-9]{10}" title="Debe contener exactamente 10 dígitos numéricos">
+             <input type="tel" class="form-control" name="telefono" id="telefono" 
+                    value="<?php echo htmlspecialchars($formData['telefono'] ?? ''); ?>" 
+                    required pattern="[0-9]{10}" title="Debe contener exactamente 10 dígitos numéricos">
          </div>
         <div class="form-group">
             <label for="puesto">Puesto: <span class="text-danger">*</span></label>
             <select class="form-control" name="puesto" id="puesto" required>
                 <option value="" disabled <?php echo empty($formData['puesto']) ? 'selected' : ''; ?>>Seleccione un puesto</option>
-                <option value="Administrativo" <?php echo (isset($formData['puesto']) && $formData['puesto'] == 'Administrativo') ? 'selected' : ''; ?>>Administrativo</option>
-                <option value="Mensajero" <?php echo (isset($formData['puesto']) && $formData['puesto'] == 'Mensajero') ? 'selected' : ''; ?>>Mensajero</option>
-                <option value="Gerente" <?php echo (isset($formData['puesto']) && $formData['puesto'] == 'Gerente') ? 'selected' : ''; ?>>Gerente</option>
-                <option value="Medico" <?php echo (isset($formData['puesto']) && $formData['puesto'] == 'Medico') ? 'selected' : ''; ?>>Medico</option>
-                <option value="Secretaria" <?php echo (isset($formData['puesto']) && $formData['puesto'] == 'Secretaria') ? 'selected' : ''; ?>>Secretaria</option>
-                <option value="Organizador" <?php echo (isset($formData['puesto']) && $formData['puesto'] == 'Organizador') ? 'selected' : ''; ?>>Organizador</option>
+                <?php 
+                $puestos_permitidos = ['Administrativo', 'Mensajero', 'Gerente', 'Medico', 'Secretaria', 'Organizador'];
+                $puesto_actual = $formData['puesto'] ?? ''; // Obtener puesto actual del formData
+                foreach ($puestos_permitidos as $puesto_opcion) {
+                    $selected_attr = ($puesto_actual == $puesto_opcion) ? 'selected' : '';
+                    echo "<option value=\"{$puesto_opcion}\" {$selected_attr}>" . htmlspecialchars($puesto_opcion) . "</option>";
+                }
+                ?>
             </select>
         </div>
 
@@ -55,8 +67,8 @@ if (isset($_SESSION['error'])) { echo "<div class='alert alert-error'>" . $_SESS
             <label for="fecha_ingreso">Fecha de Ingreso: <span class="text-danger">*</span></label>
             <input type="date" class="form-control" name="fecha_ingreso" id="fecha_ingreso" required
                    value="<?php echo htmlspecialchars($formData['fecha_ingreso'] ?? ''); ?>"
-                   max="<?php echo $maxFechaIngreso; ?>"
-                   min="<?php echo $minFechaIngreso; ?>"
+                   max="<?php echo date('Y-m-d'); ?>"
+                   min="<?php echo date('Y-m-d', strtotime('-40 years')); ?>"
                    title="La fecha no puede ser futura ni demasiado antigua.">
              <small>No puede ser futura ni menor de 40 años atrás.</small>
         </div>
@@ -69,15 +81,14 @@ if (isset($_SESSION['error'])) { echo "<div class='alert alert-error'>" . $_SESS
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Las validaciones de pattern y required ya las maneja el navegador.
+    // La validación de email y longitud de teléfono ahora las hace el servidor principalmente.
+    // Este script JS ya no es estrictamente necesario ya que las validaciones fuertes son server-side.
+    // Sin embargo, si quieres mantener validaciones client-side (para feedback inmediato), podrías hacerlo.
+    // Por ahora, eliminamos los 'alert' de JS ya que el servidor se encarga de los mensajes.
     document.getElementById('empleadoForm').addEventListener('submit', function(e) {
-        var emailInput = document.getElementById('email');
-        if (emailInput.value.trim() !== '') {
-             var emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            if (!emailRegex.test(emailInput.value)) {
-                 alert('Por favor ingrese un correo electrónico válido o déjelo vacío.');
-                 e.preventDefault(); return false;
-             }
-         }
+        // No hay JS de validación agresivo aquí. El servidor es la fuente de verdad.
+        // Los atributos pattern, required, min, max del HTML ya proveen validación básica.
     });
 });
 </script>

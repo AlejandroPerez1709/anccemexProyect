@@ -1,74 +1,96 @@
-<!-- app/views/socios/edit.php -->
 <?php
+//app/views/socios/edit.php
 // Asegurar que las variables existan
+// $socio contendrá los datos del socio si se cargó correctamente.
+// $formData tendrá prioridad si hubo un error de validación en el POST.
 $socio = $socio ?? null;
-$documentosSocio = $documentosSocio ?? [];
+$documentosSocio = $documentosSocio ?? []; // Debe venir del controlador SociosController::edit
+$formData = $formData ?? $socio; // Repoblar con datos del socio o de la sesión si hubo error
 ?>
+
 <h2>Editar Socio: <?php echo htmlspecialchars($socio['nombre'] ?? 'Socio no encontrado'); ?> (<?php echo htmlspecialchars($socio['codigoGanadero'] ?? 'N/A'); ?>)</h2>
 
 <?php
-// Mostrar mensajes de sesión
-if (isset($_SESSION['error'])) { echo "<div class='alert alert-error'>" . $_SESSION['error'] . "</div>"; unset($_SESSION['error']); }
-if (isset($_SESSION['warning'])) { echo "<div class='alert alert-warning'>" . $_SESSION['warning'] . "</div>"; unset($_SESSION['warning']); }
-if(isset($_SESSION['message'])){ echo "<div class='alert alert-success'>" . $_SESSION['message'] . "</div>"; unset($_SESSION['message']); }
+// Mensajes de error y éxito ahora se gestionan en master.php.
+// Eliminamos la lógica duplicada aquí.
 ?>
 
 <div class="form-container">
-     <?php if ($socio): ?>
+     <?php if ($socio): // Solo mostrar formulario si el socio existe ?>
     <form action="index.php?route=socios_update" method="POST" id="socioEditForm" enctype="multipart/form-data">
-        <input type="hidden" name="id_socio" value="<?php echo $socio['id_socio']; ?>">
+        <input type="hidden" name="id_socio" value="<?php echo htmlspecialchars($socio['id_socio'] ?? ''); ?>">
 
          <fieldset>
             <legend>Datos del Titular</legend>
             <div class="form-group">
                 <label for="nombre">Nombre(s) Titular: <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" name="nombre" id="nombre" value="<?php echo htmlspecialchars($socio['nombre'] ?? ''); ?>" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
+                <input type="text" class="form-control" name="nombre" id="nombre"
+                       value="<?php echo htmlspecialchars($formData['nombre'] ?? ''); ?>"
+                       required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
             </div>
             <div class="form-group">
                 <label for="apellido_paterno">Apellido Paterno: <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" name="apellido_paterno" id="apellido_paterno" value="<?php echo htmlspecialchars($socio['apellido_paterno'] ?? ''); ?>" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
+                <input type="text" class="form-control" name="apellido_paterno" id="apellido_paterno"
+                       value="<?php echo htmlspecialchars($formData['apellido_paterno'] ?? ''); ?>"
+                       required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
             </div>
             <div class="form-group">
                 <label for="apellido_materno">Apellido Materno: <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" name="apellido_materno" id="apellido_materno" value="<?php echo htmlspecialchars($socio['apellido_materno'] ?? ''); ?>" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
+                <input type="text" class="form-control" name="apellido_materno" id="apellido_materno"
+                       value="<?php echo htmlspecialchars($formData['apellido_materno'] ?? ''); ?>"
+                       required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
             </div>
              <div class="form-group">
                  <label for="telefono">Teléfono: <span class="text-danger">*</span></label>
-                 <input type="tel" class="form-control" name="telefono" id="telefono" value="<?php echo htmlspecialchars($socio['telefono'] ?? ''); ?>"required pattern="[0-9]{10}" title="10 dígitos">
+                 <input type="tel" class="form-control" name="telefono" id="telefono"
+                        value="<?php echo htmlspecialchars($formData['telefono'] ?? ''); ?>"
+                        required pattern="[0-9]{10}" title="Debe contener exactamente 10 dígitos numéricos">
              </div>
             <div class="form-group">
                 <label for="email">Email: <span class="text-danger">*</span></label>
-                <input type="email" class="form-control" name="email" id="email" value="<?php echo htmlspecialchars($socio['email'] ?? ''); ?>" required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Formato de email no válido">
+                <input type="email" class="form-control" name="email" id="email"
+                       value="<?php echo htmlspecialchars($formData['email'] ?? ''); ?>"
+                       required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Formato de email no válido">
             </div>
              <div class="form-group">
                 <label for="identificacion_fiscal_titular">RFC: <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" name="identificacion_fiscal_titular" id="identificacion_fiscal_titular" value="<?php echo htmlspecialchars($socio['identificacion_fiscal_titular'] ?? ''); ?>"required pattern="[A-Za-z0-9\-]+" title="Letras, números y guiones">
+                <input type="text" class="form-control" name="identificacion_fiscal_titular" id="identificacion_fiscal_titular"
+                       value="<?php echo htmlspecialchars($formData['identificacion_fiscal_titular'] ?? ''); ?>"
+                       required pattern="[A-Za-z0-9\-]+" title="Letras, números y guiones permitidos">
             </div>
         </fieldset>
 
         <fieldset>
             <legend>Datos de la Ganadería</legend>
              <div class="form-group">
-                <label for="nombre_ganaderia">Nombre Ganadería: <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" name="nombre_ganaderia" id="nombre_ganaderia" value="<?php echo htmlspecialchars($socio['nombre_ganaderia'] ?? ''); ?>" maxlength="150" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\.#°,\-]+" title="Caracteres permitidos">
+                <label for="nombre_ganaderia">Nombre Ganadería:<span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="nombre_ganaderia" id="nombre_ganaderia"
+                       value="<?php echo htmlspecialchars($formData['nombre_ganaderia'] ?? ''); ?>"
+                       required maxlength="150" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\.#°,\-]+" title="Caracteres permitidos">
             </div>
              <div class="form-group">
-                <label for="direccion">Dirección: <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" name="direccion" id="direccion" value="<?php echo htmlspecialchars($socio['direccion'] ?? ''); ?>" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\.#°,\-]+" title="Caracteres permitidos">
+                <label for="direccion">Dirección:<span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="direccion" id="direccion"
+                       value="<?php echo htmlspecialchars($formData['direccion'] ?? ''); ?>"
+                       required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\.#°,\-]+" title="Caracteres permitidos">
             </div>
              <div class="form-group">
                 <label for="codigoGanadero">Código Ganadero: <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" name="codigoGanadero" id="codigoGanadero" value="<?php echo htmlspecialchars($socio['codigoGanadero'] ?? ''); ?>" required pattern="[A-Za-z0-9]+" title="Letras y números">
+                <input type="text" class="form-control" name="codigoGanadero" id="codigoGanadero"
+                       value="<?php echo htmlspecialchars($formData['codigoGanadero'] ?? ''); ?>"
+                       required pattern="[A-Za-z0-9]+" title="Letras y números permitidos">
             </div>
              <div class="form-group">
-                <label for="fechaRegistro">Fecha de Registro (Socio):</label>
-                <input type="date" class="form-control" name="fechaRegistro" id="fechaRegistro" value="<?php echo htmlspecialchars($socio['fechaRegistro'] ?? ''); ?>" required>
+                <label for="fechaRegistro">Fecha de Registro (Socio): <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" name="fechaRegistro" id="fechaRegistro"
+                       value="<?php echo htmlspecialchars($formData['fechaRegistro'] ?? ''); ?>"
+                       required max="<?php echo date('Y-m-d'); ?>">
             </div>
              <div class="form-group">
-                <label for="estado">Estado:</label>
+                <label for="estado">Estado:<span class="text-danger">*</span></label>
                 <select class="form-control" name="estado" id="estado" required>
-                    <option value="activo" <?php echo (isset($socio['estado']) && $socio['estado'] == 'activo') ? 'selected' : ''; ?>>Activo</option>
-                    <option value="inactivo" <?php echo (isset($socio['estado']) && $socio['estado'] == 'inactivo') ? 'selected' : ''; ?>>Inactivo</option>
+                    <option value="activo" <?php echo (isset($formData['estado']) && $formData['estado'] == 'activo') ? 'selected' : ''; ?>>Activo</option>
+                    <option value="inactivo" <?php echo (isset($formData['estado']) && $formData['estado'] == 'inactivo') ? 'selected' : ''; ?>>Inactivo</option>
                 </select>
             </div>
         </fieldset>
@@ -83,34 +105,50 @@ if(isset($_SESSION['message'])){ echo "<div class='alert alert-success'>" . $_SE
                               <li class="document-list-item">
                                   <div class="document-list-item-content">
                                      <strong><?php echo htmlspecialchars($doc['tipoDocumento']); ?>:</strong>
-                                     <a href="index.php?route=documento_download&id=<?php echo $doc['id_documento']; ?>" target="_blank"> <?php echo htmlspecialchars($doc['nombreArchivoOriginal']); ?> </a>
+                                     <a href="index.php?route=documento_download&id=<?php echo htmlspecialchars($doc['id_documento']); ?>" target="_blank" title="Descargar <?php echo htmlspecialchars($doc['nombreArchivoOriginal']); ?>">
+                                         <?php echo htmlspecialchars($doc['nombreArchivoOriginal']); ?>
+                                     </a>
                                      <small>(Subido: <?php echo date('d/m/Y H:i', strtotime($doc['fechaSubida'])); ?> por <?php echo htmlspecialchars($doc['uploaded_by_username'] ?? 'N/A'); ?>)</small>
                                       <?php if(!empty($doc['comentarios'])): ?>
                                          <p class="document-comment"><i>Comentarios: <?php echo htmlspecialchars($doc['comentarios']); ?></i></p>
                                      <?php endif; ?>
                                  </div>
                                   <div class="document-list-item-actions">
-                                       <?php if (isset($_SESSION['user']) && $_SESSION['user']['rol'] === 'superusuario'): ?>
-                                         <a href="index.php?route=documento_delete&id=<?php echo $doc['id_documento']; ?>&socio_id=<?php echo $socio['id_socio']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Eliminar documento?')">Eliminar</a>
+                                      <?php if (isset($_SESSION['user']) && $_SESSION['user']['rol'] === 'superusuario'): ?>
+                                         <a href="index.php?route=documento_delete&id=<?php echo htmlspecialchars($doc['id_documento']); ?>&socio_id=<?php echo htmlspecialchars($socio['id_socio']); ?>"
+                                            class="btn btn-sm btn-danger"
+                                            onclick="return confirm('¿Seguro que quieres eliminar el documento \'<?php echo htmlspecialchars(addslashes($doc['nombreArchivoOriginal'])); ?>\'?\n¡Esta acción borrará el archivo permanentemente!')">Eliminar</a>
                                       <?php endif; ?>
                                  </div>
-                            </li>
+                              </li>
                          <?php endforeach; ?>
                      </ul>
                  <?php else: ?>
-                    <p>No hay documentos registrados.</p>
+                    <p>No hay documentos maestros registrados para este socio.</p>
                  <?php endif; ?>
              </div>
              <hr>
              <h4>Subir/Actualizar Documentos:</h4>
              <small>Suba un archivo para añadirlo o actualizar uno existente del mismo tipo.</small>
-               <div class="form-group"><label for="id_oficial_file">ID Oficial:</label><input type="file" class="form-control" name="id_oficial_file" accept=".pdf,.jpg,.png,.gif"></div>
-               <div class="form-group"><label for="rfc_file">Constancia Fiscal:</label><input type="file" class="form-control" name="rfc_file" accept=".pdf,.jpg,.png,.gif"></div>
-               <div class="form-group"><label for="domicilio_file">Comp. Domicilio:</label><input type="file" class="form-control" name="domicilio_file" accept=".pdf,.jpg,.png,.gif"></div>
-               <div class="form-group"><label for="titulo_propiedad_file">Título Propiedad:</label><input type="file" class="form-control" name="titulo_propiedad_file" accept=".pdf,.jpg,.png,.gif"></div>
+               <div class="form-group">
+                   <label for="id_oficial_file">Identificación Oficial Titular (INE/Pasaporte/Visa):</label>
+                   <input type="file" class="form-control" name="id_oficial_file" id="id_oficial_file" accept=".pdf,.jpg,.jpeg,.png,.gif">
+               </div>
+               <div class="form-group">
+                   <label for="rfc_file">Constancia Fiscal (RFC):</label>
+                   <input type="file" class="form-control" name="rfc_file" id="rfc_file" accept=".pdf,.jpg,.jpeg,.png,.gif">
+               </div>
+               <div class="form-group">
+                   <label for="domicilio_file">Comprobante Domicilio Ganadería:</label>
+                   <input type="file" class="form-control" name="domicilio_file" id="domicilio_file" accept=".pdf,.jpg,.jpeg,.png,.gif">
+               </div>
+               <div class="form-group">
+                   <label for="titulo_propiedad_file">Título Propiedad Rancho:</label>
+                   <input type="file" class="form-control" name="titulo_propiedad_file" id="titulo_propiedad_file" accept=".pdf,.jpg,.jpeg,.png,.gif">
+               </div>
         </fieldset>
 
-        <p><small><span class="text-danger">*</span> Campos obligatorios para datos del socio/ganadería.</small></p>
+        <p><small><span class="text-danger">*</span> Campos obligatorios</small></p>
         <button type="submit" class="btn btn-primary">Actualizar Socio y Subir Documentos</button>
         <a href="index.php?route=socios_index" class="btn btn-secondary">Cancelar</a>
     </form>
@@ -119,3 +157,16 @@ if(isset($_SESSION['message'])){ echo "<div class='alert alert-success'>" . $_SE
         <a href="index.php?route=socios_index" class="btn btn-secondary">Volver al listado</a>
     <?php endif; ?>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Establecer la fecha máxima para Fecha de Registro
+    var today = new Date().toISOString().split('T')[0];
+    var fechaRegInput = document.getElementById('fechaRegistro');
+    if (fechaRegInput) {
+        fechaRegInput.setAttribute('max', today);
+    }
+    // Las validaciones de pattern, required, etc., ya las maneja el navegador y el servidor.
+    // No hay necesidad de JavaScript adicional con alerts.
+});
+</script>
