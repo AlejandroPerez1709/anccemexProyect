@@ -5,38 +5,30 @@ require_once __DIR__ . '/../models/TipoServicio.php';
 require_once __DIR__ . '/../models/Socio.php';
 require_once __DIR__ . '/../models/Ejemplar.php';
 require_once __DIR__ . '/../models/Medico.php';
-require_once __DIR__ . '/../models/Documento.php'; // Incluir modelo Documento
+require_once __DIR__ . '/../models/Documento.php';
 
 class ServiciosController {
 
-    // Helper para verificar sesión
-    private function checkSession() {
-        if (session_status() === PHP_SESSION_NONE) { session_start(); }
-        if (!isset($_SESSION['user'])) { header("Location: index.php?route=login"); exit; }
-    }
-
-    // Helper para procesar subida de un documento específico para un servicio
+    // CORREGIDO: Se elimina el helper checkSession()
+    
     private function handleServicioDocumentUpload($fileInputName, $servicioId, $tipoDocumento, $userId) {
-        // Permitir tipos comunes de documentos e imágenes
         $allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-        $maxFileSize = 10 * 1024 * 1024; // 10 MB (ajustar si es necesario)
+        $maxFileSize = 10 * 1024 * 1024;
 
-        // Verificar si el archivo fue subido y es válido
         if (isset($_FILES[$fileInputName]) && $_FILES[$fileInputName]['error'] === UPLOAD_ERR_OK) {
-            // Usar subcarpeta 'servicios' y organizar por año/mes
             $subfolder = 'servicios' . DIRECTORY_SEPARATOR . date('Y') . DIRECTORY_SEPARATOR . date('m');
             $uploadResult = Documento::handleUpload($fileInputName, $allowedTypes, $maxFileSize, $subfolder);
-
+            
             if ($uploadResult['status'] === 'success') {
                 $docData = [
                     'tipoDocumento' => $tipoDocumento,
                     'nombreArchivoOriginal' => $uploadResult['data']['originalName'],
-                    'rutaArchivo' => $uploadResult['data']['savedPath'], // Ruta relativa guardada por handleUpload
+                    'rutaArchivo' => $uploadResult['data']['savedPath'],
                     'mimeType' => $uploadResult['data']['mimeType'],
                     'sizeBytes' => $uploadResult['data']['size'],
                     'socio_id' => null,
                     'ejemplar_id' => null,
-                    'servicio_id' => $servicioId, // Asociar al servicio
+                    'servicio_id' => $servicioId,
                     'id_usuario' => $userId,
                     'comentarios' => 'Documento de servicio.'
                 ];
@@ -44,38 +36,27 @@ class ServiciosController {
                      error_log("Error BD al guardar doc {$tipoDocumento} para servicio {$servicioId}.");
                      $_SESSION['warning'] = ($_SESSION['warning'] ?? '') . " Error DB doc: " . htmlspecialchars($uploadResult['data']['originalName']) . ". ";
                 }
-                 return true; // Se procesó el intento de subida
+                 return true;
             } else {
-                 // Error en la subida física (tamaño, tipo, permisos, etc.)
                  $_SESSION['warning'] = ($_SESSION['warning'] ?? '') . " Error al subir " . htmlspecialchars($_FILES[$fileInputName]['name']) . ": " . $uploadResult['message'] . ". ";
             }
         } elseif (isset($_FILES[$fileInputName]) && $_FILES[$fileInputName]['error'] !== UPLOAD_ERR_NO_FILE) {
-            // Hubo un error diferente a "No se subió archivo"
              $_SESSION['warning'] = ($_SESSION['warning'] ?? '') . " Error PHP al subir " . $fileInputName . " (Code: " . $_FILES[$fileInputName]['error'] . "). ";
         }
-         // Si no se subió archivo (UPLOAD_ERR_NO_FILE), no hacemos nada y retornamos false
          return false;
     }
 
-
-    /**
-     * Muestra la lista de servicios
-     */
     public function index() {
-        $this->checkSession();
+        check_permission();
+        
         $filters = [];
         if (!empty($_GET['filtro_estado'])) $filters['estado'] = $_GET['filtro_estado'];
         if (!empty($_GET['filtro_socio_id'])) $filters['socio_id'] = filter_input(INPUT_GET, 'filtro_socio_id', FILTER_VALIDATE_INT);
         if (!empty($_GET['filtro_tipo_id'])) $filters['tipo_servicio_id'] = filter_input(INPUT_GET, 'filtro_tipo_id', FILTER_VALIDATE_INT);
 
-
-        $servicios = Servicio::getAll($filters); // <-- Obtiene los servicios del modelo
-
-       
-
-        // El resto del código sigue igual
-        $sociosList = Socio::getActiveSociosForSelect(); // Para el filtro
-        $tiposServicioList = TipoServicio::getActiveForSelect(); // Para el filtro
+        $servicios = Servicio::getAll($filters);
+        $sociosList = Socio::getActiveSociosForSelect();
+        $tiposServicioList = TipoServicio::getActiveForSelect();
 
         $pageTitle = 'Listado de Servicios';
         $currentRoute = 'servicios_index';
@@ -83,29 +64,25 @@ class ServiciosController {
         require_once __DIR__ . '/../views/layouts/master.php';
     }
 
-    /**
-     * Muestra el formulario para registrar un nuevo servicio
-     */
     public function create() {
-        $this->checkSession();
+        check_permission();
+
         $tiposServicioList = TipoServicio::getActiveForSelect();
         $sociosList = Socio::getActiveSociosForSelect();
-        $ejemplares = Ejemplar::getAll(); // Cargar todos para filtrar con JS
+        $ejemplares = Ejemplar::getAll();
         $medicosList = Medico::getActiveMedicosForSelect();
-
-         // Preparar datos de tipos de servicio para JS (requiere médico)
-         $tiposServicioDataJS = [];
-         if (!empty($tiposServicioList)) {
-              $allTiposData = TipoServicio::getAll(); // Necesitamos info completa
+        
+        $tiposServicioDataJS = [];
+        if (!empty($tiposServicioList)) {
+              $allTiposData = TipoServicio::getAll();
               foreach($allTiposData as $tipo) {
-                  if (isset($tiposServicioList[$tipo['id_tipo_servicio']])) { // Solo incluir activos
+                  if (isset($tiposServicioList[$tipo['id_tipo_servicio']])) {
                      $tiposServicioDataJS[$tipo['id_tipo_servicio']] = [
-                         'req_medico' => !empty($tipo['requiere_medico']) // Convertir a booleano JS
+                         'req_medico' => !empty($tipo['requiere_medico'])
                      ];
                   }
               }
          }
-
 
         if (empty($sociosList)) $_SESSION['warning'] = "No hay socios activos registrados.";
         if (empty($tiposServicioList)) $_SESSION['warning'] = "No hay tipos de servicio activos.";
@@ -113,18 +90,14 @@ class ServiciosController {
         $pageTitle = 'Registrar Nuevo Servicio';
         $currentRoute = 'servicios/create';
         $contentView = __DIR__ . '/../views/servicios/create.php';
-        require_once __DIR__ . '/../views/layouts/master.php'; // Master extraerá las listas
+        require_once __DIR__ . '/../views/layouts/master.php';
     }
 
-    /**
-     * Guarda la nueva solicitud de servicio Y los documentos iniciales.
-     */
     public function store() {
-        $this->checkSession();
+        check_permission();
         $userId = $_SESSION['user']['id_usuario'];
-
+        
         if (isset($_POST)) {
-            // Recoger datos del servicio
             $socio_id = filter_input(INPUT_POST, 'socio_id', FILTER_VALIDATE_INT);
             $tipo_servicio_id = filter_input(INPUT_POST, 'tipo_servicio_id', FILTER_VALIDATE_INT);
             $ejemplar_id = filter_input(INPUT_POST, 'ejemplar_id', FILTER_VALIDATE_INT);
@@ -132,21 +105,19 @@ class ServiciosController {
             $fechaSolicitud = trim($_POST['fechaSolicitud'] ?? date('Y-m-d'));
             $descripcion = trim($_POST['descripcion'] ?? '');
             $referencia_pago = trim($_POST['referencia_pago'] ?? '');
-
-            // --- Validaciones ---
+            
             $errors = [];
             if (empty($socio_id)) $errors[] = "Debe seleccionar un socio.";
             if (empty($tipo_servicio_id)) $errors[] = "Debe seleccionar un tipo de servicio.";
             if (empty($fechaSolicitud)) $errors[] = "La fecha de solicitud es obligatoria.";
-            if (empty($ejemplar_id)) { $errors[] = "Debe seleccionar un ejemplar."; }
-            else {
+            if (empty($ejemplar_id)) {
+                $errors[] = "Debe seleccionar un ejemplar.";
+            } else {
                  $ejemplarData = Ejemplar::getById($ejemplar_id);
                  if (!$ejemplarData || $ejemplarData['socio_id'] != $socio_id) {
                       $errors[] = "El ejemplar seleccionado no pertenece al socio elegido.";
                  }
             }
-
-            // Validar si los archivos obligatorios fueron subidos correctamente
              $solicitudOk = isset($_FILES['solicitud_file']) && $_FILES['solicitud_file']['error'] === UPLOAD_ERR_OK;
              $pagoOk = isset($_FILES['pago_file']) && $_FILES['pago_file']['error'] === UPLOAD_ERR_OK;
 
@@ -156,7 +127,6 @@ class ServiciosController {
              if (!$pagoOk) {
                   $errors[] = "Debe adjuntar el Comprobante de Pago (Error: " . ($_FILES['pago_file']['error'] ?? 'No subido') . ").";
              }
-             // ... (Otras validaciones) ...
 
             if (!empty($errors)) {
                 $_SESSION['error'] = implode("<br>", $errors);
@@ -165,93 +135,77 @@ class ServiciosController {
                 exit;
             }
 
-            // Preparar datos para el modelo Servicio
-            $data = [ /* ... datos ... */
+            $data = [
                  'socio_id' => $socio_id, 'ejemplar_id' => $ejemplar_id,
                  'tipo_servicio_id' => $tipo_servicio_id, 'medico_id' => $medico_id ?: null,
-                 'estado' => 'Recibido Completo', // Estado inicial ahora que pedimos docs
+                 'estado' => 'Recibido Completo',
                  'fechaSolicitud' => $fechaSolicitud, 'descripcion' => $descripcion ?: null,
                  'referencia_pago' => $referencia_pago ?: null,
                  'id_usuario_registro' => $userId, 'id_usuario_ultima_mod' => $userId,
-                  'fechaRecepcionDocs' => date('Y-m-d'), // Marcar fecha recepción docs hoy
-                  'fechaPago' => date('Y-m-d'), // Marcar fecha pago hoy (o tomar de form si se añade)
-                  'fechaAsignacionMedico' => ($medico_id ? date('Y-m-d') : null),
-                 // ... resto a NULL ...
+                 'fechaRecepcionDocs' => date('Y-m-d'),
+                 'fechaPago' => date('Y-m-d'),
+                 'fechaAsignacionMedico' => ($medico_id ? date('Y-m-d') : null),
             ];
-
-            $servicioId = Servicio::store($data); // Guardar datos del servicio
+            $servicioId = Servicio::store($data);
 
             if ($servicioId !== false) {
                 $_SESSION['message'] = "Servicio registrado con ID: " . $servicioId . ".";
                 unset($_SESSION['form_data']);
 
-                // --- Procesar Documentos Subidos (Solicitud y Pago) ---
-                // Ya validamos que los archivos venían OK, ahora los procesamos
                 $this->handleServicioDocumentUpload('solicitud_file', $servicioId, 'SOLICITUD_SERVICIO', $userId);
                 $this->handleServicioDocumentUpload('pago_file', $servicioId, 'COMPROBANTE_PAGO', $userId);
-                // Los warnings de subida (si fallara algo aquí inesperadamente) se añadirían a la sesión
-
             } else {
                 $error_detail = $_SESSION['error_details'] ?? 'Verifique los datos ingresados.';
                 unset($_SESSION['error_details']);
                 $_SESSION['error'] = "Error al registrar el servicio. " . $error_detail;
                 $_SESSION['form_data'] = $_POST;
-                // ¡Importante! No redirigir aquí si la subida falló, el usuario perdería los archivos.
-                // Mejor mostrar el error en la misma página de creación.
+                
                  $tiposServicioList = TipoServicio::getActiveForSelect();
                  $sociosList = Socio::getActiveSociosForSelect();
                  $ejemplares = Ejemplar::getAll();
                  $medicosList = Medico::getActiveMedicosForSelect();
-                 $tiposServicioDataJS = []; // Recalcular para la vista
+                 $tiposServicioDataJS = [];
                  if (!empty($tiposServicioList)) { $allTiposData = TipoServicio::getAll(); foreach($allTiposData as $tipo) { if(isset($tiposServicioList[$tipo['id_tipo_servicio']])) {$tiposServicioDataJS[$tipo['id_tipo_servicio']] = ['req_medico' => !empty($tipo['requiere_medico'])]; } } }
                  $pageTitle = 'Registrar Nuevo Servicio';
                  $currentRoute = 'servicios/create';
                  $contentView = __DIR__ . '/../views/servicios/create.php';
                  require_once __DIR__ . '/../views/layouts/master.php';
-                 exit; // Detener aquí
+                 exit;
             }
         } else {
              $_SESSION['error'] = "No se recibieron datos del formulario.";
         }
-        // Redirigir solo si todo fue exitoso (incluyendo subidas)
+        
         header("Location: index.php?route=servicios_index");
         exit;
     }
 
-    /**
-     * Muestra el formulario para editar/actualizar un servicio y sus documentos.
-     */
     public function edit($id = null) {
-        $this->checkSession();
+        check_permission();
+
         $servicioId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if (!$servicioId) { $_SESSION['error'] = "ID inválido."; header("Location: index.php?route=servicios_index"); exit; }
 
         $servicio = Servicio::getById($servicioId);
         if (!$servicio) { $_SESSION['error'] = "Servicio no encontrado."; header("Location: index.php?route=servicios_index"); exit; }
 
-        // Cargar listas y datos necesarios para la vista
         $tiposServicioList = TipoServicio::getActiveForSelect();
         $sociosList = Socio::getActiveSociosForSelect();
         $ejemplares = Ejemplar::getAll();
         $medicosList = Medico::getActiveMedicosForSelect();
         $posiblesEstados = ['Pendiente Docs/Pago', 'Recibido Completo', 'Pendiente Visita Medico','Pendiente Resultado Lab', 'Enviado a LG', 'Pendiente Respuesta LG', 'Completado', 'Rechazado', 'Cancelado'];
-
-        // Obtener Documentos asociados a ESTE servicio
         $documentosServicio = Documento::getByEntityId('servicio', $servicioId);
-
+        
         $pageTitle = 'Editar/Ver Servicio #' . $servicio['id_servicio'];
         $currentRoute = 'servicios/edit';
         $contentView = __DIR__ . '/../views/servicios/edit.php';
         require_once __DIR__ . '/../views/layouts/master.php';
     }
 
-    /**
-     * Actualiza un servicio existente y maneja subida de nuevos documentos.
-     */
     public function update() {
-        $this->checkSession();
+        check_permission();
         $userId = $_SESSION['user']['id_usuario'];
-
+        
         if (isset($_POST['id_servicio'])) {
             $id = filter_input(INPUT_POST, 'id_servicio', FILTER_VALIDATE_INT);
             if (!$id) {
@@ -260,11 +214,10 @@ class ServiciosController {
                 exit;
             }
 
-            // Recoger TODOS los campos del formulario de edición
             $ejemplar_id = filter_input(INPUT_POST, 'ejemplar_id', FILTER_VALIDATE_INT);
             $medico_id = filter_input(INPUT_POST, 'medico_id', FILTER_VALIDATE_INT);
             $estado = trim($_POST['estado'] ?? '');
-            $fechaSolicitud = trim($_POST['fechaSolicitud'] ?? ''); // Readonly, pero lo pasamos
+            $fechaSolicitud = trim($_POST['fechaSolicitud'] ?? '');
             $fechaRecepcionDocs = trim($_POST['fechaRecepcionDocs'] ?? ''); if(empty($fechaRecepcionDocs)) $fechaRecepcionDocs = null;
             $fechaPago = trim($_POST['fechaPago'] ?? ''); if(empty($fechaPago)) $fechaPago = null;
             $fechaAsignacionMedico = trim($_POST['fechaAsignacionMedico'] ?? ''); if(empty($fechaAsignacionMedico)) $fechaAsignacionMedico = null;
@@ -275,18 +228,15 @@ class ServiciosController {
             $descripcion = trim($_POST['descripcion'] ?? '');
             $motivo_rechazo = trim($_POST['motivo_rechazo'] ?? '');
             $referencia_pago = trim($_POST['referencia_pago'] ?? '');
-
-            // --- Validaciones ---
-             $errors = [];
-             $posiblesEstados = ['Pendiente Docs/Pago', 'Recibido Completo', 'Pendiente Visita Medico','Pendiente Resultado Lab', 'Enviado a LG', 'Pendiente Respuesta LG', 'Completado', 'Rechazado', 'Cancelado'];
-             if (!in_array($estado, $posiblesEstados)) { $errors[] = "Estado inválido."; }
-             // ... validar fechas ...
-              if ($estado === 'Rechazado' && empty($motivo_rechazo)) { $errors[] = "Debe indicar motivo de rechazo."; }
-              if ($estado !== 'Rechazado') { $motivo_rechazo = null; }
-              if (($estado === 'Completado' || $estado === 'Rechazado' || $estado === 'Cancelado') && empty($fechaFinalizacion)) {
-                  $fechaFinalizacion = date('Y-m-d');
-              }
-             // ... más validaciones ...
+            
+            $errors = [];
+            $posiblesEstados = ['Pendiente Docs/Pago', 'Recibido Completo', 'Pendiente Visita Medico','Pendiente Resultado Lab', 'Enviado a LG', 'Pendiente Respuesta LG', 'Completado', 'Rechazado', 'Cancelado'];
+            if (!in_array($estado, $posiblesEstados)) { $errors[] = "Estado inválido."; }
+            if ($estado === 'Rechazado' && empty($motivo_rechazo)) { $errors[] = "Debe indicar motivo de rechazo."; }
+            if ($estado !== 'Rechazado') { $motivo_rechazo = null; }
+            if (($estado === 'Completado' || $estado === 'Rechazado' || $estado === 'Cancelado') && empty($fechaFinalizacion)) {
+                $fechaFinalizacion = date('Y-m-d');
+            }
 
              if (!empty($errors)) {
                   $_SESSION['error'] = implode("<br>", $errors);
@@ -294,7 +244,6 @@ class ServiciosController {
                   exit;
              }
 
-             // Preparar array $data
              $data = [
                   'ejemplar_id' => $ejemplar_id ?: null, 'medico_id' => $medico_id ?: null, 'estado' => $estado,
                   'fechaSolicitud' => $fechaSolicitud, 'fechaRecepcionDocs' => $fechaRecepcionDocs, 'fechaPago' => $fechaPago,
@@ -304,40 +253,31 @@ class ServiciosController {
                   'motivo_rechazo' => $motivo_rechazo, 'referencia_pago' => $referencia_pago ?: null,
                   'id_usuario_ultima_mod' => $userId
              ];
-
-             if (Servicio::update($id, $data)) { // Actualizar datos del servicio
+             
+             if (Servicio::update($id, $data)) {
                  $_SESSION['message'] = "Servicio #" . $id . " actualizado.";
-
-                 // Procesar NUEVOS Documentos Subidos
                  $this->handleServicioDocumentUpload('solicitud_file_edit', $id, 'SOLICITUD_SERVICIO', $userId);
                  $this->handleServicioDocumentUpload('pago_file_edit', $id, 'COMPROBANTE_PAGO', $userId);
-                 // Añadir aquí procesamiento para otros campos de archivo que añadas al edit form
-
-                 // --- ¡CAMBIO EN LA REDIRECCIÓN! ---
-                 header("Location: index.php?route=servicios_index"); // Redirigir al LISTADO
+                 
+                 header("Location: index.php?route=servicios_index");
                  exit;
-                 // --- FIN DEL CAMBIO ---
-
              } else {
                   $error_detail = $_SESSION['error_details'] ?? 'Error desconocido.'; unset($_SESSION['error_details']);
                   $_SESSION['error'] = "Error al actualizar el servicio. " . $error_detail;
-                  header("Location: index.php?route=servicios/edit&id=" . $id); exit; // Volver a edit en error
+                  header("Location: index.php?route=servicios/edit&id=" . $id); exit;
              }
 
         } else {
             $_SESSION['error'] = "Falta ID del servicio.";
-            header("Location: index.php?route=servicios_index"); exit; // Ir a índice si falta ID
+            header("Location: index.php?route=servicios_index"); exit;
         }
-        
    }
 
-    /**
-     * Cambia el estado de un servicio a 'Cancelado'.
-     */
     public function cancel($id = null) {
-         $this->checkSession();
-         $servicioId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
-         if ($servicioId) {
+        check_permission();
+        
+        $servicioId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+        if ($servicioId) {
              if (Servicio::cancel($servicioId, $_SESSION['user']['id_usuario'])) {
                  $_SESSION['message'] = "Servicio #" . $servicioId . " cancelado exitosamente.";
              } else {
@@ -345,10 +285,8 @@ class ServiciosController {
                   unset($_SESSION['error_details']);
                   $_SESSION['error'] = "Error al cancelar el servicio. " . $error_detail;
              }
-         } else { $_SESSION['error'] = "ID de servicio inválido."; }
+        } else { $_SESSION['error'] = "ID de servicio inválido."; }
          header("Location: index.php?route=servicios_index");
          exit;
     }
-
-} // Fin clase ServiciosController
-?>
+}
