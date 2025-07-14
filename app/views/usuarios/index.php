@@ -1,8 +1,7 @@
 <!-- app/views/usuarios/index.php -->
 
 <h2>Listado de Usuarios</h2>
-
-
+<a href="index.php?route=usuarios/create" class="btn btn-primary margin-bottom-15">Registrar Nuevo Usuario</a>
 
 <?php
 // Mensajes de éxito o error generales del listado
@@ -19,7 +18,7 @@ if(isset($_SESSION['error'])){
 <table>
     <thead>
         <tr>
-            <th>ID</th>
+            <th>N°</th>
             <th>Nombre</th>
             <th>Apellidos</th>
             <th>Email</th>
@@ -57,14 +56,14 @@ if(isset($_SESSION['error'])){
                             <a href="index.php?route=usuarios_delete&id=<?php echo $usuario['id_usuario']; ?>" class="btn btn-danger" 
                             onclick="return confirm('¿Estás seguro de eliminar a este usuario?\nNombre: <?php echo htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellido_paterno']); ?>\nUsername: <?php echo htmlspecialchars($usuario['username']); ?>\n\n¡Esta acción no se puede deshacer!')">Eliminar</a>
                         <?php else: ?>
-                            <span style="color: gray;">(Usuario actual)</span>
+                            <span class="gray">(Usuario actual)</span>
                         <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; ?>
         <?php else: ?>
             <tr>
-                <td colspan="10" style="text-align: center;">No hay usuarios registrados</td>
+                <td colspan="10" class="text-center" >No hay usuarios registrados</td>
             </tr>
         <?php endif; ?>
     </tbody>

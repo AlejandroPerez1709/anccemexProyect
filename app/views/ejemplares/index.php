@@ -1,10 +1,14 @@
+<?php
+// app/views/dashboard/index.php
+?>
+
 <h2>Listado de Ejemplares</h2>
 <a href="index.php?route=ejemplares/create" class="btn btn-primary" style="margin-bottom: 15px;">Registrar Nuevo Ejemplar</a>
 <?php /* ... mensajes ... */ ?>
 <table>
     <thead>
         <tr>
-            <th>ID</th>
+            <th>N°</th>
             <th>Nombre</th>
             <th>Código Ejemplar</th> <th>Socio Propietario (Cód. Gan.)</th> <th>Sexo</th>
             <th>Fecha Nac.</th>
@@ -36,7 +40,7 @@
             <?php endforeach; ?>
         <?php else: ?>
             <tr>
-                <td colspan="9" style="text-align: center;">No hay ejemplares registrados</td> </tr>
+                <td colspan="9" class="text-center"">No hay ejemplares registrados</td> </tr>
         <?php endif; ?>
     </tbody>
 </table>

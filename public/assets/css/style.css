@@ -130,7 +130,9 @@ h2{
     background: #1B5E20;
 }
 
-
+.gray{
+    color: gray;
+}
 
 
 /* Cabecera */
@@ -174,6 +176,144 @@ h2{
 
 .user-info a:hover {
     text-decoration: underline;
+}
+
+/* --- CLASES DE UTILIDAD --- */
+.text-center {
+    text-align: center;
+}
+
+.margin-bottom-15 {
+    margin-bottom: 15px;
+}
+
+.text-danger {
+    color: #dc3545; /* rojo */
+}
+
+/* --- CLASES PARA ESTADOS --- */
+.status-active {
+    color: #28a745; /* verde */
+    font-weight: bold;
+}
+
+.status-inactive {
+    color: #dc3545; /* rojo */
+    font-weight: bold;
+}
+
+.status-badge {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+    color: white;
+    text-transform: capitalize;
+}
+
+.status-pendiente-docs-pago { background-color: #ffc107; color: #333; }
+.status-recibido-completo { background-color: #17a2b8; }
+.status-pendiente-visita-medico { background-color: #6f42c1; }
+.status-pendiente-resultado-lab { background-color: #fd7e14; }
+.status-enviado-a-lg { background-color: #007bff; }
+.status-pendiente-respuesta-lg { background-color: #007bff; opacity: 0.8; }
+.status-completado { background-color: #28a745; }
+.status-rechazado { background-color: #dc3545; }
+.status-cancelado { background-color: #6c757d; }
+
+/* --- NUEVAS CLASES PARA FORMULARIO DE FILTROS --- */
+.filter-form {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #e9ecef;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+}
+
+.filter-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+.filter-controls > div {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-label {
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.filter-select {
+    min-width: 220px;
+}
+
+/* Contenedor para Tablas Responsivas */
+.table-container {
+    overflow-x: auto;
+    background: #fff;
+    padding: 1px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* --- ESTILOS PARA LISTAS DE DOCUMENTOS (EN VISTAS EDIT) --- */
+
+.document-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 15px;
+}
+
+.document-list-item {
+    border-bottom: 1px solid #eee;
+    padding: 10px 5px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.document-list-item-content {
+    flex-grow: 1; /* El contenido principal ocupa el espacio disponible */
+}
+
+.document-list-item-content a {
+    font-weight: bold;
+}
+
+.document-list-item-content small {
+    display: block;
+    color: #6c757d;
+    font-size: 0.85em;
+    margin-top: 4px;
+}
+
+.document-comment {
+    font-size: 0.85em;
+    color: #555;
+    margin: 5px 0 0 15px;
+    font-style: italic;
+}
+
+.document-list-item-actions {
+    white-space: nowrap; /* Evita que los botones se partan en dos líneas */
+    flex-shrink: 0; /* Evita que los botones se encojan */
+}
+
+/* ---  --- */
+
+.hidden {
+    display: none;
+}
+
+.float-right {
+    float: right;
 }
 
 
@@ -352,4 +492,123 @@ th {
 .form-control:focus {
     outline: none;
     border-color: #2E7D32;
+}
+
+/*
+================================================================
+== NUEVO CÓDIGO PARA DISEÑO RESPONSIVE (MEDIA QUERIES) ==
+================================================================
+*/
+
+/* Para Tablets y Móviles (pantallas de hasta 992px) */
+@media (max-width: 992px) {
+    .layout-container {
+        flex-direction: column; /* Apila el sidebar y el contenido */
+    }
+
+    .sidebar {
+        width: 100%; /* El sidebar ocupa todo el ancho */
+        min-height: auto;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .content {
+        width: 100%;
+        box-shadow: none;
+    }
+}
+
+/* Para Móviles (pantallas de hasta 576px) */
+@media (max-width: 576px) {
+    body {
+        font-size: 14px; /* Reducimos la fuente base para mejor lectura */
+    }
+
+    .header {
+        padding: 10px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .content, .sidebar, .form-container {
+        padding: 15px;
+    }
+
+    .btn {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    td .btn {
+        width: auto; /* Evita que los botones en tablas ocupen todo el ancho */
+        margin-bottom: 5px;
+    }
+
+    .login-box {
+        width: 90%;
+        padding: 20px;
+    }
+}
+
+
+
+
+/* --- ESTILOS PARA MENÚ LATERAL DESPLEGABLE (ACTUALIZADO CON COLORES INVERTIDOS) --- */
+
+.sidebar-menu .has-submenu > a {
+    position: relative;
+}
+
+.sidebar-menu .has-submenu > a::after {
+    content: '▼';
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%) scale(0.6);
+    transition: transform 0.3s ease;
+}
+
+.sidebar-menu .has-submenu.open > a::after {
+    transform: translateY(-50%) scale(0.6) rotate(180deg);
+}
+
+/* CORREGIDO: Menú principal desplegado (verde oscuro) */
+.sidebar-menu .has-submenu.open > a {
+    background-color: #2E7D32; /* Verde oscuro */
+    color: white;
+    font-weight: bold;
+}
+
+.sidebar-submenu {
+    list-style: none;
+    padding-left: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-in-out;
+}
+
+.sidebar-submenu.visible {
+    max-height: 500px; 
+}
+
+.sidebar-submenu li a {
+    padding-left: 35px;
+    background-color: #f8f9fa;
+    font-size: 0.9em;
+}
+
+/* CORREGIDO: Enlace del submenú activo (página actual) con verde claro */
+.sidebar-submenu li a.active {
+    background-color: #E8F5E9; /* Verde claro */
+    color: #2E7D32;
+    font-weight: bold;
+}
+
+/* Separador para submenús */
+.sidebar-submenu hr {
+    margin: 8px 15px;
+    border: none;
+    border-top: 1px solid #e0e0e0;
 }

@@ -1,3 +1,5 @@
+# public/.htaccess
+
 # RewriteEngine On
 
 # Redirige las solicitudes que NO son para un archivo existente

@@ -18,7 +18,7 @@ if(isset($_SESSION['error'])){
 <table>
     <thead>
         <tr>
-            <th>ID</th>
+            <th>N°</th>
             <th>Nombre</th>
             <th>Apellidos</th>
             <th>Email</th>
@@ -53,7 +53,7 @@ if(isset($_SESSION['error'])){
             <?php endforeach; ?>
         <?php else: ?>
             <tr>
-                <td colspan="9" style="text-align: center;">No hay médicos registrados</td> </tr>
+                <td colspan="9" class="text-center"">No hay médicos registrados</td> </tr>
         <?php endif; ?>
     </tbody>
 </table>

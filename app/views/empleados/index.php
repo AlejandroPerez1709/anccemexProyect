@@ -4,7 +4,7 @@
 <table>
     <thead>
         <tr>
-            <th>ID</th>
+            <th>N°</th>
             <th>Nombre</th>
             <th>Apellidos</th>
             <th>Email</th>
@@ -36,7 +36,7 @@
             <?php endforeach; ?>
         <?php else: ?>
             <tr>
-                <td colspan="8" style="text-align: center;">No hay empleados registrados</td>
+                <td colspan="8" class="text-center" >No hay empleados registrados</td>
             </tr>
         <?php endif; ?>
     </tbody>

@@ -9,7 +9,7 @@
 <table>
     <thead>
         <tr>
-            <th>ID</th>
+            <th>N°</th>
             <th>Nombre Titular</th>
             <th>Apellidos</th>
             <th>Nombre Ganadería</th>
@@ -43,7 +43,7 @@
             <?php endforeach; ?>
         <?php else: ?>
             <tr>
-                <td colspan="10" style="text-align: center;">No hay socios registrados</td> </tr>
+                <td colspan="10" class="text-center">No hay socios registrados</td> </tr>
         <?php endif; ?>
     </tbody>
 </table>

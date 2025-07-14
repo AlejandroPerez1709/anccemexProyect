@@ -13,7 +13,7 @@ define('DB_NAME', 'anccemex_db');
 // --- Constantes de la Aplicación ---
 define('APP_NAME', 'Sistema ANCCEMEX');
 // Asegúrate que esta URL base sea correcta para tu entorno local
-define('BASE_URL', 'http://localhost/anccemexProyectoChatGpt/public');
+define('BASE_URL', 'http://localhost/anccemexProyecto/public');
 
 // --- ZONA HORARIA ---
 date_default_timezone_set('America/Mexico_City');

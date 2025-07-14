@@ -1,8 +1,7 @@
 <!-- app/views/tipos_servicio/index.php -->
 
 <h2>Catálogo: Tipos de Servicio</h2>
-
-
+<a href="index.php?route=tipos_servicios/create" class="btn btn-primary margin-bottom-15">Registrar Nuevo Tipo de Servicio</a>
 
 <?php
 // Reutilizar el bloque de mensajes de master.php si se prefiere no duplicar
@@ -13,7 +12,7 @@ if(isset($_SESSION['error'])){ echo "<div class='alert alert-error'>" . $_SESSIO
 <table>
     <thead>
         <tr>
-            <th>ID</th>
+            <th>N°</th>
             <th>Nombre</th>
             <th>Código</th>
             <th>Requiere Médico</th>
@@ -46,7 +45,7 @@ if(isset($_SESSION['error'])){ echo "<div class='alert alert-error'>" . $_SESSIO
             <?php endforeach; ?>
         <?php else: ?>
             <tr>
-                <td colspan="6" style="text-align: center;">No hay tipos de servicio registrados</td> </tr>
+                <td colspan="6" class="text-center">No hay tipos de servicio registrados</td> </tr>
         <?php endif; ?>
     </tbody>
 </table>

@@ -6,14 +6,15 @@
 <?php
 $formData = $_SESSION['form_data'] ?? [];
 unset($_SESSION['form_data']);
-if (isset($_SESSION['error'])) { echo "<div class='alert alert-error'>" . $_SESSION['error'] . "</div>"; unset($_SESSION['error']); }
+if (isset($_SESSION['error'])) { echo "<div class='alert alert-error'>" . $_SESSION['error'] . "</div>"; unset($_SESSION['error']);
+}
 ?>
 
 <div class="form-container">
     <form action="index.php?route=tipos_servicios_store" method="POST" id="tipoServicioForm">
 
         <div class="form-group">
-            <label for="nombre">Nombre del Servicio: <span style="color: red;">*</span></label>
+            <label for="nombre">Nombre del Servicio: <span class="text-danger">*</span></label>
             <input type="text" class="form-control" name="nombre" id="nombre" 
                 value="<?php echo htmlspecialchars($formData['nombre'] ?? ''); ?>" 
                 required 
@@ -23,7 +24,7 @@ if (isset($_SESSION['error'])) { echo "<div class='alert alert-error'>" . $_SESS
         </div>
 
         <div class="form-group">
-            <label for="codigo_servicio">Código Oficial (Ej: 619): <span style="color: red;">*</span></label>
+            <label for="codigo_servicio">Código Oficial (Ej: 619): <span class="text-danger">*</span></label>
             <input type="text" class="form-control" name="codigo_servicio" id="codigo_servicio" 
                 required 
                 value="<?php echo htmlspecialchars($formData['codigo_servicio'] ?? ''); ?>" 
@@ -44,22 +45,21 @@ if (isset($_SESSION['error'])) { echo "<div class='alert alert-error'>" . $_SESS
         </div>
 
          <div class="form-group">
-            <!-- <label>Características:</label> -->
             <div>
                 <label for="requiere_medico"> Requiere Médico?</label>
                 <input type="checkbox" id="requiere_medico" name="requiere_medico" value="1" <?php echo isset($formData['requiere_medico']) ? 'checked' : ''; ?>> Sí
             </div>
-             </div>
+         </div>
 
         <div class="form-group">
-            <label for="estado">Estado: <span style="color: red;">*</span></label>
+            <label for="estado">Estado: <span class="text-danger">*</span></label>
             <select class="form-control" name="estado" id="estado" required>
                 <option value="activo" <?php echo (!isset($formData['estado']) || $formData['estado'] == 'activo') ? 'selected' : ''; ?>>Activo</option>
                 <option value="inactivo" <?php echo (isset($formData['estado']) && $formData['estado'] == 'inactivo') ? 'selected' : ''; ?>>Inactivo</option>
             </select>
         </div>
 
-         <p><small><span style="color: red;">*</span> Campos obligatorios</small></p>
+         <p><small><span class="text-danger">*</span> Campos obligatorios</small></p>
 
         <button type="submit" class="btn btn-primary">Crear Tipo Servicio</button>
         <a href="index.php?route=tipos_servicios_index" class="btn btn-secondary">Cancelar</a>

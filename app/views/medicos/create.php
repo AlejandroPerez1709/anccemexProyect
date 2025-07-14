@@ -16,17 +16,17 @@ if (isset($_SESSION['error'])) {
     <form action="index.php?route=medicos_store" method="POST" id="medicoForm">
 
          <div class="form-group">
-            <label for="nombre">Nombre(s): <span style="color: red;">*</span></label>
+            <label for="nombre">Nombre(s): <span class="text-danger">*</span></label>
             <input type="text" class="form-control" name="nombre" id="nombre" value="<?php echo htmlspecialchars($formData['nombre'] ?? ''); ?>" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios">
         </div>
 
         <div class="form-group">
-            <label for="apellido_paterno">Apellido Paterno: <span style="color: red;">*</span></label>
+            <label for="apellido_paterno">Apellido Paterno: <span class="text-danger">*</span></label>
             <input type="text" class="form-control" name="apellido_paterno" id="apellido_paterno" value="<?php echo htmlspecialchars($formData['apellido_paterno'] ?? ''); ?>" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios">
         </div>
 
         <div class="form-group">
-            <label for="apellido_materno">Apellido Materno: <span style="color: red;">*</span></label>
+            <label for="apellido_materno">Apellido Materno: <span class="text-danger">*</span></label>
             <input type="text" class="form-control" name="apellido_materno" id="apellido_materno" value="<?php echo htmlspecialchars($formData['apellido_materno'] ?? ''); ?>" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios">
         </div>
 
@@ -36,22 +36,22 @@ if (isset($_SESSION['error'])) {
         </div>
 
          <div class="form-group">
-             <label for="telefono">Teléfono: <span style="color: red;">*</span></label>
+             <label for="telefono">Teléfono: <span class="text-danger">*</span></label>
              <input type="tel" class="form-control" name="telefono" id="telefono" value="<?php echo htmlspecialchars($formData['telefono'] ?? ''); ?>" required pattern="[0-9]{10}" title="Debe contener exactamente 10 dígitos numéricos">
          </div>
 
         <div class="form-group">
-            <label for="email">Email: <span style="color: red;">*</span></label>
+            <label for="email">Email: <span class="text-danger">*</span></label>
             <input type="email" class="form-control" name="email" id="email" value="<?php echo htmlspecialchars($formData['email'] ?? ''); ?>" required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Ingrese un email válido">
         </div>
 
         <div class="form-group">
-            <label for="numero_cedula_profesional">Número Cédula Profesional: <span style="color: red;">*</span></label>
+            <label for="numero_cedula_profesional">Número Cédula Profesional: <span class="text-danger">*</span></label>
             <input type="text" class="form-control" name="numero_cedula_profesional" id="numero_cedula_profesional" value="<?php echo htmlspecialchars($formData['numero_cedula_profesional'] ?? ''); ?>" required pattern="[A-Za-z0-9\-]+" title="Letras, números y guiones permitidos">
         </div>
 
         <div class="form-group">
-            <label for="entidad_residencia">Entidad de Residencia: <span style="color: red;">*</span></label>
+            <label for="entidad_residencia">Entidad de Residencia: <span class="text-danger">*</span></label>
             <input type="text" class="form-control" name="entidad_residencia" id="entidad_residencia" value="<?php echo htmlspecialchars($formData['entidad_residencia'] ?? ''); ?>" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios">
         </div>
 
@@ -68,7 +68,7 @@ if (isset($_SESSION['error'])) {
             </select>
         </div>
 
-        <p><small><span style="color: red;">*</span> Campos obligatorios</small></p>
+        <p><small><span class="text-danger">*</span> Campos obligatorios</small></p>
 
         <button type="submit" class="btn btn-primary">Registrar Médico</button>
         <a href="index.php?route=medicos_index" class="btn btn-secondary">Cancelar</a>
@@ -86,6 +86,5 @@ document.getElementById('medicoForm').addEventListener('submit', function(e) {
             return false;
         }
     }
-    // Añadir más validaciones aquí si se requiere
 });
-</script>
+ </script>
