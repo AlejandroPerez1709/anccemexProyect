@@ -7,13 +7,13 @@ if (session_status() === PHP_SESSION_NONE) {
 $currentRoute = $currentRoute ?? '';
 
 // Lógica para determinar qué grupo de menú está activo
-$isAdminActive = strpos($currentRoute, 'usuarios') !== false || strpos($currentRoute, 'tipos_servicios') !== false;
-$isEmpleadosActive = strpos($currentRoute, 'empleados') !== false;
-$isMedicosActive = strpos($currentRoute, 'medicos') !== false;
-$isSociosActive = strpos($currentRoute, 'socios') !== false;
-$isEjemplaresActive = strpos($currentRoute, 'ejemplares') !== false;
-// Se verifica que la ruta COMIENCE con 'servicios' para evitar la coincidencia con 'tipos_servicios'
+$isDashboardActive = ($currentRoute === 'dashboard');
 $isServiciosActive = (strpos($currentRoute, 'servicios') === 0);
+$isSociosActive = (strpos($currentRoute, 'socios') === 0);
+$isEjemplaresActive = (strpos($currentRoute, 'ejemplares') === 0);
+$isMedicosActive = (strpos($currentRoute, 'medicos') === 0);
+$isEmpleadosActive = (strpos($currentRoute, 'empleados') === 0);
+$isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($currentRoute, 'tipos_servicios') !== false;
 
 ?>
 <!DOCTYPE html>
@@ -34,7 +34,8 @@ $isServiciosActive = (strpos($currentRoute, 'servicios') === 0);
             <?php if(isset($_SESSION['user'])): ?>
                 <span>
                     Bienvenido, <strong><?php echo htmlspecialchars($_SESSION['user']['username']); ?></strong>
-                     (<?php echo htmlspecialchars(ucfirst($_SESSION['user']['rol'])); ?>) | <a href="index.php?route=logout">Cerrar sesión</a>
+                     (<?php echo htmlspecialchars(ucfirst($_SESSION['user']['rol'])); ?>) |
+                    <a href="index.php?route=logout">Cerrar sesión</a>
                 </span>
             <?php endif; ?>
         </div>
@@ -44,69 +45,31 @@ $isServiciosActive = (strpos($currentRoute, 'servicios') === 0);
         <div class="sidebar">
             <div class="sidebar-title">Módulos del Sistema</div>
             <ul class="sidebar-menu">
-                <li><a href="index.php?route=dashboard" class="<?php echo ($currentRoute === 'dashboard') ? 'active' : ''; ?>">Dashboard</a></li>
-                <hr>
-
+                <li><a href="index.php?route=dashboard" class="<?php echo $isDashboardActive ? 'active' : ''; ?>">Dashboard</a></li>
+                <li><a href="index.php?route=servicios_index" class="<?php echo $isServiciosActive ? 'active' : ''; ?>">Servicios</a></li>
+                <li><a href="index.php?route=socios_index" class="<?php echo $isSociosActive ? 'active' : ''; ?>">Socios</a></li>
+                <li><a href="index.php?route=ejemplares_index" class="<?php echo $isEjemplaresActive ? 'active' : ''; ?>">Ejemplares</a></li>
+                <li><a href="index.php?route=medicos_index" class="<?php echo $isMedicosActive ? 'active' : ''; ?>">Médicos</a></li>
+                <li><a href="index.php?route=empleados_index" class="<?php echo $isEmpleadosActive ? 'active' : ''; ?>">Empleados</a></li>
                 <?php if(is_admin()): ?>
-                <li class="has-submenu <?php echo $isAdminActive ? 'open' : ''; ?>">
+                <li class="has-submenu <?php echo $isAdminSectionActive ? 'open' : ''; ?>">
                     <a href="#">Administración</a>
-                    <ul class="sidebar-submenu <?php echo $isAdminActive ? 'visible' : ''; ?>">
+                    <ul class="sidebar-submenu <?php echo $isAdminSectionActive ? 'visible' : ''; ?>">
                         <li><a href="index.php?route=usuarios_index" class="<?php echo (strpos($currentRoute, 'usuarios') !== false) ? 'active' : ''; ?>">Usuarios</a></li>
                         <li><a href="index.php?route=tipos_servicios_index" class="<?php echo (strpos($currentRoute, 'tipos_servicios') !== false) ? 'active' : ''; ?>">Tipos de Servicio</a></li>
                     </ul>
                 </li>
-                <hr>
                 <?php endif; ?>
-
-                <li class="has-submenu <?php echo $isEmpleadosActive ? 'open' : ''; ?>">
-                    <a href="#">Empleados</a>
-                    <ul class="sidebar-submenu <?php echo $isEmpleadosActive ? 'visible' : ''; ?>">
-                        <li><a href="index.php?route=empleados_index" class="<?php echo ($currentRoute === 'empleados_index' || $currentRoute === 'empleados/edit') ? 'active' : ''; ?>">Listado</a></li>
-                        <li><a href="index.php?route=empleados/create" class="<?php echo ($currentRoute === 'empleados/create') ? 'active' : ''; ?>">Registrar Nuevo</a></li>
-                    </ul>
-                </li>
-
-                <li class="has-submenu <?php echo $isMedicosActive ? 'open' : ''; ?>">
-                    <a href="#">Médicos</a>
-                    <ul class="sidebar-submenu <?php echo $isMedicosActive ? 'visible' : ''; ?>">
-                        <li><a href="index.php?route=medicos_index" class="<?php echo ($currentRoute === 'medicos_index' || $currentRoute === 'medicos/edit') ? 'active' : ''; ?>">Listado</a></li>
-                        <li><a href="index.php?route=medicos/create" class="<?php echo ($currentRoute === 'medicos/create') ? 'active' : ''; ?>">Registrar Nuevo</a></li>
-                    </ul>
-                </li>
-
-                <li class="has-submenu <?php echo $isSociosActive ? 'open' : ''; ?>">
-                    <a href="#">Socios</a>
-                    <ul class="sidebar-submenu <?php echo $isSociosActive ? 'visible' : ''; ?>">
-                        <li><a href="index.php?route=socios_index" class="<?php echo ($currentRoute === 'socios_index' || $currentRoute === 'socios/edit') ? 'active' : ''; ?>">Listado</a></li>
-                        <li><a href="index.php?route=socios/create" class="<?php echo ($currentRoute === 'socios/create') ? 'active' : ''; ?>">Registrar Nuevo</a></li>
-                    </ul>
-                </li>
-
-                <li class="has-submenu <?php echo $isEjemplaresActive ? 'open' : ''; ?>">
-                    <a href="#">Ejemplares</a>
-                    <ul class="sidebar-submenu <?php echo $isEjemplaresActive ? 'visible' : ''; ?>">
-                        <li><a href="index.php?route=ejemplares_index" class="<?php echo ($currentRoute === 'ejemplares_index' || $currentRoute === 'ejemplares/edit') ? 'active' : ''; ?>">Listado</a></li>
-                        <li><a href="index.php?route=ejemplares/create" class="<?php echo ($currentRoute === 'ejemplares/create') ? 'active' : ''; ?>">Registrar Nuevo</a></li>
-                    </ul>
-                </li>
-                
-                <li class="has-submenu <?php echo $isServiciosActive ? 'open' : ''; ?>">
-                    <a href="#">Servicios</a>
-                    <ul class="sidebar-submenu <?php echo $isServiciosActive ? 'visible' : ''; ?>">
-                        <li><a href="index.php?route=servicios_index" class="<?php echo ($currentRoute === 'servicios_index' || $currentRoute === 'servicios/edit') ? 'active' : ''; ?>">Listado</a></li>
-                        <li><a href="index.php?route=servicios/create" class="<?php echo ($currentRoute === 'servicios/create') ? 'active' : ''; ?>">Registrar Nuevo</a></li>
-                    </ul>
-                </li>
             </ul>
         </div>
 
         <div class="content">
             <?php
-            // Mensajes globales
+            // Mensajes globales (error, success, warning)
             $messageTypes = ['message' => 'alert-success', 'error' => 'alert-error', 'warning' => 'alert-warning'];
             foreach ($messageTypes as $key => $class) {
                 if(isset($_SESSION[$key])){
-                    echo "<div class='alert $class'>" . $_SESSION[$key] . "</div>";
+                    echo "<div class='alert $class'>" . htmlspecialchars($_SESSION[$key]) . "</div>";
                     unset($_SESSION[$key]);
                 }
             }
@@ -127,11 +90,12 @@ $isServiciosActive = (strpos($currentRoute, 'servicios') === 0);
                 if (isset($servicios)) extract(['servicios' => $servicios]);
                 if (isset($servicio)) extract(['servicio' => $servicio]);
                 if (isset($posiblesEstados)) extract(['posiblesEstados' => $posiblesEstados]);
+                if (isset($formData)) extract(['formData' => $formData]);
 
                 include $contentView;
             } else {
-                echo "<div class='alert alert-error'>Error: No se pudo cargar la vista de contenido.</div>";
-                error_log("Error al cargar la vista: " . ($contentView ?? 'No definida'));
+                echo "<div class='alert alert-error'>Error: No se pudo cargar la vista de contenido (" . htmlspecialchars($contentView ?? 'ruta no definida') . ").</div>";
+                error_log("Error al cargar la vista: " . ($contentView ?? 'No definida') . " para la ruta: " . ($_GET['route'] ?? 'desconocida'));
             }
             ?>
         </div>
@@ -143,11 +107,15 @@ $isServiciosActive = (strpos($currentRoute, 'servicios') === 0);
 
             menuItems.forEach(item => {
                 item.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    
+                    // Solo prevenir el default si es un submenu (Administración)
+                    // y permitir que los otros enlaces naveguen directamente
                     const parentLi = this.parentElement;
+                    if (parentLi.classList.contains('has-submenu')) {
+                        event.preventDefault();
+                    }
                     
-                    if (!parentLi.classList.contains('open')) {
+                    // Cerrar otros submenús abiertos si se abre uno nuevo
+                    if (parentLi.classList.contains('has-submenu') && !parentLi.classList.contains('open')) {
                         document.querySelectorAll('.sidebar-menu .has-submenu.open').forEach(openMenu => {
                             if (openMenu !== parentLi) {
                                 openMenu.classList.remove('open');
@@ -156,10 +124,13 @@ $isServiciosActive = (strpos($currentRoute, 'servicios') === 0);
                         });
                     }
 
-                    parentLi.classList.toggle('open');
-                    const submenu = parentLi.querySelector('.sidebar-submenu');
-                    if (submenu) {
-                        submenu.classList.toggle('visible');
+                    // Toggle del submenú si es una pestaña con submenu
+                    if (parentLi.classList.contains('has-submenu')) {
+                        parentLi.classList.toggle('open');
+                        const submenu = parentLi.querySelector('.sidebar-submenu');
+                        if (submenu) {
+                            submenu.classList.toggle('visible');
+                        }
                     }
                 });
             });

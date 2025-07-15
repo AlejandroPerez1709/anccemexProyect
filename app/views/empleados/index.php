@@ -1,6 +1,8 @@
 <!-- app/views/empleados/index.php -->
 <h2>Listado de Empleados</h2>
 
+<a href="index.php?route=empleados/create" class="btn btn-primary margin-bottom-15">Registrar Nuevo Empleado</a>  
+
 <table>
     <thead>
         <tr>

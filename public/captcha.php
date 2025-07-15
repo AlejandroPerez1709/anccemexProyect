@@ -1,8 +1,15 @@
 <?php
 // public/captcha.php
 
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+// Asegúrate que no haya espacios en blanco ni líneas antes de este <?php
+
+// DESACTIVAMOS TEMPORALMENTE LA VISUALIZACIÓN DE ERRORES para producción
+// No se deben dejar estos ini_set para mostrar errores en un entorno real.
+// Si necesitas depurar en vivo, usa error_log o revisa los logs del servidor.
+ini_set('display_errors', 0); // Desactivar la muestra de errores en pantalla
+ini_set('display_startup_errors', 0);
+error_reporting(E_ALL); // Mantener el reporte de errores para que se guarden en el log
+
 session_start(); // Inicia la sesión para acceder al código Captcha
 
 // Asegurarse de que el código Captcha esté en la sesión
@@ -14,8 +21,8 @@ if (!isset($_SESSION['captcha_code'])) {
 $captcha_code = $_SESSION['captcha_code'];
 
 // Dimensiones de la imagen
-$width = 150; // Ancho un poco mayor para letras más grandes
-$height = 50; // Alto un poco mayor
+$width = 150; 
+$height = 50; 
 
 // Crear una imagen en blanco
 $image = imagecreatetruecolor($width, $height);
@@ -42,7 +49,7 @@ for ($i = 0; $i < 5; $i++) {
 $font_path = __DIR__ . '/fonts/playfair.ttf'; 
 
 // Tamaño de la fuente en píxeles (puedes ajustar este número para hacerlo más grande o pequeño)
-$font_size_px = 28; // Puedes probar con 28, 30, 32, etc.
+$font_size_px = 28; 
 
 // Ángulo del texto (0 para horizontal)
 $angle = 0;
@@ -50,22 +57,17 @@ $angle = 0;
 // Calcular posición para centrar el texto
 $textbox = imagettfbbox($font_size_px, $angle, $font_path, $captcha_code);
 
-// --- CAMBIOS AQUI: Ajuste en el cálculo de 'y' para centrar mejor el texto ---
-// $x ya lo calculaba bien horizontalmente
-$x = ($width - ($textbox[2] - $textbox[0])) / 2;
-
-// Ajuste de 'y' para mover el texto hacia arriba o hacia abajo.
-// Restamos el punto 'y' más bajo del bounding box (caja del texto) para obtener la altura total del texto,
-// y luego ajustamos. Un valor negativo en el final de la línea lo sube.
-// Prueba con diferentes valores en el '- X' al final de la línea si no queda centrado.
-$y = ($height / 2) + ($font_size_px / 2) - 5; // Un ajuste común, puedes probar -7, -10, etc.
+// CORREGIDO: Redondear los valores a enteros explícitamente para evitar la advertencia "Deprecated"
+// y asegurar que las coordenadas sean siempre números enteros.
+$x = (int) (($width - ($textbox[2] - $textbox[0])) / 2); // Conversión explícita a int
+$y = (int) (($height / 2) + ($font_size_px / 2) - 5);    // Conversión explícita a int (línea 64)
 
 // Dibuja el texto usando la fuente TrueType
 imagettftext($image, $font_size_px, $angle, $x, $y, $text_color, $font_path, $captcha_code);
 
 
 // Establecer el tipo de contenido como imagen PNG
-header('Content-type: image/png');
+header('Content-type: image/png'); // Línea 68
 
 // Enviar la imagen al navegador
 imagepng($image);
