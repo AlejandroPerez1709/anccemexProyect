@@ -582,6 +582,9 @@ legend { /* Estilo para la leyenda de fieldset */
     font-size: 0.85em;
 }
 
+
+
+
 /* Contenedor para botones en la parte inferior derecha del formulario completo */
 .form-actions-bottom {
     display: flex;
@@ -624,6 +627,63 @@ legend { /* Estilo para la leyenda de fieldset */
 .btn-secondary:hover {
     background-color: #5a6268;
 }
+
+/* --- ESTILOS MEJORADOS PARA FORMULARIO DE FILTROS --- */
+.filter-form {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa; /* Un color de fondo más neutro */
+    border: 1px solid #dee2e6; /* Borde sutil */
+    border-radius: 8px;
+}
+
+.filter-controls {
+    display: flex;
+    flex-wrap: wrap; /* Permite que los filtros se reorganicen en pantallas pequeñas */
+    gap: 20px; /* Espacio entre los elementos del filtro */
+    align-items: flex-end; /* Alinea los elementos en la parte inferior */
+}
+
+/* Estilo para cada grupo de filtro (label + input) */
+.filter-item {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Hace que los campos de selección crezcan para ocupar el espacio disponible */
+.filter-item.filter-grow {
+    flex-grow: 1; /* Permite que el elemento crezca */
+    flex-basis: 200px; /* Define un tamaño base antes de crecer */
+}
+
+/* Contenedor específico para los botones de acción */
+.filter-buttons {
+    flex-shrink: 0; /* Evita que el contenedor de botones se encoja */
+    display: flex;
+    gap: 10px; /* Espacio entre los botones "Filtrar" y "Limpiar" */
+}
+
+.filter-label {
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #495057; /* Un color de texto más oscuro para mejor lectura */
+}
+
+
+
+/* Nos aseguramos de que los botones dentro del filtro no tengan margen extra */
+.filter-buttons .btn {
+    margin: 0;
+}
+
+/* Aseguramos que los selects tengan una altura consistente */
+.filter-controls .form-control {
+    height: 38px;
+}
+
+
+
 
 /* --- ESTILOS DE BOTONES EN TABLAS (EDITAR/ELIMINAR) --- */
 td .btn-sm {

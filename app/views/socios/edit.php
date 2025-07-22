@@ -1,4 +1,5 @@
 <?php
+//app/views/socios/edit.php
 // Asegurar que las variables existan y sean del tipo esperado
 // $socio contendrá los datos del socio si se cargó correctamente.
 // $formData tendrá prioridad si hubo un error de validación en el POST.

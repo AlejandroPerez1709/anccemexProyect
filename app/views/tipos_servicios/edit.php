@@ -1,4 +1,6 @@
 <?php 
+//app/views/tipos_servicios/edit.php
+
 $tipoServicio = $tipoServicio ?? null; // Asegura que exista y sea array
 
 // Para repoblar el formulario en caso de error de POST, $formData tendrá prioridad.

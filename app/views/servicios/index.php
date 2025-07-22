@@ -1,14 +1,15 @@
-
 <!-- app/views/servicios/index.php  -->
 
 <h2>Listado de Servicios Solicitados</h2>
 
 <a href="index.php?route=servicios/create" class="btn btn-primary margin-bottom-15">Registrar Nuevo Servicio</a>
 
+<!-- FORMULARIO DE FILTROS MEJORADO -->
 <form action="index.php" method="GET" class="filter-form">
      <input type="hidden" name="route" value="servicios_index">
      <div class="filter-controls">
-         <div>
+         <!-- Filtro de Estado -->
+         <div class="filter-item filter-grow">
              <label for="filtro_estado" class="filter-label">Estado:</label>
              <select name="filtro_estado" id="filtro_estado" class="form-control">
                   <option value="">-- Todos --</option>
@@ -21,7 +22,8 @@
                  ?>
              </select>
          </div>
-         <div>
+         <!-- Filtro de Socio -->
+         <div class="filter-item filter-grow">
               <label for="filtro_socio_id" class="filter-label">Socio:</label>
               <select name="filtro_socio_id" id="filtro_socio_id" class="form-control filter-select">
                   <option value="">-- Todos --</option>
@@ -34,7 +36,8 @@
                   ?>
               </select>
          </div>
-          <div>
+         <!-- Filtro de Tipo de Servicio -->
+          <div class="filter-item filter-grow">
                 <label for="filtro_tipo_id" class="filter-label">Tipo Servicio:</label>
                 <select name="filtro_tipo_id" id="filtro_tipo_id" class="form-control filter-select">
                       <option value="">-- Todos --</option>
@@ -47,11 +50,12 @@
                        ?>
                 </select>
           </div>
-         <div>
-              <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
-              <a href="index.php?route=servicios_index" class="btn btn-light btn-sm">Limpiar</a>
-          </div>
-     </div>
+          <!-- Contenedor de Botones -->
+          <div class="filter-item filter-buttons">
+               <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
+               <a href="index.php?route=servicios_index" class="btn btn-primary btn-sm">Limpiar</a>
+           </div>
+        </div>
 </form>
 
 
