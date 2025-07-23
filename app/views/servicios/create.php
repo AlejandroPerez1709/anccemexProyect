@@ -14,7 +14,7 @@ $formData = $formData ?? []; // Asegurar que $formData exista
                     <legend>Datos de la Solicitud</legend>
                     <div class="form-group-full">
                         <select name="tipo_servicio_id" id="tipo_servicio_id" required <?php echo empty($tiposServicioList) ? 'disabled' : ''; ?>>
-                            <option value="" disabled <?php echo empty($formData['tipo_servicio_id']) ? 'selected' : ''; ?>>-- Seleccione Tipo de Servicio --</option>
+                            <option value="" disabled <?php echo empty($formData['tipo_servicio_id']) ? 'selected' : ''; ?>>-</option>
                             <?php foreach ($tiposServicioList as $id => $display): ?>
                                 <option value="<?php echo htmlspecialchars($id); ?>"
                                         <?php echo (isset($formData['tipo_servicio_id']) && $formData['tipo_servicio_id'] == $id) ? 'selected' : ''; ?>
@@ -29,7 +29,7 @@ $formData = $formData ?? []; // Asegurar que $formData exista
 
                     <div class="form-group-full">
                         <select name="socio_id" id="socio_id" required <?php echo empty($sociosList) ? 'disabled' : ''; ?>>
-                            <option value="" disabled <?php echo empty($formData['socio_id']) ? 'selected' : ''; ?>>-- Seleccione Socio Solicitante --</option>
+                            <option value="" disabled <?php echo empty($formData['socio_id']) ? 'selected' : ''; ?>>-</option>
                             <?php foreach ($sociosList as $id => $display): ?>
                                 <option value="<?php echo htmlspecialchars($id); ?>" <?php echo (isset($formData['socio_id']) && $formData['socio_id'] == $id) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($display); ?>
@@ -42,7 +42,7 @@ $formData = $formData ?? []; // Asegurar que $formData exista
 
                     <div class="form-group-full" id="grupo_ejemplar">
                         <select name="ejemplar_id" id="ejemplar_id" required disabled>
-                            <option value="" selected disabled>-- Seleccione un Socio Primero --</option>
+                            <option value="" selected disabled>-</option>
                             <?php foreach ($ejemplares as $ejemplar_item): /* Renombrado para evitar conflicto con $ejemplar principal */ ?>
                                 <option value="<?php echo htmlspecialchars($ejemplar_item['id_ejemplar']); ?>"
                                         data-socio="<?php echo htmlspecialchars($ejemplar_item['socio_id']); ?>"

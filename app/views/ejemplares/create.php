@@ -14,7 +14,7 @@ $formData = $formData ?? []; // Asegurar que $formData exista
                     <legend>Datos del Ejemplar</legend>
                     <div class="form-group-full">
                         <select name="socio_id" id="socio_id" required <?php echo empty($sociosList) ? 'disabled' : ''; ?>>
-                            <option value="" disabled <?php echo empty($formData['socio_id']) ? 'selected' : ''; ?>>-- Seleccione Socio Propietario --</option>
+                            <option value="" disabled <?php echo empty($formData['socio_id']) ? 'selected' : ''; ?>>-</option>
                             <?php foreach ($sociosList as $id => $display): ?>
                                 <option value="<?php echo htmlspecialchars($id); ?>" <?php echo (isset($formData['socio_id']) && $formData['socio_id'] == $id) ? 'selected' : ''; ?>><?php echo htmlspecialchars($display); ?></option>
                             <?php endforeach; ?>
@@ -31,7 +31,7 @@ $formData = $formData ?? []; // Asegurar que $formData exista
                     <div class="form-row">
                         <div class="form-group">
                             <select name="sexo" id="sexo" required>
-                                <option value="" disabled <?php echo empty($formData['sexo']) ? 'selected' : ''; ?>>-- Seleccione --</option>
+                                <option value="" disabled <?php echo empty($formData['sexo']) ? 'selected' : ''; ?>>-</option>
                                 <option value="Macho" <?php echo (isset($formData['sexo']) && $formData['sexo'] == 'Macho') ? 'selected' : ''; ?>>Macho</option>
                                 <option value="Hembra" <?php echo (isset($formData['sexo']) && $formData['sexo'] == 'Hembra') ? 'selected' : ''; ?>>Hembra</option>
                             </select>

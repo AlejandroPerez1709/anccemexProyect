@@ -38,8 +38,10 @@ if(isset($_SESSION['error'])){ echo "<div class='alert alert-error'>" . $_SESSIO
                         </span>
                     </td>
                     <td>
-                        <a href="index.php?route=tipos_servicios/edit&id=<?php echo $tipo['id_tipo_servicio']; ?>" class="btn btn-warning">Editar</a>
-                        <a href="index.php?route=tipos_servicios_delete&id=<?php echo $tipo['id_tipo_servicio']; ?>" class="btn btn-danger" onclick="return confirm('¿Estás seguro de eliminar este tipo de servicio?\nNombre: <?php echo htmlspecialchars(addslashes($tipo['nombre'])); ?>\n\n¡Atención: Si hay servicios usando este tipo, podría causar errores!')">Eliminar</a>
+                        <div class="action-buttons">       
+                            <a href="index.php?route=tipos_servicios/edit&id=<?php echo $tipo['id_tipo_servicio']; ?>" class="btn btn-warning">Editar</a>
+                            <a href="index.php?route=tipos_servicios_delete&id=<?php echo $tipo['id_tipo_servicio']; ?>" class="btn btn-danger" onclick="return confirm('¿Estás seguro de eliminar este tipo de servicio?\nNombre: <?php echo htmlspecialchars(addslashes($tipo['nombre'])); ?>\n\n¡Atención: Si hay servicios usando este tipo, podría causar errores!')">Eliminar</a>
+                        </div>
                     </td>
                 </tr>
             <?php endforeach; ?>

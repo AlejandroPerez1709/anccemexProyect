@@ -50,7 +50,7 @@ $formData = $formData ?? []; // Asegurar que $formData exista
             <div class="form-row">
                 <div class="form-group">
                     <select name="rol" id="rol" required>
-                        <option value="" disabled <?php echo empty($formData['rol']) ? 'selected' : ''; ?>>Seleccione un rol</option>
+                        <option value="" disabled <?php echo empty($formData['rol']) ? 'selected' : ''; ?>>-</option>
                         <option value="usuario" <?php echo (isset($formData['rol']) && $formData['rol'] == 'usuario') ? 'selected' : ''; ?>>Usuario</option>
                         <option value="superusuario" <?php echo (isset($formData['rol']) && $formData['rol'] == 'superusuario') ? 'selected' : ''; ?>>Superusuario</option>
                     </select>

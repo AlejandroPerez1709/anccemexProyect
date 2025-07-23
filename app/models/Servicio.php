@@ -113,7 +113,7 @@ class Servicio {
 
         if (!empty($filters['estado'])) { $whereClauses[] = "s.estado = ?"; $params[] = $filters['estado']; $types .= "s"; } 
         if (!empty($filters['socio_id'])) { $whereClauses[] = "s.socio_id = ?"; $params[] = $filters['socio_id']; $types .= "i"; } 
-        if (!empty($filters['tipo_id'])) { $whereClauses[] = "s.tipo_servicio_id = ?"; $params[] = $filters['tipo_id']; $types .= "i"; } // Corregido el nombre del filtro de 'tipo_servicio_id' a 'tipo_id' como lo usas en el controlador
+        if (!empty($filters['tipo_servicio_id'])) { $whereClauses[] = "s.tipo_servicio_id = ?"; $params[] = $filters['tipo_servicio_id']; $types .= "i"; } // Corregido el nombre del filtro de 'tipo_servicio_id' a 'tipo_id' como lo usas en el controlador
 
         if (!empty($whereClauses)) { $sql .= " WHERE " . implode(" AND ", $whereClauses); } 
         

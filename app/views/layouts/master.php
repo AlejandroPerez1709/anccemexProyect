@@ -1,5 +1,3 @@
-<!-- app/views/layouts/master.php     -->
-
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -23,26 +21,33 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($pageTitle) ? $pageTitle . ' - ' . APP_NAME : APP_NAME; ?></title>
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
     <div class="header">
         <div class="logo-container">
             <img src="<?php echo BASE_URL; ?>/assets/img/logoAnccemex.png" alt="Logo" class="logo">
-            <h1><?php echo APP_NAME; ?></h1>
+            <h1 id="header-title"><?php echo APP_NAME; ?></h1>
         </div>
-        <div class="user-info">
-            <?php if(isset($_SESSION['user'])): ?>
-                <span>
-                    Bienvenido, <strong><?php echo htmlspecialchars($_SESSION['user']['username']); ?></strong>
-                     (<?php echo htmlspecialchars(ucfirst($_SESSION['user']['rol'])); ?>) |
-                    <a href="index.php?route=logout">Cerrar sesión</a>
-                </span>
-            <?php endif; ?>
+        <div class="header-right">
+            <div class="user-info">
+                <?php if(isset($_SESSION['user'])): ?>
+                    <span>
+                        Bienvenido, <strong><?php echo htmlspecialchars($_SESSION['user']['username']); ?></strong>
+                         (<?php echo htmlspecialchars(ucfirst($_SESSION['user']['rol'])); ?>) | <a href="index.php?route=logout">Cerrar sesión</a>
+                    </span>
+                <?php endif; ?>
+            </div>
+            <button class="menu-toggle" id="menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
     </div>
 
     <div class="layout-container">
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="sidebar-title">Módulos del Sistema</div>
             <ul class="sidebar-menu">
                 <li><a href="index.php?route=dashboard" class="<?php echo $isDashboardActive ? 'active' : ''; ?>">Dashboard</a></li>
@@ -65,18 +70,34 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
 
         <div class="content">
             <?php
-            // Mensajes globales (error, success, warning)
-            $messageTypes = ['message' => 'alert-success', 'error' => 'alert-error', 'warning' => 'alert-warning'];
-            foreach ($messageTypes as $key => $class) {
-                if(isset($_SESSION[$key])){
-                    echo "<div class='alert $class'>" . htmlspecialchars($_SESSION[$key]) . "</div>";
-                    unset($_SESSION[$key]);
-                }
+            // INICIO DE LA MODIFICACIÓN: Mensajes globales con SweetAlert2
+            if (isset($_SESSION['message'])) {
+                echo "<script>
+                    Swal.fire({
+                        position: 'center',
+                        icon: 'success',
+                        title: '" . htmlspecialchars($_SESSION['message']) . "',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                </script>";
+                unset($_SESSION['message']);
             }
+            
+            // Mantenemos las alertas de error y advertencia como estaban (son menos comunes y más informativas)
+            if (isset($_SESSION['error'])) {
+                echo "<div class='alert alert-error'>" . htmlspecialchars($_SESSION['error']) . "</div>";
+                unset($_SESSION['error']);
+            }
+
+            if (isset($_SESSION['warning'])) {
+                echo "<div class='alert alert-warning'>" . htmlspecialchars($_SESSION['warning']) . "</div>";
+                unset($_SESSION['warning']);
+            }
+            // FIN DE LA MODIFICACIÓN
             
             // Incluir la vista de contenido
             if (isset($contentView) && file_exists($contentView)) {
-                // Pasar variables a la vista
                 if (isset($tiposServicios)) extract(['tiposServicios' => $tiposServicios]);
                 if (isset($tipoServicio)) extract(['tipoServicio' => $tipoServicio]);
                 if (isset($empleado)) extract(['empleado' => $empleado]);
@@ -91,11 +112,10 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
                 if (isset($servicio)) extract(['servicio' => $servicio]);
                 if (isset($posiblesEstados)) extract(['posiblesEstados' => $posiblesEstados]);
                 if (isset($formData)) extract(['formData' => $formData]);
-
                 include $contentView;
             } else {
-                echo "<div class='alert alert-error'>Error: No se pudo cargar la vista de contenido (" . htmlspecialchars($contentView ?? 'ruta no definida') . ").</div>";
-                error_log("Error al cargar la vista: " . ($contentView ?? 'No definida') . " para la ruta: " . ($_GET['route'] ?? 'desconocida'));
+                echo "<div class='alert alert-error'>Error: No se pudo cargar la vista de contenido.</div>";
+                error_log("Error al cargar la vista: " . ($contentView ?? 'No definida'));
             }
             ?>
         </div>
@@ -103,37 +123,26 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Script para el menú de administración desplegable
             const menuItems = document.querySelectorAll('.sidebar-menu .has-submenu > a');
-
             menuItems.forEach(item => {
                 item.addEventListener('click', function(event) {
-                    // Solo prevenir el default si es un submenu (Administración)
-                    // y permitir que los otros enlaces naveguen directamente
+                    event.preventDefault();
                     const parentLi = this.parentElement;
-                    if (parentLi.classList.contains('has-submenu')) {
-                        event.preventDefault();
-                    }
-                    
-                    // Cerrar otros submenús abiertos si se abre uno nuevo
-                    if (parentLi.classList.contains('has-submenu') && !parentLi.classList.contains('open')) {
-                        document.querySelectorAll('.sidebar-menu .has-submenu.open').forEach(openMenu => {
-                            if (openMenu !== parentLi) {
-                                openMenu.classList.remove('open');
-                                openMenu.querySelector('.sidebar-submenu').classList.remove('visible');
-                            }
-                        });
-                    }
-
-                    // Toggle del submenú si es una pestaña con submenu
-                    if (parentLi.classList.contains('has-submenu')) {
-                        parentLi.classList.toggle('open');
-                        const submenu = parentLi.querySelector('.sidebar-submenu');
-                        if (submenu) {
-                            submenu.classList.toggle('visible');
-                        }
-                    }
+                    parentLi.classList.toggle('open');
+                    const submenu = parentLi.querySelector('.sidebar-submenu');
+                    submenu.classList.toggle('visible');
                 });
             });
+
+            // Script para el botón de menú hamburguesa en móvil
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.getElementById('sidebar');
+            if(menuToggle && sidebar) {
+                menuToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('is-open');
+                });
+            }
         });
     </script>
 </body>

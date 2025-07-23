@@ -42,7 +42,7 @@ $formData = $formData ?? []; // Asegurar que $formData exista
                 <label for="requiere_medico">Requiere Médico?</label> </div>
 
             <div class="form-group-full"> <select name="estado" id="estado" required>
-                    <option value="" disabled <?php echo empty($formData['estado']) ? 'selected' : ''; ?>>Seleccione un estado</option> <option value="activo" <?php echo (isset($formData['estado']) && $formData['estado'] == 'activo') ? 'selected' : ''; ?>>Activo</option>
+                    <option value="" disabled <?php echo empty($formData['estado']) ? 'selected' : ''; ?>>-</option> <option value="activo" <?php echo (isset($formData['estado']) && $formData['estado'] == 'activo') ? 'selected' : ''; ?>>Activo</option>
                     <option value="inactivo" <?php echo (isset($formData['estado']) && $formData['estado'] == 'inactivo') ? 'selected' : ''; ?>>Inactivo</option>
                 </select>
                 <label for="estado">Estado:<span class="text-danger">*</span></label>
