@@ -25,7 +25,9 @@ if (!empty($_GET['filtro_socio_id'])) $export_filters['filtro_socio_id'] = $_GET
 if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['filtro_tipo_id'];
 ?>
 
-<h2>Listado de Servicios Solicitados</h2>
+<div class="page-title-container">
+    <h2>Listado de Servicios Solicitados</h2>
+</div>
 
 <div class="table-header-controls">
     <a href="index.php?route=servicios/create" class="btn btn-primary">Registrar Nuevo Servicio</a>
@@ -175,6 +177,7 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
 </nav>
 <?php endif; ?>
 
+<!-- Estructura HTML de la Ventana Modal para Servicios -->
 <div id="infoModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -182,24 +185,33 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
             <h2 id="modalTitle">Detalles del Servicio</h2>
         </div>
         <div class="modal-body">
-            <p><strong>Número de Servicio:</strong> <span id="modalIdServicio"></span></p>
-            <p><strong>Tipo de Servicio:</strong> <span id="modalTipoServicio"></span></p>
-            <p><strong>Socio:</strong> <span id="modalSocio"></span></p>
-            <p><strong>Ejemplar:</strong> <span id="modalEjemplar"></span></p>
-            <hr>
-            <p><strong>Estado Actual:</strong> <span id="modalEstado"></span></p>
-            <p><strong>Fecha de Solicitud:</strong> <span id="modalFechaSolicitud"></span></p>
-            <p><strong>Última Modificación:</strong> <span id="modalUltimaModif"></span></p>
-            <hr>
-            <p><strong>Documentos del Servicio:</strong></p>
-            <label class="custom-checkbox-container">Solicitud de Servicio
-                <input type="checkbox" id="modalDocSolicitud" disabled>
-                <span class="checkmark"></span>
-            </label>
-            <label class="custom-checkbox-container">Comprobante de Pago
-                <input type="checkbox" id="modalDocPago" disabled>
-                <span class="checkmark"></span>
-            </label>
+            <div class="modal-section">
+                <div class="modal-section-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M21 8V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V4C3 3.44772 3.44772 3 4 3H12V8H21ZM19 10H12V5H5V19H19V10ZM14 10V12H16V10H14ZM14 13V15H16V13H14ZM10 13V15H7V13H10Z"></path></svg>
+                    <h4>Información del Trámite</h4>
+                </div>
+                <div class="modal-grid">
+                    <div class="modal-field"><span class="modal-label">Número de Servicio:</span><span class="modal-value" id="modalIdServicio"></span></div>
+                    <div class="modal-field"><span class="modal-label">Tipo de Servicio:</span><span class="modal-value" id="modalTipoServicio"></span></div>
+                    <div class="modal-field"><span class="modal-label">Socio:</span><span class="modal-value" id="modalSocio"></span></div>
+                    <div class="modal-field"><span class="modal-label">Ejemplar:</span><span class="modal-value" id="modalEjemplar"></span></div>
+                </div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-section-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4ZM12.5 8V12.5L16 14.25L15.25 15.4L11 13V8H12.5Z"></path></svg>
+                    <h4>Seguimiento</h4>
+                </div>
+                <div class="modal-grid">
+                    <div class="modal-field"><span class="modal-label">Estado Actual:</span><span class="modal-value" id="modalEstado"></span></div>
+                    <div class="modal-field"><span class="modal-label">Fecha de Solicitud:</span><span class="modal-value" id="modalFechaSolicitud"></span></div>
+                    <div class="modal-field full-width"><span class="modal-label">Última Modificación:</span><span class="modal-value" id="modalUltimaModif"></span></div>
+                </div>
+                <div class="modal-docs">
+                    <label class="custom-checkbox-container">Solicitud de Servicio<input type="checkbox" id="modalDocSolicitud" disabled><span class="checkmark"></span></label>
+                    <label class="custom-checkbox-container">Comprobante de Pago<input type="checkbox" id="modalDocPago" disabled><span class="checkmark"></span></label>
+                </div>
+            </div>
         </div>
     </div>
 </div>

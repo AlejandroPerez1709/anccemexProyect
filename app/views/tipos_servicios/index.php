@@ -1,7 +1,10 @@
 <?php 
 //app/views/tipos_servicios/index.php
 ?>
-<h2>Catálogo: Tipos de Servicio</h2>
+
+<div class="page-title-container">
+    <h2>Catálogo: Tipos de Servicio</h2>
+</div>
 
 <div class="table-header-controls">
     <a href="index.php?route=tipos_servicios/create" class="btn btn-primary">Registrar Nuevo Tipo</a>
@@ -61,6 +64,7 @@
     </table>
 </div>
 
+<!-- Estructura HTML de la Ventana Modal para Tipos de Servicio -->
 <div id="infoModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -68,12 +72,19 @@
             <h2 id="modalTitle">Detalles del Tipo de Servicio</h2>
         </div>
         <div class="modal-body">
-            <p><strong>Nombre:</strong> <span id="modalNombre"></span></p>
-            <p><strong>Código:</strong> <span id="modalCodigo"></span></p>
-            <p><strong>Estado:</strong> <span id="modalEstado"></span></p>
-            <p><strong>Requiere Médico:</strong> <span id="modalReqMedico"></span></p>
-            <p><strong>Descripción:</strong></p>
-            <p id="modalDescripcion"></p>
+            <div class="modal-section">
+                <div class="modal-section-title">
+                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M21 8V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V4C3 3.44772 3.44772 3 4 3H12V8H21ZM19 10H12V5H5V19H19V10ZM14 10V12H16V10H14ZM14 13V15H16V13H14ZM10 13V15H7V13H10Z"></path></svg>
+                    <h4>Información del Servicio</h4>
+                </div>
+                <div class="modal-grid">
+                    <div class="modal-field full-width"><span class="modal-label">Nombre del Servicio:</span><span class="modal-value" id="modalNombre"></span></div>
+                    <div class="modal-field"><span class="modal-label">Código Oficial:</span><span class="modal-value" id="modalCodigo"></span></div>
+                    <div class="modal-field"><span class="modal-label">Requiere Médico:</span><span class="modal-value" id="modalReqMedico"></span></div>
+                    <div class="modal-field"><span class="modal-label">Estado:</span><span class="modal-value" id="modalEstado"></span></div>
+                    <div class="modal-field full-width"><span class="modal-label">Descripción:</span><span class="modal-value" id="modalDescripcion"></span></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -11,7 +11,9 @@ function build_pagination_url($page, $searchTerm) {
 }
 ?>
 
-<h2>Listado de Empleados</h2>
+<div class="page-title-container">
+    <h2>Listado de Empleados</h2>
+</div>
 
 <div class="table-header-controls">
     <a href="index.php?route=empleados/create" class="btn btn-primary">Registrar Nuevo Empleado</a>
@@ -126,6 +128,7 @@ function build_pagination_url($page, $searchTerm) {
 </nav>
 <?php endif; ?>
 
+<!-- Estructura HTML de la Ventana Modal para Empleados -->
 <div id="infoModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -133,14 +136,29 @@ function build_pagination_url($page, $searchTerm) {
             <h2 id="modalTitle">Detalles del Empleado</h2>
         </div>
         <div class="modal-body">
-            <p><strong>Nombre Completo:</strong> <span id="modalNombreCompleto"></span></p>
-            <p><strong>Puesto:</strong> <span id="modalPuesto"></span></p>
-            <p><strong>Email:</strong> <span id="modalEmail"></span></p>
-            <p><strong>Teléfono:</strong> <span id="modalTelefono"></span></p>
-            <p><strong>Dirección:</strong> <span id="modalDireccion"></span></p>
-            <hr>
-            <p><strong>Fecha de Ingreso:</strong> <span id="modalFechaIngreso"></span></p>
-            <p><strong>Estado:</strong> <span id="modalEstado"></span></p>
+            <div class="modal-section">
+                <div class="modal-section-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14C14.2091 14 16 12.2091 16 10C16 7.79086 14.2091 6 12 6C9.79086 6 8 7.79086 8 10C8 12.2091 9.79086 14 12 14ZM12 16C7.58172 16 4 17.7909 4 20V21H20V20C20 17.7909 16.4183 16 12 16Z"></path></svg>
+                    <h4>Información del Empleado</h4>
+                </div>
+                <div class="modal-grid">
+                    <div class="modal-field full-width"><span class="modal-label">Nombre Completo:</span><span class="modal-value" id="modalNombreCompleto"></span></div>
+                    <div class="modal-field"><span class="modal-label">Puesto:</span><span class="modal-value" id="modalPuesto"></span></div>
+                    <div class="modal-field"><span class="modal-label">Email:</span><span class="modal-value" id="modalEmail"></span></div>
+                    <div class="modal-field"><span class="modal-label">Teléfono:</span><span class="modal-value" id="modalTelefono"></span></div>
+                    <div class="modal-field full-width"><span class="modal-label">Dirección:</span><span class="modal-value" id="modalDireccion"></span></div>
+                </div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-section-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7C4.79086 3 3 4.79086 3 7V17C3 19.2091 4.79086 21 7 21H17C19.2091 21 21 19.2091 21 17V7C21 4.79086 19.2091 3 17 3ZM19 17C19 18.1046 18.1046 19 17 19H7C5.89543 19 5 18.1046 5 17V7C5 5.89543 5.89543 5 7 5H17C18.1046 5 19 5.89543 19 7V17ZM15.2929 9.29289L11 13.5858L8.70711 11.2929L7.29289 12.7071L11 16.4142L16.7071 10.7071L15.2929 9.29289Z"></path></svg>
+                    <h4>Estado y Antigüedad</h4>
+                </div>
+                <div class="modal-grid">
+                    <div class="modal-field"><span class="modal-label">Fecha de Ingreso:</span><span class="modal-value" id="modalFechaIngreso"></span></div>
+                    <div class="modal-field"><span class="modal-label">Estado:</span><span class="modal-value" id="modalEstado"></span></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

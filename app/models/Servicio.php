@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../config/config.php';
 
 class Servicio {
 
-    // ... (El método store se mantiene igual) ...
+    // ... (método store se mantiene igual) ...
     public static function store($data) {
         $conn = dbConnect();
         if (!$conn) {
@@ -64,6 +64,22 @@ class Servicio {
         return $total;
     }
 
+    // AÑADIR ESTE NUEVO MÉTODO
+    public static function countActive() {
+        $conn = dbConnect();
+        if (!$conn) return 0;
+
+        $query = "SELECT COUNT(id_servicio) as total FROM servicios WHERE estado NOT IN ('Completado', 'Rechazado', 'Cancelado')";
+        $result = $conn->query($query);
+        $total = 0;
+        if ($result) {
+            $total = $result->fetch_assoc()['total'];
+            $result->free();
+        }
+        $conn->close();
+        return $total;
+    }
+
     public static function getAll($filters = [], $limit = 15, $offset = 0) {
         $conn = dbConnect();
         $servicios = []; 
@@ -86,13 +102,14 @@ class Servicio {
 
         if (!empty($whereClauses)) { $sql .= " WHERE " . implode(" AND ", $whereClauses); } 
         
-        // --- INICIO DE LA MODIFICACIÓN ---
-        $sql .= " ORDER BY s.id_servicio ASC LIMIT ? OFFSET ?";
-        // --- FIN DE LA MODIFICACIÓN ---
-
-        $params[] = $limit;
-        $params[] = $offset;
-        $types .= 'ii';
+        if ($limit != -1) {
+            $sql .= " ORDER BY s.id_servicio ASC LIMIT ? OFFSET ?";
+            $params[] = $limit;
+            $params[] = $offset;
+            $types .= 'ii';
+        } else {
+            $sql .= " ORDER BY s.id_servicio ASC";
+        }
         
         $stmt = $conn->prepare($sql);
         if (!$stmt) return $servicios;
@@ -114,7 +131,6 @@ class Servicio {
         return $servicios;
     }
 
-    // ... (El resto de los métodos: getById, update, cancel se mantienen igual) ...
     public static function getById($id) {
          $conn = dbConnect();
          if (!$conn) return null;

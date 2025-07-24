@@ -4,7 +4,8 @@ require_once __DIR__ . '/../../config/config.php';
 
 class Socio {
 
-    // ... (El método store se mantiene igual) ...
+    // ... (métodos store, countAll, getAll, getById, etc. se mantienen igual) ...
+
     public static function store($data) {
         $conn = dbConnect();
         if (!$conn) {
@@ -53,11 +54,6 @@ class Socio {
         return $newId;
     }
 
-    /**
-     * Cuenta el total de socios, opcionalmente filtrados por un término de búsqueda.
-     * @param string $searchTerm Término para buscar.
-     * @return int Total de socios.
-     */
     public static function countAll($searchTerm = '') {
         $conn = dbConnect();
         if (!$conn) return 0;
@@ -89,14 +85,23 @@ class Socio {
         $conn->close();
         return $total;
     }
+    
+    // AÑADIR ESTE NUEVO MÉTODO
+    public static function countActive() {
+        $conn = dbConnect();
+        if (!$conn) return 0;
 
-    /**
-     * Obtiene una lista paginada de socios.
-     * @param string $searchTerm Término para buscar.
-     * @param int $limit Número de registros por página.
-     * @param int $offset Número de registros a saltar.
-     * @return array Lista de socios.
-     */
+        $query = "SELECT COUNT(id_socio) as total FROM socios WHERE estado = 'activo'";
+        $result = $conn->query($query);
+        $total = 0;
+        if ($result) {
+            $total = $result->fetch_assoc()['total'];
+            $result->free();
+        }
+        $conn->close();
+        return $total;
+    }
+
     public static function getAll($searchTerm = '', $limit = 15, $offset = 0) {
         $conn = dbConnect();
         $socios = [];
@@ -113,10 +118,14 @@ class Socio {
             $types = 'ssssss';
         }
 
-        $query .= " ORDER BY id_socio ASC LIMIT ? OFFSET ?";
-        $params[] = $limit;
-        $params[] = $offset;
-        $types .= 'ii';
+        if ($limit != -1) {
+            $query .= " ORDER BY id_socio ASC LIMIT ? OFFSET ?";
+            $params[] = $limit;
+            $params[] = $offset;
+            $types .= 'ii';
+        } else {
+            $query .= " ORDER BY id_socio ASC";
+        }
 
         $stmt = $conn->prepare($query);
 

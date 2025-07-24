@@ -11,7 +11,9 @@ function build_pagination_url($page, $searchTerm) {
 }
 ?>
 
-<h2>Listado de Ejemplares</h2>
+<div class="page-title-container">
+    <h2>Listado de Ejemplares</h2>
+</div>
 
 <div class="table-header-controls">
     <a href="index.php?route=ejemplares/create" class="btn btn-primary">Registrar Nuevo Ejemplar</a>
@@ -132,6 +134,7 @@ function build_pagination_url($page, $searchTerm) {
 </nav>
 <?php endif; ?>
 
+<!-- Estructura HTML de la Ventana Modal para Ejemplares -->
 <div id="infoModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -139,36 +142,38 @@ function build_pagination_url($page, $searchTerm) {
             <h2 id="modalTitle">Detalles del Ejemplar</h2>
         </div>
         <div class="modal-body">
-            <p><strong>Nombre:</strong> <span id="modalNombre"></span></p>
-            <p><strong>Código de Ejemplar:</strong> <span id="modalCodigo"></span></p>
-            <p><strong>Socio Propietario:</strong> <span id="modalSocio"></span></p>
-            <hr>
-            <p><strong>Sexo:</strong> <span id="modalSexo"></span></p>
-            <p><strong>Fecha de Nacimiento:</strong> <span id="modalFechaNacimiento"></span></p>
-            <p><strong>Raza:</strong> <span id="modalRaza"></span></p>
-            <p><strong>Capa:</strong> <span id="modalCapa"></span></p>
-            <hr>
-            <p><strong>N° Microchip:</strong> <span id="modalMicrochip"></span></p>
-            <p><strong>N° Certificado LG:</strong> <span id="modalCertificado"></span></p>
-            <p><strong>Estado:</strong> <span id="modalEstado"></span></p>
-            <hr>
-            <p><strong>Estado de Documentos:</strong></p>
-            <label class="custom-checkbox-container">Pasaporte / DIE
-                <input type="checkbox" id="modalDocPasaporte" disabled>
-                <span class="checkmark"></span>
-            </label>
-            <label class="custom-checkbox-container">Resultado de ADN
-                <input type="checkbox" id="modalDocAdn" disabled>
-                <span class="checkmark"></span>
-            </label>
-            <label class="custom-checkbox-container">Certificado de Inscripción LG
-                <input type="checkbox" id="modalDocLg" disabled>
-                <span class="checkmark"></span>
-            </label>
-            <label class="custom-checkbox-container">Foto de Identificación
-                <input type="checkbox" id="modalDocFoto" disabled>
-                <span class="checkmark"></span>
-            </label>
+            <div class="modal-section">
+                <div class="modal-section-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5,4H14C15.43,4 17,5.57 17,7.5V11.5C17,13.43 15.43,15 14,15H9V18H6V20H12V18H11V15H8.5C6.57,15 5,13.43 5,11.5V7.5C5,5.57 6.57,4 8.5,4M14,6H8.5C7.67,6 7,6.67 7,7.5V11.5C7,12.33 7.67,13 8.5,13H12.5C13.33,13 14,12.33 14,11.5V6Z"></path></svg>
+                    <h4>Información General</h4>
+                </div>
+                <div class="modal-grid">
+                    <div class="modal-field"><span class="modal-label">Nombre:</span><span class="modal-value" id="modalNombre"></span></div>
+                    <div class="modal-field"><span class="modal-label">Código:</span><span class="modal-value" id="modalCodigo"></span></div>
+                    <div class="modal-field full-width"><span class="modal-label">Socio Propietario:</span><span class="modal-value" id="modalSocio"></span></div>
+                    <div class="modal-field"><span class="modal-label">Sexo:</span><span class="modal-value" id="modalSexo"></span></div>
+                    <div class="modal-field"><span class="modal-label">Fecha de Nacimiento:</span><span class="modal-value" id="modalFechaNacimiento"></span></div>
+                    <div class="modal-field"><span class="modal-label">Raza:</span><span class="modal-value" id="modalRaza"></span></div>
+                    <div class="modal-field"><span class="modal-label">Capa:</span><span class="modal-value" id="modalCapa"></span></div>
+                </div>
+            </div>
+            <div class="modal-section">
+                <div class="modal-section-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7C4.79086 3 3 4.79086 3 7V17C3 19.2091 4.79086 21 7 21H17C19.2091 21 21 19.2091 21 17V7C21 4.79086 19.2091 3 17 3ZM19 17C19 18.1046 18.1046 19 17 19H7C5.89543 19 5 18.1046 5 17V7C5 5.89543 5.89543 5 7 5H17C18.1046 5 19 5.89543 19 7V17ZM15.2929 9.29289L11 13.5858L8.70711 11.2929L7.29289 12.7071L11 16.4142L16.7071 10.7071L15.2929 9.29289Z"></path></svg>
+                    <h4>Registros y Documentos</h4>
+                </div>
+                <div class="modal-grid">
+                    <div class="modal-field"><span class="modal-label">N° Microchip:</span><span class="modal-value" id="modalMicrochip"></span></div>
+                    <div class="modal-field"><span class="modal-label">N° Certificado LG:</span><span class="modal-value" id="modalCertificado"></span></div>
+                    <div class="modal-field"><span class="modal-label">Estado:</span><span class="modal-value" id="modalEstado"></span></div>
+                </div>
+                <div class="modal-docs">
+                    <label class="custom-checkbox-container">Pasaporte / DIE<input type="checkbox" id="modalDocPasaporte" disabled><span class="checkmark"></span></label>
+                    <label class="custom-checkbox-container">Resultado de ADN<input type="checkbox" id="modalDocAdn" disabled><span class="checkmark"></span></label>
+                    <label class="custom-checkbox-container">Certificado de Inscripción LG<input type="checkbox" id="modalDocLg" disabled><span class="checkmark"></span></label>
+                    <label class="custom-checkbox-container">Foto de Identificación<input type="checkbox" id="modalDocFoto" disabled><span class="checkmark"></span></label>
+                </div>
+            </div>
         </div>
     </div>
 </div>
