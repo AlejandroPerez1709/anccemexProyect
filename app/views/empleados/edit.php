@@ -1,3 +1,4 @@
+<!--app/views/empleados/edit.php-->
 <div class="form-container">
     <h2>Editar Empleado</h2>
     <?php if ($empleado): ?>

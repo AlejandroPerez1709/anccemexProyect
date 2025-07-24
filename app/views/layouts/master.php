@@ -1,4 +1,6 @@
 <?php
+//app/views/layouts/master.php
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

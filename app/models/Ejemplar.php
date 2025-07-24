@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../config/config.php';
 
 class Ejemplar {
 
+    // ... (El método store se mantiene igual) ...
     public static function store($data) {
         $conn = dbConnect();
         if (!$conn) {
@@ -43,13 +44,56 @@ class Ejemplar {
         return $newId;
     }
 
-    public static function getAll($searchTerm = '') {
+    /**
+     * Cuenta el total de ejemplares, opcionalmente filtrados por un término de búsqueda.
+     * @param string $searchTerm Término para buscar.
+     * @return int Total de ejemplares.
+     */
+    public static function countAll($searchTerm = '') {
+        $conn = dbConnect();
+        if (!$conn) return 0;
+
+        $query = "SELECT COUNT(e.id_ejemplar) as total 
+                  FROM ejemplares e 
+                  LEFT JOIN socios s ON e.socio_id = s.id_socio";
+        $params = [];
+        $types = '';
+
+        if (!empty($searchTerm)) {
+            $query .= " WHERE e.nombre LIKE ? OR e.codigo_ejemplar LIKE ? OR s.codigoGanadero LIKE ?";
+            $searchTermWildcard = "%" . $searchTerm . "%";
+            $params = [$searchTermWildcard, $searchTermWildcard, $searchTermWildcard];
+            $types = 'sss';
+        }
+
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $total = $result->fetch_assoc()['total'];
+            $stmt->close();
+        } else {
+            $total = 0;
+        }
+        
+        $conn->close();
+        return $total;
+    }
+
+    /**
+     * Obtiene una lista paginada de ejemplares.
+     * @param string $searchTerm Término para buscar.
+     * @param int $limit Número de registros por página.
+     * @param int $offset Número de registros a saltar.
+     * @return array Lista de ejemplares.
+     */
+    public static function getAll($searchTerm = '', $limit = 15, $offset = 0) {
         $conn = dbConnect();
         $ejemplares = []; 
-        if (!$conn) {
-            $_SESSION['error_details'] = 'Error de conexión a la base de datos al obtener ejemplares.';
-            return $ejemplares;
-        }
+        if (!$conn) return $ejemplares;
         
         $query = "SELECT e.*, CONCAT(s.nombre, ' ', s.apellido_paterno) as nombre_socio, s.codigoGanadero as socio_codigo_ganadero
                   FROM ejemplares e 
@@ -65,7 +109,10 @@ class Ejemplar {
             $types = 'sss';
         }
         
-        $query .= " ORDER BY e.id_ejemplar ASC"; 
+        $query .= " ORDER BY e.id_ejemplar ASC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+        $types .= 'ii';
         
         $stmt = $conn->prepare($query);
         if ($stmt) {
@@ -122,7 +169,6 @@ class Ejemplar {
                     sexo = ?, codigo_ejemplar = ?, capa = ?, numero_microchip = ?, numero_certificado = ?,
                     estado = ?, id_usuario = ?";
         
-        // Si el estado se está cambiando a 'activo', se limpia la razón de desactivación
         if (isset($data['estado']) && $data['estado'] == 'activo') {
             $sql .= ", razon_desactivacion = NULL";
         }

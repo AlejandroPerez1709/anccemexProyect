@@ -1,5 +1,9 @@
 <?php
 // app/controllers/EjemplaresController.php
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
 require_once __DIR__ . '/../models/Ejemplar.php';
 require_once __DIR__ . '/../models/Socio.php';
 require_once __DIR__ . '/../models/Documento.php';
@@ -7,26 +11,14 @@ require_once __DIR__ . '/../../config/config.php';
 
 class EjemplaresController {
 
-    // ... (métodos handleSingle... y handleMultiple... se mantienen igual) ...
     private function handleSingleEjemplarDocUpload($fileInputName, $ejemplarId, $tipoDocumento, $userId) {
         if (isset($_FILES[$fileInputName]) && $_FILES[$fileInputName]['error'] === UPLOAD_ERR_OK) {
             $allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'];
-            $maxFileSize = 10 * 1024 * 1024; // 10 MB
+            $maxFileSize = 10 * 1024 * 1024;
 
             $uploadResult = Documento::handleUpload($fileInputName, $allowedTypes, $maxFileSize, 'ejemplares');
             if ($uploadResult['status'] === 'success') {
-                $docData = [
-                    'tipoDocumento' => $tipoDocumento,
-                    'nombreArchivoOriginal' => $uploadResult['data']['originalName'],
-                    'rutaArchivo' => $uploadResult['data']['savedPath'], 
-                    'mimeType' => $uploadResult['data']['mimeType'],
-                    'sizeBytes' => $uploadResult['data']['size'],
-                    'socio_id' => null,
-                    'ejemplar_id' => $ejemplarId,
-                    'servicio_id' => null,
-                    'id_usuario' => $userId,
-                    'comentarios' => 'Documento maestro de ejemplar.'
-                ];
+                $docData = [ 'tipoDocumento' => $tipoDocumento, 'nombreArchivoOriginal' => $uploadResult['data']['originalName'], 'rutaArchivo' => $uploadResult['data']['savedPath'], 'mimeType' => $uploadResult['data']['mimeType'], 'sizeBytes' => $uploadResult['data']['size'], 'socio_id' => null, 'ejemplar_id' => $ejemplarId, 'servicio_id' => null, 'id_usuario' => $userId, 'comentarios' => 'Documento maestro de ejemplar.' ];
                 if (!Documento::store($docData)) {
                      $_SESSION['warning'] = ($_SESSION['warning'] ?? '') . " Error DB doc: " . htmlspecialchars($uploadResult['data']['originalName']) . ". ";
                 }
@@ -39,34 +31,17 @@ class EjemplaresController {
     private function handleMultipleEjemplarPhotos($fileInputName, $ejemplarId, $userId) {
         if (isset($_FILES[$fileInputName]) && is_array($_FILES[$fileInputName]['name']) && !empty($_FILES[$fileInputName]['name'][0])) {
             $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-            $maxFileSize = 5 * 1024 * 1024; // 5 MB
+            $maxFileSize = 5 * 1024 * 1024;
             $fileCount = count($_FILES[$fileInputName]['name']);
             $subfolder = 'ejemplares' . DIRECTORY_SEPARATOR . $ejemplarId . DIRECTORY_SEPARATOR . 'fotos';
 
             for ($i = 0; $i < $fileCount; $i++) {
                 if ($_FILES[$fileInputName]['error'][$i] === UPLOAD_ERR_OK) {
-                    $singleFileArray = [
-                        'name' => $_FILES[$fileInputName]['name'][$i],
-                        'type' => $_FILES[$fileInputName]['type'][$i],
-                        'tmp_name' => $_FILES[$fileInputName]['tmp_name'][$i],
-                        'error' => $_FILES[$fileInputName]['error'][$i],
-                        'size' => $_FILES[$fileInputName]['size'][$i]
-                    ];
+                    $singleFileArray = [ 'name' => $_FILES[$fileInputName]['name'][$i], 'type' => $_FILES[$fileInputName]['type'][$i], 'tmp_name' => $_FILES[$fileInputName]['tmp_name'][$i], 'error' => $_FILES[$fileInputName]['error'][$i], 'size' => $_FILES[$fileInputName]['size'][$i] ];
                     $uploadResult = Documento::handleUpload('dummy_name', $allowedTypes, $maxFileSize, $subfolder, ['dummy_name' => $singleFileArray]);
 
                     if ($uploadResult['status'] === 'success') {
-                        $docData = [
-                            'tipoDocumento' => 'FOTO_IDENTIFICACION',
-                            'nombreArchivoOriginal' => $uploadResult['data']['originalName'],
-                            'rutaArchivo' => $uploadResult['data']['savedPath'],
-                            'mimeType' => $uploadResult['data']['mimeType'],
-                            'sizeBytes' => $uploadResult['data']['size'],
-                            'socio_id' => null,
-                            'ejemplar_id' => $ejemplarId,
-                            'servicio_id' => null,
-                            'id_usuario' => $userId,
-                            'comentarios' => 'Foto ID.'
-                        ];
+                        $docData = [ 'tipoDocumento' => 'FOTO_IDENTIFICACION', 'nombreArchivoOriginal' => $uploadResult['data']['originalName'], 'rutaArchivo' => $uploadResult['data']['savedPath'], 'mimeType' => $uploadResult['data']['mimeType'], 'sizeBytes' => $uploadResult['data']['size'], 'socio_id' => null, 'ejemplar_id' => $ejemplarId, 'servicio_id' => null, 'id_usuario' => $userId, 'comentarios' => 'Foto ID.' ];
                         if (!Documento::store($docData)) {
                              $_SESSION['warning'] = ($_SESSION['warning'] ?? '') . " Error DB foto: " . htmlspecialchars($singleFileArray['name']) . ". ";
                         }
@@ -80,13 +55,21 @@ class EjemplaresController {
 
     public function index() {
          check_permission();
-         
-         $searchTerm = '';
-         if (isset($_GET['search']) && !empty(trim($_GET['search']))) {
-             $searchTerm = trim($_GET['search']);
-         }
+         $searchTerm = $_GET['search'] ?? '';
+         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+         $records_per_page = 15;
+         $offset = ($page - 1) * $records_per_page;
 
-         $ejemplares = Ejemplar::getAll($searchTerm);
+         $total_records = Ejemplar::countAll($searchTerm);
+         $total_pages = ceil($total_records / $records_per_page);
+
+         $ejemplares = Ejemplar::getAll($searchTerm, $records_per_page, $offset);
+
+        // INICIO DE LA MODIFICACIÓN
+        foreach ($ejemplares as $key => $ejemplar) {
+            $ejemplares[$key]['document_status'] = Documento::getDocumentStatusForEjemplar($ejemplar['id_ejemplar']);
+        }
+        // FIN DE LA MODIFICACIÓN
 
          $pageTitle = 'Listado de Ejemplares'; 
          $currentRoute = 'ejemplares_index'; 
@@ -94,7 +77,44 @@ class EjemplaresController {
          require_once __DIR__ . '/../views/layouts/master.php';
     }
 
-    // ... (métodos create y store se mantienen igual) ...
+    public function exportToExcel() {
+        check_permission();
+
+        $searchTerm = $_GET['search'] ?? '';
+        $ejemplares = Ejemplar::getAll($searchTerm, -1); // -1 para obtener todos los registros
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Encabezados
+        $sheet->setCellValue('A1', 'ID')->setCellValue('B1', 'Nombre')->setCellValue('C1', 'Código Ejemplar')->setCellValue('D1', 'Socio Propietario')->setCellValue('E1', 'Cód. Ganadero')->setCellValue('F1', 'Sexo')->setCellValue('G1', 'Fecha Nacimiento')->setCellValue('H1', 'Raza')->setCellValue('I1', 'Capa')->setCellValue('J1', 'N° Microchip')->setCellValue('K1', 'Estado');
+        
+        $row = 2;
+        foreach ($ejemplares as $ejemplar) {
+            $sheet->setCellValue('A' . $row, $ejemplar['id_ejemplar'])
+                  ->setCellValue('B' . $row, $ejemplar['nombre'])
+                  ->setCellValue('C' . $row, $ejemplar['codigo_ejemplar'])
+                  ->setCellValue('D' . $row, $ejemplar['nombre_socio'])
+                  ->setCellValue('E' . $row, $ejemplar['socio_codigo_ganadero'])
+                  ->setCellValue('F' . $row, $ejemplar['sexo'])
+                  ->setCellValue('G' . $row, !empty($ejemplar['fechaNacimiento']) ? date('d/m/Y', strtotime($ejemplar['fechaNacimiento'])) : '-')
+                  ->setCellValue('H' . $row, $ejemplar['raza'])
+                  ->setCellValue('I' . $row, $ejemplar['capa'])
+                  ->setCellValue('J' . $row, $ejemplar['numero_microchip'])
+                  ->setCellValue('K' . $row, ucfirst($ejemplar['estado']));
+            $row++;
+        }
+
+        // Cabeceras para descarga
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="Reporte_Ejemplares.xlsx"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+
     public function create() {
         check_permission();
         $formData = $_SESSION['form_data'] ?? [];
@@ -117,20 +137,7 @@ class EjemplaresController {
         $_SESSION['form_data'] = $_POST;
 
         if(isset($_POST)) {
-            $data = [ 
-                'nombre' => trim($_POST['nombre'] ?? ''), 
-                'raza' => trim($_POST['raza'] ?? '') ?: null, 
-                'fechaNacimiento' => trim($_POST['fechaNacimiento'] ?? '') ?: null, 
-                'socio_id' => filter_input(INPUT_POST, 'socio_id', FILTER_VALIDATE_INT), 
-                'sexo' => trim($_POST['sexo'] ?? ''), 
-                'codigo_ejemplar' => trim($_POST['codigo_ejemplar'] ?? '') ?: null, 
-                'capa' => trim($_POST['capa'] ?? '') ?: null, 
-                'numero_microchip' => trim($_POST['numero_microchip'] ?? '') ?: null, 
-                'numero_certificado' => trim($_POST['numero_certificado'] ?? '') ?: null, 
-                'estado' => trim($_POST['estado'] ?? 'activo'), 
-                'id_usuario' => $userId 
-            ];
-
+            $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'raza' => trim($_POST['raza'] ?? '') ?: null, 'fechaNacimiento' => trim($_POST['fechaNacimiento'] ?? '') ?: null, 'socio_id' => filter_input(INPUT_POST, 'socio_id', FILTER_VALIDATE_INT), 'sexo' => trim($_POST['sexo'] ?? ''), 'codigo_ejemplar' => trim($_POST['codigo_ejemplar'] ?? '') ?: null, 'capa' => trim($_POST['capa'] ?? '') ?: null, 'numero_microchip' => trim($_POST['numero_microchip'] ?? '') ?: null, 'numero_certificado' => trim($_POST['numero_certificado'] ?? '') ?: null, 'estado' => trim($_POST['estado'] ?? 'activo'), 'id_usuario' => $userId ];
             $ejemplarId = Ejemplar::store($data);
             if($ejemplarId) {
                 $_SESSION['message'] = "Ejemplar registrado con ID: " . $ejemplarId . "."; 
@@ -140,7 +147,6 @@ class EjemplaresController {
                 $this->handleSingleEjemplarDocUpload('adn_file', $ejemplarId, 'RESULTADO_ADN', $userId);
                 $this->handleSingleEjemplarDocUpload('cert_lg_file', $ejemplarId, 'CERTIFICADO_INSCRIPCION_LG', $userId);
                 $this->handleMultipleEjemplarPhotos('fotos_file', $ejemplarId, $userId);
-                
                 header("Location: index.php?route=ejemplares_index"); 
                 exit;
             } else { 
@@ -151,9 +157,8 @@ class EjemplaresController {
             }
         }
     }
-    
-    // ... (método edit se mantiene igual) ...
-     public function edit($id = null) {
+
+    public function edit($id = null) {
         check_permission();
         $ejemplarId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if ($ejemplarId) { 
@@ -165,10 +170,10 @@ class EjemplaresController {
                 $sociosList = Socio::getActiveSociosForSelect();
                 $documentosEjemplar = Documento::getByEntityId('ejemplar', $ejemplarId, true); 
                 $pageTitle = 'Editar Ejemplar'; 
-                $currentRoute = 'ejemplares/edit'; 
+                $currentRoute = 'ejemplares/edit';
                 $contentView = __DIR__ . '/../views/ejemplares/edit.php';
                 require_once __DIR__ . '/../views/layouts/master.php'; 
-                return; 
+                return;
             }
         }
         $_SESSION['error'] = "Ejemplar no encontrado o ID inválido.";
@@ -176,9 +181,8 @@ class EjemplaresController {
         exit;
     }
 
-    // ... (método update se mantiene igual) ...
     public function update() {
-        check_permission(); 
+        check_permission();
         $userId = $_SESSION['user']['id_usuario'];
         $id = filter_input(INPUT_POST, 'id_ejemplar', FILTER_VALIDATE_INT);
         if (!$id) { 
@@ -189,20 +193,7 @@ class EjemplaresController {
         
         $_SESSION['form_data'] = $_POST;
         if(isset($_POST)) {
-            $data = [
-                'nombre' => trim($_POST['nombre'] ?? ''), 
-                'raza' => trim($_POST['raza'] ?? '') ?: null, 
-                'fechaNacimiento' => trim($_POST['fechaNacimiento'] ?? '') ?: null, 
-                'socio_id' => filter_input(INPUT_POST, 'socio_id', FILTER_VALIDATE_INT), 
-                'sexo' => trim($_POST['sexo'] ?? ''), 
-                'codigo_ejemplar' => trim($_POST['codigo_ejemplar'] ?? '') ?: null, 
-                'capa' => trim($_POST['capa'] ?? '') ?: null, 
-                'numero_microchip' => trim($_POST['numero_microchip'] ?? '') ?: null, 
-                'numero_certificado' => trim($_POST['numero_certificado'] ?? '') ?: null, 
-                'estado' => trim($_POST['estado'] ?? ''), 
-                'id_usuario' => $userId 
-            ];
-
+            $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'raza' => trim($_POST['raza'] ?? '') ?: null, 'fechaNacimiento' => trim($_POST['fechaNacimiento'] ?? '') ?: null, 'socio_id' => filter_input(INPUT_POST, 'socio_id', FILTER_VALIDATE_INT), 'sexo' => trim($_POST['sexo'] ?? ''), 'codigo_ejemplar' => trim($_POST['codigo_ejemplar'] ?? '') ?: null, 'capa' => trim($_POST['capa'] ?? '') ?: null, 'numero_microchip' => trim($_POST['numero_microchip'] ?? '') ?: null, 'numero_certificado' => trim($_POST['numero_certificado'] ?? '') ?: null, 'estado' => trim($_POST['estado'] ?? ''), 'id_usuario' => $userId ];
             if(Ejemplar::update($id, $data)) {
                 $_SESSION['message'] = "Ejemplar actualizado.";
                 unset($_SESSION['form_data']);
@@ -215,7 +206,7 @@ class EjemplaresController {
                 $_SESSION['error'] = "Error al actualizar. " . ($_SESSION['error_details'] ?? 'Error desconocido.');
                 unset($_SESSION['error_details']);
                 header("Location: index.php?route=ejemplares/edit&id=" . $id);
-                exit; 
+                exit;
             }
         }
         
@@ -223,12 +214,10 @@ class EjemplaresController {
         exit;
     }
 
-    // *** INICIO DE LA MODIFICACIÓN ***
     public function delete($id = null) {
          check_permission();
          $ejemplarId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
          $razon = $_POST['razon'] ?? '';
-
          if (empty($razon)) {
             $_SESSION['error'] = "La razón de desactivación es obligatoria.";
             header("Location: index.php?route=ejemplares_index");
@@ -248,5 +237,4 @@ class EjemplaresController {
          header("Location: index.php?route=ejemplares_index"); 
          exit;
     }
-    // *** FIN DE LA MODIFICACIÓN ***
 }

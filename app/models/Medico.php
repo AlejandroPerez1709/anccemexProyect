@@ -36,7 +36,51 @@ class Medico {
         return $newId;
     }
 
-    public static function getAll($searchTerm = '') {
+    /**
+     * Cuenta el total de médicos, opcionalmente filtrados por un término de búsqueda.
+     * @param string $searchTerm Término para buscar.
+     * @return int Total de médicos.
+     */
+    public static function countAll($searchTerm = '') {
+        $conn = dbConnect();
+        if (!$conn) return 0;
+
+        $query = "SELECT COUNT(id_medico) as total FROM medicos";
+        $params = [];
+        $types = '';
+
+        if (!empty($searchTerm)) {
+            $query .= " WHERE nombre LIKE ? OR apellido_paterno LIKE ? OR apellido_materno LIKE ? OR email LIKE ? OR numero_cedula_profesional LIKE ?";
+            $searchTermWildcard = "%" . $searchTerm . "%";
+            $params = [$searchTermWildcard, $searchTermWildcard, $searchTermWildcard, $searchTermWildcard, $searchTermWildcard];
+            $types = 'sssss';
+        }
+        
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $total = $result->fetch_assoc()['total'];
+            $stmt->close();
+        } else {
+            $total = 0;
+        }
+        
+        $conn->close();
+        return $total;
+    }
+
+    /**
+     * Obtiene una lista paginada de médicos.
+     * @param string $searchTerm Término para buscar.
+     * @param int $limit Número de registros por página.
+     * @param int $offset Número de registros a saltar.
+     * @return array Lista de médicos.
+     */
+    public static function getAll($searchTerm = '', $limit = 15, $offset = 0) {
         $conn = dbConnect();
         $medicos = [];
         if (!$conn) return $medicos;
@@ -52,7 +96,10 @@ class Medico {
             $types = 'sssss';
         }
         
-        $query .= " ORDER BY id_medico ASC";
+        $query .= " ORDER BY id_medico ASC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+        $types .= 'ii';
         
         $stmt = $conn->prepare($query);
         if ($stmt) {

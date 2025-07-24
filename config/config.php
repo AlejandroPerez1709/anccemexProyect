@@ -1,5 +1,8 @@
 <?php
-//config/config.php
+// config/config.php
+
+require_once __DIR__ . '/../vendor/autoload.php'; // Carga todas las librerías de Composer
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -19,7 +22,6 @@ date_default_timezone_set('America/Mexico_City');
 
 // --- RUTA BASE PARA SUBIDA DE ARCHIVOS ---
 define('UPLOADS_BASE_DIR', realpath(__DIR__ . '/../uploads') . DIRECTORY_SEPARATOR);
-
 if (!defined('UPLOADS_BASE_DIR') || !is_dir(UPLOADS_BASE_DIR)) {
      error_log("ERROR CRITICO: UPLOADS_BASE_DIR no definido o no existe.");
 } elseif (!is_writable(UPLOADS_BASE_DIR)) {
@@ -50,14 +52,12 @@ function check_permission($required_role = 'usuario') {
 
     if (!isset($_SESSION['user'])) {
         $_SESSION['error'] = "Acceso denegado. Debes iniciar sesión.";
-        // ***** CORREGIDO: Se usa BASE_URL para una redirección absoluta y segura *****
         header("Location: " . BASE_URL . "/index.php?route=login");
         exit;
     }
 
     $user_role = $_SESSION['user']['rol'] ?? 'invitado';
     $hasPermission = false;
-
     if ($required_role === 'superusuario') {
         if ($user_role === 'superusuario') {
             $hasPermission = true;
@@ -70,7 +70,6 @@ function check_permission($required_role = 'usuario') {
 
     if (!$hasPermission) {
         $_SESSION['error'] = "Acceso denegado. Permisos insuficientes para realizar esta acción.";
-        // ***** CORREGIDO: Se usa BASE_URL para una redirección absoluta y segura *****
         header("Location: " . BASE_URL . "/index.php?route=dashboard");
         exit;
     }

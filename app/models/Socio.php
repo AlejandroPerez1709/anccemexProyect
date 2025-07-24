@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../config/config.php';
 
 class Socio {
 
-    // ... (El método store y getAll se mantienen igual) ...
+    // ... (El método store se mantiene igual) ...
     public static function store($data) {
         $conn = dbConnect();
         if (!$conn) {
@@ -53,13 +53,54 @@ class Socio {
         return $newId;
     }
 
-    public static function getAll($searchTerm = '') {
+    /**
+     * Cuenta el total de socios, opcionalmente filtrados por un término de búsqueda.
+     * @param string $searchTerm Término para buscar.
+     * @return int Total de socios.
+     */
+    public static function countAll($searchTerm = '') {
+        $conn = dbConnect();
+        if (!$conn) return 0;
+
+        $query = "SELECT COUNT(id_socio) as total FROM socios";
+        $params = [];
+        $types = '';
+
+        if (!empty($searchTerm)) {
+            $query .= " WHERE nombre LIKE ? OR apellido_paterno LIKE ? OR apellido_materno LIKE ? OR codigoGanadero LIKE ? OR email LIKE ? OR nombre_ganaderia LIKE ?";
+            $searchTermWildcard = "%" . $searchTerm . "%";
+            $params = [$searchTermWildcard, $searchTermWildcard, $searchTermWildcard, $searchTermWildcard, $searchTermWildcard, $searchTermWildcard];
+            $types = 'ssssss';
+        }
+
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $total = $result->fetch_assoc()['total'];
+            $stmt->close();
+        } else {
+            $total = 0;
+        }
+        
+        $conn->close();
+        return $total;
+    }
+
+    /**
+     * Obtiene una lista paginada de socios.
+     * @param string $searchTerm Término para buscar.
+     * @param int $limit Número de registros por página.
+     * @param int $offset Número de registros a saltar.
+     * @return array Lista de socios.
+     */
+    public static function getAll($searchTerm = '', $limit = 15, $offset = 0) {
         $conn = dbConnect();
         $socios = [];
-        if (!$conn) {
-            $_SESSION['error_details'] = 'Error de conexión a la base de datos al obtener socios.';
-            return $socios;
-        }
+        if (!$conn) return $socios;
 
         $query = "SELECT * FROM socios";
         $params = [];
@@ -72,7 +113,11 @@ class Socio {
             $types = 'ssssss';
         }
 
-        $query .= " ORDER BY id_socio ASC";
+        $query .= " ORDER BY id_socio ASC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+        $types .= 'ii';
+
         $stmt = $conn->prepare($query);
 
         if ($stmt) {
@@ -86,13 +131,10 @@ class Socio {
                     $socios[] = $row;
                 }
                 $result->free();
-            } else {
-                error_log("Error get_result (Socio getAll): " . $stmt->error);
             }
             $stmt->close();
         } else {
             error_log("Error query (Socio getAll): " . $conn->error);
-            $_SESSION['error_details'] = 'Error de base de datos al obtener socios: ' . $conn->error;
         }
 
         $conn->close();
@@ -127,7 +169,6 @@ class Socio {
         return $socio;
     }
 
-    // *** INICIO DE LA MODIFICACIÓN ***
     public static function update($id, $data) {
         $conn = dbConnect();
         if (!$conn) {
@@ -135,13 +176,11 @@ class Socio {
             return false;
         }
         
-        // Se construye la consulta base
         $sql = "UPDATE socios SET
                 nombre = ?, apellido_paterno = ?, apellido_materno = ?, nombre_ganaderia = ?, direccion = ?,
                 codigoGanadero = ?, telefono = ?, email = ?, fechaRegistro = ?, estado = ?, id_usuario = ?,
                 identificacion_fiscal_titular = ?";
 
-        // Si el estado se está cambiando a 'activo', se añade la limpieza de la razón de desactivación
         if (isset($data['estado']) && $data['estado'] == 'activo') {
             $sql .= ", razon_desactivacion = NULL";
         }
@@ -156,7 +195,6 @@ class Socio {
             return false;
         }
 
-        // Se enlazan los parámetros
         $stmt->bind_param("ssssssssssisi",
             $data['nombre'], $data['apellido_paterno'], $data['apellido_materno'], $data['nombre_ganaderia'], 
             $data['direccion'], $data['codigoGanadero'], $data['telefono'], $data['email'], 
@@ -177,7 +215,6 @@ class Socio {
             }
         } catch (mysqli_sql_exception $e) {
             error_log("Exception (Socio update): " . $e->getMessage());
-            $_SESSION['error_details'] = 'Error de base de datos al actualizar el socio (' . $e->getCode() . '): ' . $e->getMessage();
             $result = false;
         }
 
@@ -185,7 +222,6 @@ class Socio {
         $conn->close();
         return $result;
     }
-    // *** FIN DE LA MODIFICACIÓN ***
 
     public static function delete($id, $razon) {
         $conn = dbConnect();
@@ -209,7 +245,6 @@ class Socio {
             $result = $stmt->execute();
         } catch (mysqli_sql_exception $e) {
             error_log("Exception (Socio delete): " . $e->getMessage());
-            $_SESSION['error_details'] = 'Error de base de datos al desactivar el socio.';
         }
 
         $stmt->close();
@@ -220,10 +255,8 @@ class Socio {
     public static function getActiveSociosForSelect() {
         $conn = dbConnect();
         $sociosList = [];
-        if (!$conn) {
-            $_SESSION['error_details'] = 'Error de conexión a la base de datos al obtener socios activos para select.';
-            return $sociosList;
-        }
+        if (!$conn) return $sociosList;
+
         $query = "SELECT id_socio, nombre, apellido_paterno, apellido_materno, codigoGanadero
                   FROM socios
                   WHERE estado = 'activo'
@@ -238,9 +271,6 @@ class Socio {
                 $sociosList[$row['id_socio']] = $displayText;
             }
             $result->free();
-        } else {
-            error_log("Error al obtener socios activos para select: " . $conn->error);
-            $_SESSION['error_details'] = 'Error de base de datos al obtener socios activos para select: ' . $conn->error;
         }
         $conn->close();
         return $sociosList;

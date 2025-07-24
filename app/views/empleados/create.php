@@ -1,3 +1,4 @@
+<!--app/views/empleados/create.php-->
 <div class="form-container">
     <h2>Registrar Nuevo Empleado</h2>
     <form action="index.php?route=empleados_store" method="POST" id="empleadoForm">

@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../../config/config.php';
 
 class Empleado {
+    // ... (El método store se mantiene igual) ...
     public static function store($data) {
         $conn = dbConnect();
         if (!$conn) {
@@ -30,7 +31,51 @@ class Empleado {
         return $result;
     }
     
-    public static function getAll($searchTerm = '') {
+    /**
+     * Cuenta el total de empleados, opcionalmente filtrados por un término de búsqueda.
+     * @param string $searchTerm Término para buscar.
+     * @return int Total de empleados.
+     */
+    public static function countAll($searchTerm = '') {
+        $conn = dbConnect();
+        if (!$conn) return 0;
+
+        $query = "SELECT COUNT(id_empleado) as total FROM empleados";
+        $params = [];
+        $types = '';
+
+        if (!empty($searchTerm)) {
+            $query .= " WHERE nombre LIKE ? OR apellido_paterno LIKE ? OR apellido_materno LIKE ? OR email LIKE ? OR puesto LIKE ?";
+            $searchTermWildcard = "%" . $searchTerm . "%";
+            $params = [$searchTermWildcard, $searchTermWildcard, $searchTermWildcard, $searchTermWildcard, $searchTermWildcard];
+            $types = 'sssss';
+        }
+
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $total = $result->fetch_assoc()['total'];
+            $stmt->close();
+        } else {
+            $total = 0;
+        }
+        
+        $conn->close();
+        return $total;
+    }
+
+    /**
+     * Obtiene una lista paginada de empleados.
+     * @param string $searchTerm Término para buscar.
+     * @param int $limit Número de registros por página.
+     * @param int $offset Número de registros a saltar.
+     * @return array Lista de empleados.
+     */
+    public static function getAll($searchTerm = '', $limit = 15, $offset = 0) {
         $conn = dbConnect();
         $empleados = [];
         if (!$conn) return $empleados;
@@ -46,7 +91,10 @@ class Empleado {
             $types = 'sssss';
         }
 
-        $query .= " ORDER BY id_empleado ASC";
+        $query .= " ORDER BY id_empleado ASC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+        $types .= 'ii';
         
         $stmt = $conn->prepare($query);
         if ($stmt) {
@@ -94,7 +142,6 @@ class Empleado {
 
         $sql = "UPDATE empleados SET nombre = ?, apellido_paterno = ?, apellido_materno = ?, email = ?, direccion = ?, telefono = ?, puesto = ?, estado = ?, fecha_ingreso = ?";
         
-        // Si el estado se está cambiando a 'activo', se limpia la razón de desactivación
         if (isset($data['estado']) && $data['estado'] == 'activo') {
             $sql .= ", razon_desactivacion = NULL";
         }

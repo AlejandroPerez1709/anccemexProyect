@@ -1,5 +1,10 @@
 <?php
 // app/controllers/MedicosController.php
+
+// AÑADIR ESTAS DOS LÍNEAS AL INICIO
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
 require_once __DIR__ . '/../models/Medico.php';
 require_once __DIR__ . '/../../config/config.php';
 
@@ -7,18 +12,60 @@ class MedicosController {
 
     public function index() {
         check_permission();
-        
-        $searchTerm = '';
-        if (isset($_GET['search']) && !empty(trim($_GET['search']))) {
-            $searchTerm = trim($_GET['search']);
-        }
+        // --- LÓGICA DE PAGINACIÓN Y BÚSQUEDA ---
+        $searchTerm = $_GET['search'] ?? '';
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $records_per_page = 15;
+        $offset = ($page - 1) * $records_per_page;
 
-        $medicos = Medico::getAll($searchTerm);
+        $total_records = Medico::countAll($searchTerm);
+        $total_pages = ceil($total_records / $records_per_page);
+
+        $medicos = Medico::getAll($searchTerm, $records_per_page, $offset);
+        // --- FIN DE LA LÓGICA ---
 
         $pageTitle = 'Listado de Médicos';
         $currentRoute = 'medicos_index';
         $contentView = __DIR__ . '/../views/medicos/index.php';
         require_once __DIR__ . '/../views/layouts/master.php';
+    }
+
+    // AÑADIR ESTE NUEVO MÉTODO COMPLETO
+    public function exportToExcel() {
+        check_permission();
+
+        $searchTerm = $_GET['search'] ?? '';
+        $medicos = Medico::getAll($searchTerm, -1); // -1 para obtener todos los registros
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Encabezados
+        $sheet->setCellValue('A1', 'ID')->setCellValue('B1', 'Nombre')->setCellValue('C1', 'Apellido Paterno')->setCellValue('D1', 'Apellido Materno')->setCellValue('E1', 'Especialidad')->setCellValue('F1', 'Teléfono')->setCellValue('G1', 'Email')->setCellValue('H1', 'Cédula Profesional')->setCellValue('I1', 'Certificación ANCCE')->setCellValue('J1', 'Estado');
+        
+        $row = 2;
+        foreach ($medicos as $medico) {
+            $sheet->setCellValue('A' . $row, $medico['id_medico'])
+                  ->setCellValue('B' . $row, $medico['nombre'])
+                  ->setCellValue('C' . $row, $medico['apellido_paterno'])
+                  ->setCellValue('D' . $row, $medico['apellido_materno'])
+                  ->setCellValue('E' . $row, $medico['especialidad'])
+                  ->setCellValue('F' . $row, $medico['telefono'])
+                  ->setCellValue('G' . $row, $medico['email'])
+                  ->setCellValue('H' . $row, $medico['numero_cedula_profesional'])
+                  ->setCellValue('I' . $row, $medico['numero_certificacion_ancce'])
+                  ->setCellValue('J' . $row, ucfirst($medico['estado']));
+            $row++;
+        }
+
+        // Cabeceras para descarga
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="Reporte_Medicos.xlsx"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 
     public function create() {
@@ -35,7 +82,6 @@ class MedicosController {
     public function store() {
         check_permission();
         $_SESSION['form_data'] = $_POST;
-        
         if(isset($_POST)) {
             $data = [
                 'nombre' => trim($_POST['nombre'] ?? ''),
@@ -50,7 +96,6 @@ class MedicosController {
                 'estado' => trim($_POST['estado'] ?? 'activo'),
                 'id_usuario' => $_SESSION['user']['id_usuario']
             ];
-
             if(Medico::store($data)) {
                 $_SESSION['message'] = "Médico registrado exitosamente.";
                 unset($_SESSION['form_data']);
@@ -110,7 +155,6 @@ class MedicosController {
                 'estado' => trim($_POST['estado'] ?? 'activo'),
                 'id_usuario' => $_SESSION['user']['id_usuario']
             ];
-
             if(Medico::update($id, $data)) {
                 $_SESSION['message'] = "Médico actualizado exitosamente.";
                 unset($_SESSION['form_data']);
@@ -129,7 +173,6 @@ class MedicosController {
         check_permission();
         $medicoId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         $razon = $_POST['razon'] ?? '';
-
         if (empty($razon)) {
             $_SESSION['error'] = "La razón de desactivación es obligatoria.";
             header("Location: index.php?route=medicos_index");
