@@ -39,16 +39,13 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
         <div class="header-right">
             <div class="user-info">
                 <?php if(isset($_SESSION['user'])): ?>
-                    <span>
-                        Bienvenido, <strong><?php echo htmlspecialchars($_SESSION['user']['nombre'] . ' ' . $_SESSION['user']['apellido_paterno']); ?></strong>
-                         (<?php echo htmlspecialchars(ucfirst($_SESSION['user']['rol'])); ?>)
+                    <span class="user-name">
+                        Bienvenido, <strong><?php echo htmlspecialchars($_SESSION['user']['nombre'] . ' ' . $_SESSION['user']['apellido_paterno']); ?></strong>                     
                     </span>
                     
                     <a href="index.php?route=logout" class="btn-logout">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                            <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM12 11H18V13H12V16L7 12L12 8V11Z"></path>
-                        </svg>
-                        Cerrar sesión
+                        <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6.26489 3.80698L7.41191 5.44558C5.34875 6.89247 4 9.28873 4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 9.28873 18.6512 6.89247 16.5881 5.44558L17.7351 3.80698C20.3141 5.61559 22 8.61091 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 8.61091 3.68594 5.61559 6.26489 3.80698ZM11 12V2H13V12H11Z"></path></svg>
+                        <p class="sesion">Cerrar sesión</p>
                     </a>
                 <?php endif; ?>
             </div>

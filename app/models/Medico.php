@@ -19,7 +19,6 @@ class Medico {
             $data['telefono'], $data['email'], $data['numero_cedula_profesional'], $data['entidad_residencia'], 
             $data['numero_certificacion_ancce'], $data['estado'], $data['id_usuario']
         );
-        
         $newId = false;
         try {
             if ($stmt->execute()) {
@@ -36,11 +35,6 @@ class Medico {
         return $newId;
     }
 
-    /**
-     * Cuenta el total de médicos, opcionalmente filtrados por un término de búsqueda.
-     * @param string $searchTerm Término para buscar.
-     * @return int Total de médicos.
-     */
     public static function countAll($searchTerm = '') {
         $conn = dbConnect();
         if (!$conn) return 0;
@@ -48,7 +42,6 @@ class Medico {
         $query = "SELECT COUNT(id_medico) as total FROM medicos";
         $params = [];
         $types = '';
-
         if (!empty($searchTerm)) {
             $query .= " WHERE nombre LIKE ? OR apellido_paterno LIKE ? OR apellido_materno LIKE ? OR email LIKE ? OR numero_cedula_profesional LIKE ?";
             $searchTermWildcard = "%" . $searchTerm . "%";
@@ -73,13 +66,22 @@ class Medico {
         return $total;
     }
 
-    /**
-     * Obtiene una lista paginada de médicos.
-     * @param string $searchTerm Término para buscar.
-     * @param int $limit Número de registros por página.
-     * @param int $offset Número de registros a saltar.
-     * @return array Lista de médicos.
-     */
+    // --- INICIO DE NUEVA FUNCIÓN ---
+    public static function countActive() {
+        $conn = dbConnect();
+        if (!$conn) return 0;
+        $query = "SELECT COUNT(id_medico) as total FROM medicos WHERE estado = 'activo'";
+        $result = $conn->query($query);
+        $total = 0;
+        if ($result) {
+            $total = $result->fetch_assoc()['total'];
+            $result->free();
+        }
+        $conn->close();
+        return $total;
+    }
+    // --- FIN DE NUEVA FUNCIÓN ---
+
     public static function getAll($searchTerm = '', $limit = 15, $offset = 0) {
         $conn = dbConnect();
         $medicos = [];
@@ -88,7 +90,6 @@ class Medico {
         $query = "SELECT * FROM medicos";
         $params = [];
         $types = '';
-
         if (!empty($searchTerm)) {
             $query .= " WHERE nombre LIKE ? OR apellido_paterno LIKE ? OR apellido_materno LIKE ? OR email LIKE ? OR numero_cedula_profesional LIKE ?";
             $searchTermWildcard = "%" . $searchTerm . "%";
@@ -147,7 +148,6 @@ class Medico {
         $sql = "UPDATE medicos SET
                 nombre = ?, apellido_paterno = ?, apellido_materno = ?, especialidad = ?, telefono = ?, email = ?,
                 numero_cedula_profesional = ?, entidad_residencia = ?, numero_certificacion_ancce = ?, estado = ?, id_usuario = ?";
-        
         if (isset($data['estado']) && $data['estado'] == 'activo') {
             $sql .= ", razon_desactivacion = NULL";
         }
@@ -162,7 +162,6 @@ class Medico {
             $data['telefono'], $data['email'], $data['numero_cedula_profesional'], $data['entidad_residencia'], 
             $data['numero_certificacion_ancce'], $data['estado'], $data['id_usuario'], $id
         );
-
         $result = $stmt->execute();
         if (!$result && $conn->errno == 1062) {
             $_SESSION['error_details'] = 'Ya existe otro médico con el Email o Cédula Profesional proporcionados.';
@@ -183,7 +182,6 @@ class Medico {
 
         $stmt->bind_param("si", $razon, $id);
         $result = $stmt->execute();
-
         if (!$result && $conn->errno == 1451) {
             $_SESSION['error_details'] = 'No se puede desactivar al médico, tiene servicios asociados.';
         }

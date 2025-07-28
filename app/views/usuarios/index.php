@@ -22,8 +22,10 @@ function build_pagination_url($page, $searchTerm) {
     <form action="index.php" method="GET" class="search-form">
         <input type="hidden" name="route" value="usuarios_index">
         <input type="text" name="search" class="form-control" placeholder="Buscar por nombre, email, username..." value="<?php echo htmlspecialchars($searchTerm ?? ''); ?>">
-        <button type="submit" class="btn btn-secondary">Buscar</button>
-        <a href="index.php?route=usuarios_index" class="btn btn-primary">Limpiar</a>
+        <div class="search-buttons">
+            <button type="submit" class="btn btn-secondary">Buscar</button>
+            <a href="index.php?route=usuarios_index" class="btn btn-primary">Limpiar</a>
+        </div>
     </form>
 </div>
 

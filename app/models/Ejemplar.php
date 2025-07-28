@@ -1,7 +1,6 @@
 <?php
 // app/models/Ejemplar.php
 require_once __DIR__ . '/../../config/config.php';
-
 class Ejemplar {
 
     // ... (El método store se mantiene igual) ...
@@ -26,7 +25,6 @@ class Ejemplar {
             $data['codigo_ejemplar'], $data['capa'], $data['numero_microchip'], $data['numero_certificado'], 
             $data['estado'], $data['id_usuario']
         );
-        
         $newId = false;
         try {
             if ($stmt->execute()) {
@@ -39,16 +37,11 @@ class Ejemplar {
             $_SESSION['error_details'] = 'Error de base de datos al guardar el ejemplar.';
         }
 
-        $stmt->close(); 
+        $stmt->close();
         $conn->close();
         return $newId;
     }
 
-    /**
-     * Cuenta el total de ejemplares, opcionalmente filtrados por un término de búsqueda.
-     * @param string $searchTerm Término para buscar.
-     * @return int Total de ejemplares.
-     */
     public static function countAll($searchTerm = '') {
         $conn = dbConnect();
         if (!$conn) return 0;
@@ -83,13 +76,22 @@ class Ejemplar {
         return $total;
     }
 
-    /**
-     * Obtiene una lista paginada de ejemplares.
-     * @param string $searchTerm Término para buscar.
-     * @param int $limit Número de registros por página.
-     * @param int $offset Número de registros a saltar.
-     * @return array Lista de ejemplares.
-     */
+    // --- INICIO DE NUEVA FUNCIÓN ---
+    public static function countActive() {
+        $conn = dbConnect();
+        if (!$conn) return 0;
+        $query = "SELECT COUNT(id_ejemplar) as total FROM ejemplares WHERE estado = 'activo'";
+        $result = $conn->query($query);
+        $total = 0;
+        if ($result) {
+            $total = $result->fetch_assoc()['total'];
+            $result->free();
+        }
+        $conn->close();
+        return $total;
+    }
+    // --- FIN DE NUEVA FUNCIÓN ---
+
     public static function getAll($searchTerm = '', $limit = 15, $offset = 0) {
         $conn = dbConnect();
         $ejemplares = []; 
@@ -98,7 +100,6 @@ class Ejemplar {
         $query = "SELECT e.*, CONCAT(s.nombre, ' ', s.apellido_paterno) as nombre_socio, s.codigoGanadero as socio_codigo_ganadero
                   FROM ejemplares e 
                   LEFT JOIN socios s ON e.socio_id = s.id_socio";
-        
         $params = [];
         $types = '';
 
@@ -151,7 +152,7 @@ class Ejemplar {
         }
         
         $stmt->bind_param("i", $id); 
-        $stmt->execute(); 
+        $stmt->execute();
         $result = $stmt->get_result();
         $ejemplar = $result ? $result->fetch_assoc() : null;
         
@@ -168,7 +169,6 @@ class Ejemplar {
                     nombre = ?, raza = ?, fechaNacimiento = ?, socio_id = ?,
                     sexo = ?, codigo_ejemplar = ?, capa = ?, numero_microchip = ?, numero_certificado = ?,
                     estado = ?, id_usuario = ?";
-        
         if (isset($data['estado']) && $data['estado'] == 'activo') {
             $sql .= ", razon_desactivacion = NULL";
         }
@@ -183,7 +183,6 @@ class Ejemplar {
             $data['codigo_ejemplar'], $data['capa'], $data['numero_microchip'], $data['numero_certificado'], 
             $data['estado'], $data['id_usuario'], $id
         );
-
         $result = $stmt->execute();
         $stmt->close();
         $conn->close();
@@ -200,7 +199,6 @@ class Ejemplar {
         
         $stmt->bind_param("si", $razon, $id);
         $result = $stmt->execute();
-        
         if (!$result && $conn->errno == 1451) {
             $_SESSION['error_details'] = 'No se puede desactivar el ejemplar porque tiene servicios asociados.';
         }

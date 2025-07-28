@@ -4,13 +4,10 @@ require_once __DIR__ . '/../models/Documento.php';
 
 class DocumentosController {
 
-    // CORREGIDO: El helper checkAccess() ha sido eliminado.
-
     /**
-     * Maneja la descarga segura de un archivo.
+     * Maneja la descarga o visualización segura de un archivo.
      */
     public function download($id = null) {
-        // CORREGIDO: Se usa la función estándar.
         // Se requiere como mínimo un 'usuario' logueado.
         check_permission('usuario');
         
@@ -32,15 +29,21 @@ class DocumentosController {
         }
 
         $fullPath = realpath(UPLOADS_BASE_DIR . $documento['rutaArchivo']);
-        
         if (!$fullPath || strpos($fullPath, realpath(UPLOADS_BASE_DIR)) !== 0 || !is_file($fullPath)) {
              error_log("Intento de acceso inválido o archivo no encontrado en descarga: ID=$docId, Path=" . $documento['rutaArchivo']);
              http_response_code(404); echo "Archivo no disponible."; exit;
         }
 
+        // --- INICIO DE MODIFICACIÓN: Ver vs Descargar ---
+        $mimeType = $documento['mimeType'] ?: 'application/octet-stream';
+        $viewableTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        
+        $disposition = in_array($mimeType, $viewableTypes) ? 'inline' : 'attachment';
+        // --- FIN DE MODIFICACIÓN ---
+
         header('Content-Description: File Transfer');
-        header('Content-Type: ' . ($documento['mimeType'] ?: 'application/octet-stream'));
-        header('Content-Disposition: attachment; filename="' . basename($documento['nombreArchivoOriginal']) . '"');
+        header('Content-Type: ' . $mimeType);
+        header('Content-Disposition: ' . $disposition . '; filename="' . basename($documento['nombreArchivoOriginal']) . '"');
         header('Expires: 0');
         header('Cache-Control: must-revalidate');
         header('Pragma: public');
@@ -59,16 +62,14 @@ class DocumentosController {
      * Maneja la eliminación de un documento (registro y archivo).
      */
     public function delete($id = null) {
-        // CORREGIDO: Se usa la función estándar para requerir rol de 'superusuario'.
         check_permission('superusuario');
 
         $docId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         
         $redirectRoute = 'dashboard';
         $redirectParams = '';
-         $redirectId = null;
-
-         if (!empty($_GET['socio_id'])) {
+        $redirectId = null;
+        if (!empty($_GET['socio_id'])) {
               $redirectRoute = 'socios/edit';
               $redirectId = filter_input(INPUT_GET, 'socio_id', FILTER_VALIDATE_INT);
          } elseif (!empty($_GET['ejemplar_id'])) {

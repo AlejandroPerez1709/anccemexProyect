@@ -1,10 +1,8 @@
 <?php
 //app/views/servicios/index.php
 
-// Helper para construir la URL con los parámetros de filtros y página
 function build_pagination_url($page, $filters) {
     $query_params = ['route' => 'servicios_index', 'page' => $page];
-    
     if (!empty($filters['estado'])) {
         $query_params['filtro_estado'] = $filters['estado'];
     }
@@ -18,7 +16,6 @@ function build_pagination_url($page, $filters) {
     return 'index.php?' . http_build_query($query_params);
 }
 
-// Preparamos los filtros actuales para el enlace de exportación
 $export_filters = [];
 if (!empty($_GET['filtro_estado'])) $export_filters['filtro_estado'] = $_GET['filtro_estado'];
 if (!empty($_GET['filtro_socio_id'])) $export_filters['filtro_socio_id'] = $_GET['filtro_socio_id'];
@@ -53,7 +50,7 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
          <div class="filter-item">
               <label for="filtro_socio_id" class="filter-label">Socio:</label>
               <select name="filtro_socio_id" id="filtro_socio_id" class="form-control">
-                  <option value="">-- Todos --</option>
+                   <option value="">-- Todos --</option>
                   <?php
                    $socioSeleccionado = $_GET['filtro_socio_id'] ?? '';
                    foreach($sociosList as $id => $display) {
@@ -65,7 +62,7 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
           <div class="filter-item">
                 <label for="filtro_tipo_id" class="filter-label">Tipo Servicio:</label>
                 <select name="filtro_tipo_id" id="filtro_tipo_id" class="form-control">
-                    <option value="">-- Todos --</option>
+                     <option value="">-- Todos --</option>
                       <?php
                        $tipoSeleccionado = $_GET['filtro_tipo_id'] ?? '';
                        foreach($tiposServicioList as $id => $display) {
@@ -88,7 +85,7 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
             <a class="page-link" href="<?php echo build_pagination_url($page - 1, $filters); ?>">Anterior</a>
         </li>
         <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-            <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
+             <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
                 <a class="page-link" href="<?php echo build_pagination_url($i, $filters); ?>"><?php echo $i; ?></a>
             </li>
         <?php endfor; ?>
@@ -119,41 +116,45 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
         <tbody>
             <?php if(isset($servicios) && count($servicios) > 0): ?>
                 <?php foreach($servicios as $servicio): ?>
-                    <tr class="clickable-row"
+                     <tr class="clickable-row"
                         data-id-servicio="<?php echo $servicio['id_servicio']; ?>"
                         data-tipo-servicio="<?php echo htmlspecialchars($servicio['tipo_servicio_nombre'] . ' (' . ($servicio['codigo_servicio'] ?: 'N/A') . ')'); ?>"
                         data-socio="<?php echo htmlspecialchars($servicio['socio_nombre'] . ' ' . $servicio['socio_apPaterno'] . ' (' . ($servicio['socio_codigo_ganadero'] ?? 'S/C') . ')'); ?>"
-                        data-ejemplar="<?php echo htmlspecialchars($servicio['ejemplar_nombre'] ?? 'N/A'); ?>"
+                        data-ejemplar="<?php echo htmlspecialchars(($servicio['ejemplar_nombre'] ?? 'N/A') . ' (' . ($servicio['ejemplar_codigo'] ?? 'S/C') . ')'); ?>"
+                        data-observaciones="<?php echo htmlspecialchars($servicio['descripcion'] ?? ''); ?>"
+                        data-fecha-finalizacion="<?php echo !empty($servicio['fechaFinalizacion']) ? date('d/m/Y', strtotime($servicio['fechaFinalizacion'])) : ''; ?>"
+                        data-medico-asignado="<?php echo !empty($servicio['medico_nombre']) ? htmlspecialchars($servicio['medico_nombre'] . ' ' . $servicio['medico_apPaterno']) : ''; ?>"
                         data-estado="<?php echo htmlspecialchars($servicio['estado']); ?>"
                         data-fecha-solicitud="<?php echo !empty($servicio['fechaSolicitud']) ? date('d/m/Y', strtotime($servicio['fechaSolicitud'])) : '-'; ?>"
                         data-ultima-modif="<?php echo !empty($servicio['fecha_modificacion']) ? date('d/m/Y H:i', strtotime($servicio['fecha_modificacion'])) . ' por ' . htmlspecialchars($servicio['modificador_username'] ?? 'Sistema') : '-'; ?>"
-                        data-doc-solicitud="<?php echo $servicio['document_status']['SOLICITUD_SERVICIO'] ? '1' : '0'; ?>"
-                        data-doc-pago="<?php echo $servicio['document_status']['COMPROBANTE_PAGO'] ? '1' : '0'; ?>">
+                        data-doc-solicitud-id="<?php echo $servicio['document_status']['SOLICITUD_SERVICIO'] ?: '0'; ?>"
+                        data-doc-pago-id="<?php echo $servicio['document_status']['COMPROBANTE_PAGO'] ?: '0'; ?>">
+                        
                         <td><?php echo $servicio['id_servicio']; ?></td>
                         <td><?php echo htmlspecialchars($servicio['tipo_servicio_nombre'] ?? 'N/A'); ?> (<?php echo htmlspecialchars($servicio['codigo_servicio'] ?: 'N/A'); ?>)</td>
                         <td><?php echo htmlspecialchars($servicio['socio_apPaterno'] . ', ' . $servicio['socio_nombre']); ?> (<?php echo htmlspecialchars($servicio['socio_codigo_ganadero'] ?? 'S/C'); ?>)</td>
                         <td><?php echo htmlspecialchars($servicio['ejemplar_nombre'] ?? 'N/A'); ?></td>
                         <td>
-                            <span class="status-badge status-<?php echo strtolower(str_replace(['/', ' '], ['-', '-'], $servicio['estado'])); ?>">
+                            <span id="status-badge-<?php echo $servicio['id_servicio']; ?>" class="status-badge status-<?php echo strtolower(str_replace(['/', ' '], ['-', '-'], $servicio['estado'])); ?>">
                                  <?php echo htmlspecialchars($servicio['estado']); ?>
                             </span>
                         </td>
                         <td><?php echo isset($servicio['fechaSolicitud']) ? date('d/m/Y', strtotime($servicio['fechaSolicitud'])) : '-'; ?></td>
                         <td><?php echo isset($servicio['fecha_modificacion']) ? date('d/m/Y H:i', strtotime($servicio['fecha_modificacion'])) : '-'; ?> por <?php echo htmlspecialchars($servicio['modificador_username'] ?? 'Sistema'); ?></td>
                         <td>
-                            <div class="action-buttons">
+                             <div class="action-buttons">
                                 <a href="index.php?route=servicios/edit&id=<?php echo $servicio['id_servicio']; ?>" class="btn btn-warning btn-sm">Ver/Editar</a>
                                 <?php if (!in_array($servicio['estado'], ['Cancelado', 'Completado', 'Rechazado'])): ?>
                                     <a href="index.php?route=servicios_cancel&id=<?php echo $servicio['id_servicio']; ?>" class="btn btn-danger btn-sm" onclick="confirmCancel(event, this.href, <?php echo $servicio['id_servicio']; ?>)">Cancelar</a>
                                 <?php endif; ?>
                             </div>
                         </td>
-                    </tr>
+                     </tr>
                 <?php endforeach; ?>
             <?php else: ?>
                 <tr>
                     <td colspan="8" class="text-center">No hay servicios que coincidan con los filtros aplicados.</td>
-                </tr>
+                 </tr>
             <?php endif; ?>
         </tbody>
     </table>
@@ -166,7 +167,7 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
             <a class="page-link" href="<?php echo build_pagination_url($page - 1, $filters); ?>">Anterior</a>
         </li>
         <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-            <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
+             <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
                 <a class="page-link" href="<?php echo build_pagination_url($i, $filters); ?>"><?php echo $i; ?></a>
             </li>
         <?php endfor; ?>
@@ -177,7 +178,6 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
 </nav>
 <?php endif; ?>
 
-<!-- Estructura HTML de la Ventana Modal para Servicios -->
 <div id="infoModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -186,8 +186,8 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
         </div>
         <div class="modal-body">
             <div class="modal-section">
-                <div class="modal-section-title">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M21 8V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V4C3 3.44772 3.44772 3 4 3H12V8H21ZM19 10H12V5H5V19H19V10ZM14 10V12H16V10H14ZM14 13V15H16V13H14ZM10 13V15H7V13H10Z"></path></svg>
+                 <div class="modal-section-title">
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M14.1213 10.4792C13.7308 10.0886 13.0976 10.0886 12.7071 10.4792L12 11.1863C11.2189 11.9673 9.95259 11.9673 9.17154 11.1863C8.39049 10.4052 8.39049 9.13888 9.17154 8.35783L14.8022 2.72568C16.9061 2.24973 19.2008 2.83075 20.8388 4.46875C23.2582 6.88811 23.3716 10.7402 21.1792 13.2939L19.071 15.4289L14.1213 10.4792ZM3.16113 4.46875C5.33452 2.29536 8.66411 1.98283 11.17 3.53116L7.75732 6.94362C6.19523 8.50572 6.19523 11.0384 7.75732 12.6005C9.27209 14.1152 11.6995 14.1611 13.2695 12.7382L13.4142 12.6005L17.6568 16.8431L13.4142 21.0858C12.6331 21.8668 11.3668 21.8668 10.5858 21.0858L3.16113 13.6611C0.622722 11.1227 0.622722 7.00715 3.16113 4.46875Z"></path></svg>
                     <h4>Información del Trámite</h4>
                 </div>
                 <div class="modal-grid">
@@ -197,81 +197,239 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
                     <div class="modal-field"><span class="modal-label">Ejemplar:</span><span class="modal-value" id="modalEjemplar"></span></div>
                 </div>
             </div>
+            
             <div class="modal-section">
                 <div class="modal-section-title">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4ZM12.5 8V12.5L16 14.25L15.25 15.4L11 13V8H12.5Z"></path></svg>
-                    <h4>Seguimiento</h4>
+                     <h4>Seguimiento y Documentos</h4>
                 </div>
                 <div class="modal-grid">
-                    <div class="modal-field"><span class="modal-label">Estado Actual:</span><span class="modal-value" id="modalEstado"></span></div>
+                    <div class="modal-field full-width">
+                        <label for="modalEstadoSelect" class="modal-label">Cambiar Estado:</label>
+                        <select id="modalEstadoSelect" class="form-control">
+                            <option>Cargando estados...</option>
+                        </select>
+                    </div>
+                    <div class="modal-field full-width" id="modalMotivoRechazoContainer" style="display: none;">
+                        <label for="modalMotivoRechazo" class="modal-label">Motivo del Rechazo (Obligatorio):</label>
+                        <textarea id="modalMotivoRechazo" rows="3" class="form-control"></textarea>
+                    </div>
                     <div class="modal-field"><span class="modal-label">Fecha de Solicitud:</span><span class="modal-value" id="modalFechaSolicitud"></span></div>
-                    <div class="modal-field full-width"><span class="modal-label">Última Modificación:</span><span class="modal-value" id="modalUltimaModif"></span></div>
+                    
+                    <div class="modal-field" id="modalFechaFinalizacionContainer">
+                        <span class="modal-label">Fecha de Finalización:</span>
+                        <span class="modal-value" id="modalFechaFinalizacion"></span>
+                    </div>
+                    <div class="modal-field full-width" id="modalMedicoContainer">
+                        <span class="modal-label">Médico Asignado:</span>
+                        <span class="modal-value" id="modalMedicoAsignado"></span>
+                    </div>
+                     <div class="modal-field full-width"><span class="modal-label">Última Modificación:</span><span class="modal-value" id="modalUltimaModif"></span></div>
+                    <div class="modal-field full-width">
+                        <span class="modal-label">Observaciones:</span>
+                        <span class="modal-value" id="modalObservaciones"></span>
+                    </div>
                 </div>
                 <div class="modal-docs">
-                    <label class="custom-checkbox-container">Solicitud de Servicio<input type="checkbox" id="modalDocSolicitud" disabled><span class="checkmark"></span></label>
-                    <label class="custom-checkbox-container">Comprobante de Pago<input type="checkbox" id="modalDocPago" disabled><span class="checkmark"></span></label>
+                    <label class="custom-checkbox-container">Solicitud de Servicio
+                        <input type="checkbox" id="modalDocSolicitud" disabled><span class="checkmark"></span>
+                        <a href="#" target="_blank" class="view-doc-icon" id="modalDocSolicitudView" title="Ver Documento">👁️</a>
+                    </label>
+                    <label class="custom-checkbox-container">Comprobante de Pago
+                        <input type="checkbox" id="modalDocPago" disabled><span class="checkmark"></span>
+                        <a href="#" target="_blank" class="view-doc-icon" id="modalDocPagoView" title="Ver Documento">👁️</a>
+                    </label>
                 </div>
             </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary close-button">Cerrar</button>
+            <button id="btnGuardarEstado" class="btn btn-primary">Guardar Estado</button>
         </div>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Lógica para el modal de información
     const modal = document.getElementById('infoModal');
     if(modal) {
-        const closeButton = modal.querySelector('.close-button');
+        const closeButtons = modal.querySelectorAll('.close-button');
         const rows = document.querySelectorAll('.clickable-row');
-
-        // Referencias a los spans del modal
+        
         const modalIdServicio = document.getElementById('modalIdServicio');
         const modalTipoServicio = document.getElementById('modalTipoServicio');
         const modalSocio = document.getElementById('modalSocio');
         const modalEjemplar = document.getElementById('modalEjemplar');
-        const modalEstado = document.getElementById('modalEstado');
         const modalFechaSolicitud = document.getElementById('modalFechaSolicitud');
         const modalUltimaModif = document.getElementById('modalUltimaModif');
+        const modalObservaciones = document.getElementById('modalObservaciones');
+        const modalFechaFinalizacion = document.getElementById('modalFechaFinalizacion');
+        const modalMedicoAsignado = document.getElementById('modalMedicoAsignado');
+        const modalFechaFinalizacionContainer = document.getElementById('modalFechaFinalizacionContainer');
+        const modalMedicoContainer = document.getElementById('modalMedicoContainer');
         const modalDocSolicitud = document.getElementById('modalDocSolicitud');
         const modalDocPago = document.getElementById('modalDocPago');
+        const modalDocSolicitudView = document.getElementById('modalDocSolicitudView');
+        const modalDocPagoView = document.getElementById('modalDocPagoView');
+        
+        const modalEstadoSelect = document.getElementById('modalEstadoSelect');
+        const btnGuardarEstado = document.getElementById('btnGuardarEstado');
+        const modalMotivoRechazoContainer = document.getElementById('modalMotivoRechazoContainer');
+        const modalMotivoRechazo = document.getElementById('modalMotivoRechazo');
+        let currentServiceId = null;
+        let currentRowElement = null;
 
         rows.forEach(row => {
             row.addEventListener('click', function(event) {
-                if (event.target.closest('.action-buttons')) {
-                    return;
-                }
-
-                // Llenar datos del modal
+                if (event.target.closest('.action-buttons')) { return; }
+                
+                currentRowElement = this; 
+                currentServiceId = this.dataset.idServicio;
+                
                 modalIdServicio.textContent = this.dataset.idServicio;
                 modalTipoServicio.textContent = this.dataset.tipoServicio;
                 modalSocio.textContent = this.dataset.socio;
                 modalEjemplar.textContent = this.dataset.ejemplar;
-                modalEstado.textContent = this.dataset.estado;
                 modalFechaSolicitud.textContent = this.dataset.fechaSolicitud;
                 modalUltimaModif.textContent = this.dataset.ultimaModif;
-                modalDocSolicitud.checked = this.dataset.docSolicitud === '1';
-                modalDocPago.checked = this.dataset.docPago === '1';
+                modalObservaciones.textContent = this.dataset.observaciones || 'Sin observaciones.';
+                
+                let fechaFin = this.dataset.fechaFinalizacion;
+                if (fechaFin) {
+                    modalFechaFinalizacion.textContent = fechaFin;
+                    modalFechaFinalizacionContainer.style.display = 'block';
+                } else {
+                    modalFechaFinalizacionContainer.style.display = 'none';
+                }
+
+                let medico = this.dataset.medicoAsignado;
+                if (medico) {
+                    modalMedicoAsignado.textContent = medico;
+                    modalMedicoContainer.style.display = 'block';
+                } else {
+                    modalMedicoContainer.style.display = 'none';
+                }
+                
+                modalMotivoRechazo.value = '';
+                
+                let docSolicitudId = this.dataset.docSolicitudId;
+                modalDocSolicitud.checked = docSolicitudId !== '0';
+                if (docSolicitudId && docSolicitudId !== '0') {
+                    modalDocSolicitudView.href = `index.php?route=documento_download&id=${docSolicitudId}`;
+                    modalDocSolicitudView.style.display = 'inline-block';
+                } else {
+                    modalDocSolicitudView.style.display = 'none';
+                }
+
+                let docPagoId = this.dataset.docPagoId;
+                modalDocPago.checked = docPagoId !== '0';
+                if (docPagoId && docPagoId !== '0') {
+                    modalDocPagoView.href = `index.php?route=documento_download&id=${docPagoId}`;
+                    modalDocPagoView.style.display = 'inline-block';
+                } else {
+                    modalDocPagoView.style.display = 'none';
+                }
+
+                modalEstadoSelect.innerHTML = '<option>Cargando...</option>';
+                modalEstadoSelect.disabled = true;
+                
+                fetch(`index.php?route=servicios_get_valid_states&id=${currentServiceId}`)
+                    .then(response => response.json())
+                    .then(estados => {
+                        modalEstadoSelect.innerHTML = '';
+                        
+                        estados.forEach(estado => {
+                            const option = document.createElement('option');
+                            option.value = estado;
+                            option.textContent = estado;
+                            modalEstadoSelect.appendChild(option);
+                        });
+                        
+                        modalEstadoSelect.value = currentRowElement.dataset.estado;
+                        modalEstadoSelect.disabled = false;
+                        toggleMotivoRechazo();
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar los estados:', error);
+                        modalEstadoSelect.innerHTML = '<option>Error al cargar</option>';
+                    });
                 
                 modal.style.display = 'block';
             });
         });
 
-        closeButton.addEventListener('click', function() {
+        function closeModal() {
             modal.style.display = 'none';
-        });
+        }
 
+        closeButtons.forEach(btn => btn.addEventListener('click', closeModal));
         window.addEventListener('click', function(event) {
             if (event.target == modal) {
-                modal.style.display = 'none';
+                closeModal();
             }
+        });
+        
+        function toggleMotivoRechazo() {
+            if (modalEstadoSelect.value === 'Rechazado') {
+                modalMotivoRechazoContainer.style.display = 'block';
+            } else {
+                modalMotivoRechazoContainer.style.display = 'none';
+            }
+        }
+        modalEstadoSelect.addEventListener('change', toggleMotivoRechazo);
+
+        btnGuardarEstado.addEventListener('click', function() {
+            const nuevoEstado = modalEstadoSelect.value;
+            const motivo = modalMotivoRechazo.value;
+
+            if (nuevoEstado === 'Rechazado' && motivo.trim() === '') {
+                Swal.fire('Error', 'Debe proporcionar un motivo para el rechazo.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('id', currentServiceId);
+            formData.append('estado', nuevoEstado);
+            formData.append('motivo', motivo);
+
+            fetch('index.php?route=servicios_update_status', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    closeModal();
+                    Swal.fire({
+                        position: 'center',
+                        icon: 'success',
+                        title: data.message,
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    
+                    if(currentRowElement) {
+                        const statusBadge = currentRowElement.querySelector(`#status-badge-${currentServiceId}`);
+                        if(statusBadge) {
+                            statusBadge.textContent = nuevoEstado;
+                            statusBadge.className = `status-badge status-${nuevoEstado.toLowerCase().replace(/[\/ ]/g, '-')}`;
+                        }
+                    }
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Error', 'Ocurrió un problema de comunicación con el servidor.', 'error');
+            });
         });
     }
 });
 
-// Script para la confirmación de cancelación de servicio
 function confirmCancel(event, url, servicioId) {
-    event.preventDefault(); // Previene que el enlace se siga inmediatamente
-    event.stopPropagation(); // Previene que se abra el modal
+    event.preventDefault(); 
+    event.stopPropagation(); 
     Swal.fire({
         title: '¿Estás seguro?',
         text: `Se cancelará el servicio #${servicioId}. ¡Esta acción no se puede deshacer!`,
@@ -283,7 +441,6 @@ function confirmCancel(event, url, servicioId) {
         cancelButtonText: 'No'
     }).then((result) => {
         if (result.isConfirmed) {
-            // Si el usuario confirma, ahora sí se redirige al enlace
             window.location.href = url;
         }
     });

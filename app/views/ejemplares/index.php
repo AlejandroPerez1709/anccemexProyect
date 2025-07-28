@@ -21,8 +21,10 @@ function build_pagination_url($page, $searchTerm) {
     <form action="index.php" method="GET" class="search-form">
         <input type="hidden" name="route" value="ejemplares_index">
         <input type="text" name="search" class="form-control" placeholder="Buscar por nombre, código, cód. ganadero..." value="<?php echo htmlspecialchars($searchTerm ?? ''); ?>">
-        <button type="submit" class="btn btn-secondary">Buscar</button>
+        <div class="search-buttons">
+            <button type="submit" class="btn btn-secondary">Buscar</button>
         <a href="index.php?route=ejemplares_index" class="btn btn-primary">Limpiar</a>
+        </div>
     </form>
 </div>
 
@@ -76,17 +78,16 @@ function build_pagination_url($page, $searchTerm) {
                         data-microchip="<?php echo htmlspecialchars($ejemplar['numero_microchip'] ?? '-'); ?>"
                         data-certificado="<?php echo htmlspecialchars($ejemplar['numero_certificado'] ?? '-'); ?>"
                         data-estado="<?php echo htmlspecialchars(ucfirst($ejemplar['estado'])); ?>"
-                        data-doc-pasaporte="<?php echo $ejemplar['document_status']['PASAPORTE_DIE'] ? '1' : '0'; ?>"
-                        data-doc-adn="<?php echo $ejemplar['document_status']['RESULTADO_ADN'] ? '1' : '0'; ?>"
-                        data-doc-lg="<?php echo $ejemplar['document_status']['CERTIFICADO_INSCRIPCION_LG'] ? '1' : '0'; ?>"
-                        data-doc-foto="<?php echo $ejemplar['document_status']['FOTO_IDENTIFICACION'] ? '1' : '0'; ?>">
+                        
+                        data-doc-pasaporte-id="<?php echo $ejemplar['document_status']['PASAPORTE_DIE'] ?: '0'; ?>"
+                        data-doc-adn-id="<?php echo $ejemplar['document_status']['RESULTADO_ADN'] ?: '0'; ?>"
+                        data-doc-lg-id="<?php echo $ejemplar['document_status']['CERTIFICADO_INSCRIPCION_LG'] ?: '0'; ?>"
+                        data-doc-foto-id="<?php echo $ejemplar['document_status']['FOTO_IDENTIFICACION'] ?: '0'; ?>">
+                        
                         <td><?php echo $ejemplar['id_ejemplar']; ?></td>
                         <td><?php echo htmlspecialchars($ejemplar['nombre'] ?? '-'); ?></td>
                         <td><?php echo htmlspecialchars($ejemplar['codigo_ejemplar'] ?? '-'); ?></td>
-                        <td>
-                            <?php echo htmlspecialchars($ejemplar['nombre_socio'] ?? 'Socio Desconocido'); ?>
-                            (<?php echo htmlspecialchars($ejemplar['socio_codigo_ganadero'] ?? 'S/C'); ?>)
-                        </td>
+                        <td><?php echo htmlspecialchars($ejemplar['nombre_socio'] ?? 'Socio Desconocido'); ?> (<?php echo htmlspecialchars($ejemplar['socio_codigo_ganadero'] ?? 'S/C'); ?>)</td>
                         <td><?php echo htmlspecialchars($ejemplar['sexo'] ?? '-'); ?></td>
                         <td><?php echo !empty($ejemplar['fechaNacimiento']) ? date('d/m/Y', strtotime($ejemplar['fechaNacimiento'])) : '-'; ?></td>
                         <td><?php echo htmlspecialchars($ejemplar['raza'] ?? '-'); ?></td>
@@ -94,9 +95,7 @@ function build_pagination_url($page, $searchTerm) {
                         <td>
                             <div class="action-buttons">
                                 <a href="index.php?route=ejemplares/edit&id=<?php echo $ejemplar['id_ejemplar']; ?>" class="btn btn-warning btn-sm">Editar</a>
-                                <button class="btn btn-danger btn-sm" onclick="confirmDeactivation(<?php echo $ejemplar['id_ejemplar']; ?>, '<?php echo htmlspecialchars(addslashes($ejemplar['nombre'])); ?>')">
-                                    Desactivar
-                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="confirmDeactivation(<?php echo $ejemplar['id_ejemplar']; ?>, '<?php echo htmlspecialchars(addslashes($ejemplar['nombre'])); ?>')">Desactivar</button>
                             </div>
                         </td>
                     </tr>
@@ -134,7 +133,6 @@ function build_pagination_url($page, $searchTerm) {
 </nav>
 <?php endif; ?>
 
-<!-- Estructura HTML de la Ventana Modal para Ejemplares -->
 <div id="infoModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -143,8 +141,8 @@ function build_pagination_url($page, $searchTerm) {
         </div>
         <div class="modal-body">
             <div class="modal-section">
-                <div class="modal-section-title">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5,4H14C15.43,4 17,5.57 17,7.5V11.5C17,13.43 15.43,15 14,15H9V18H6V20H12V18H11V15H8.5C6.57,15 5,13.43 5,11.5V7.5C5,5.57 6.57,4 8.5,4M14,6H8.5C7.67,6 7,6.67 7,7.5V11.5C7,12.33 7.67,13 8.5,13H12.5C13.33,13 14,12.33 14,11.5V6Z"></path></svg>
+                 <div class="modal-section-title">
+                    <svg class="menu-icon" viewBox="-2.5 0 63 63" version="1.1" xmlns="http://www.w3.org/2000/svg" fill="#000000"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <title>Horse-shoe</title> <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"> <g id="Horse-shoe" transform="translate(1.000000, 1.000000)" stroke="#000000" stroke-width="2"> <path d="M52,54 L48.3,54 C53.1,45.3 56,35.5 56,28 C56,12.5 43.5,0 28,0 C12.5,0 0,12.5 0,28 C0,35.5 4,45.3 8.8,54 L5,54 L5,61 L17.9,61 C23.9,61 21.5,56.8 21.5,56.8 C21.5,56.8 9.8,38.5 9.8,27.8 C9.8,17.9 18,9.9 28.1,9.9 C38.2,9.9 46.4,17.9 46.4,27.8 C46.4,38.3 39.5,48.3 36.3,56.5 C35.2,59.2 36.4,61 40.1,61 L52,61 L52,54 L52,54 Z"></path> <path d="M27,6 L29,6"></path> <path d="M12,10 L14,10"></path> <path d="M41,10 L43,10"></path> <path d="M48,18 L50,18"></path> <path d="M6,17.9 L8,17.9"></path> <path d="M50,26 L52,26"></path> <path d="M50,35 L52,35"></path> <path d="M5,35 L7,35"></path> <path d="M8,44 L10,44"></path> <path d="M47,44 L49,44"></path> <path d="M43,54 L44.9,54"></path> <path d="M12,54 L14,54"></path> <path d="M4,26 L6,26"></path> </g> </g> </g></svg>
                     <h4>Información General</h4>
                 </div>
                 <div class="modal-grid">
@@ -168,10 +166,22 @@ function build_pagination_url($page, $searchTerm) {
                     <div class="modal-field"><span class="modal-label">Estado:</span><span class="modal-value" id="modalEstado"></span></div>
                 </div>
                 <div class="modal-docs">
-                    <label class="custom-checkbox-container">Pasaporte / DIE<input type="checkbox" id="modalDocPasaporte" disabled><span class="checkmark"></span></label>
-                    <label class="custom-checkbox-container">Resultado de ADN<input type="checkbox" id="modalDocAdn" disabled><span class="checkmark"></span></label>
-                    <label class="custom-checkbox-container">Certificado de Inscripción LG<input type="checkbox" id="modalDocLg" disabled><span class="checkmark"></span></label>
-                    <label class="custom-checkbox-container">Foto de Identificación<input type="checkbox" id="modalDocFoto" disabled><span class="checkmark"></span></label>
+                    <label class="custom-checkbox-container">Pasaporte / DIE
+                        <input type="checkbox" id="modalDocPasaporte" disabled><span class="checkmark"></span>
+                        <a href="#" target="_blank" class="view-doc-icon" id="modalDocPasaporteView" title="Ver Documento">👁️</a>
+                    </label>
+                    <label class="custom-checkbox-container">Resultado de ADN
+                        <input type="checkbox" id="modalDocAdn" disabled><span class="checkmark"></span>
+                        <a href="#" target="_blank" class="view-doc-icon" id="modalDocAdnView" title="Ver Documento">👁️</a>
+                    </label>
+                    <label class="custom-checkbox-container">Certificado de Inscripción LG
+                        <input type="checkbox" id="modalDocLg" disabled><span class="checkmark"></span>
+                        <a href="#" target="_blank" class="view-doc-icon" id="modalDocLgView" title="Ver Documento">👁️</a>
+                    </label>
+                    <label class="custom-checkbox-container">Foto de Identificación
+                        <input type="checkbox" id="modalDocFoto" disabled><span class="checkmark"></span>
+                        <a href="#" target="_blank" class="view-doc-icon" id="modalDocFotoView" title="Ver Documento">👁️</a>
+                    </label>
                 </div>
             </div>
         </div>
@@ -186,7 +196,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const closeButton = modal.querySelector('.close-button');
         const rows = document.querySelectorAll('.clickable-row');
 
-        // Referencias a los spans del modal
         const modalNombre = document.getElementById('modalNombre');
         const modalCodigo = document.getElementById('modalCodigo');
         const modalSocio = document.getElementById('modalSocio');
@@ -197,11 +206,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const modalMicrochip = document.getElementById('modalMicrochip');
         const modalCertificado = document.getElementById('modalCertificado');
         const modalEstado = document.getElementById('modalEstado');
-        // Checkboxes de documentos
+
         const modalDocPasaporte = document.getElementById('modalDocPasaporte');
         const modalDocAdn = document.getElementById('modalDocAdn');
         const modalDocLg = document.getElementById('modalDocLg');
         const modalDocFoto = document.getElementById('modalDocFoto');
+        const modalDocPasaporteView = document.getElementById('modalDocPasaporteView');
+        const modalDocAdnView = document.getElementById('modalDocAdnView');
+        const modalDocLgView = document.getElementById('modalDocLgView');
+        const modalDocFotoView = document.getElementById('modalDocFotoView');
 
         rows.forEach(row => {
             row.addEventListener('click', function(event) {
@@ -221,11 +234,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 modalCertificado.textContent = this.dataset.certificado;
                 modalEstado.textContent = this.dataset.estado;
 
-                // Marcar/desmarcar checkboxes de documentos
-                modalDocPasaporte.checked = this.dataset.docPasaporte === '1';
-                modalDocAdn.checked = this.dataset.docAdn === '1';
-                modalDocLg.checked = this.dataset.docLg === '1';
-                modalDocFoto.checked = this.dataset.docFoto === '1';
+                // Checkboxes
+                modalDocPasaporte.checked = this.dataset.docPasaporteId !== '0';
+                modalDocAdn.checked = this.dataset.docAdnId !== '0';
+                modalDocLg.checked = this.dataset.docLgId !== '0';
+                modalDocFoto.checked = this.dataset.docFotoId !== '0';
+
+                // Lógica para los íconos
+                let docPasaporteId = this.dataset.docPasaporteId;
+                if (docPasaporteId && docPasaporteId !== '0') {
+                    modalDocPasaporteView.href = `index.php?route=documento_download&id=${docPasaporteId}`;
+                    modalDocPasaporteView.style.display = 'inline-block';
+                } else {
+                    modalDocPasaporteView.style.display = 'none';
+                }
+
+                let docAdnId = this.dataset.docAdnId;
+                if (docAdnId && docAdnId !== '0') {
+                    modalDocAdnView.href = `index.php?route=documento_download&id=${docAdnId}`;
+                    modalDocAdnView.style.display = 'inline-block';
+                } else {
+                    modalDocAdnView.style.display = 'none';
+                }
+                
+                let docLgId = this.dataset.docLgId;
+                if (docLgId && docLgId !== '0') {
+                    modalDocLgView.href = `index.php?route=documento_download&id=${docLgId}`;
+                    modalDocLgView.style.display = 'inline-block';
+                } else {
+                    modalDocLgView.style.display = 'none';
+                }
+                
+                let docFotoId = this.dataset.docFotoId;
+                if (docFotoId && docFotoId !== '0') {
+                    modalDocFotoView.href = `index.php?route=documento_download&id=${docFotoId}`;
+                    modalDocFotoView.style.display = 'inline-block';
+                } else {
+                    modalDocFotoView.style.display = 'none';
+                }
                 
                 modal.style.display = 'block';
             });
@@ -243,7 +289,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Lógica para la desactivación (ya existente)
 function confirmDeactivation(ejemplarId, ejemplarName) {
     Swal.fire({
         title: '¿Estás seguro?',

@@ -12,7 +12,6 @@ class Documento {
      * @param int $maxFileSize Tamaño máximo permitido en bytes.
      * @param string $subfolder Subcarpeta dentro de UPLOADS_BASE_DIR (ej. 'socios', 'ejemplares/ID/fotos').
      * @param array|null $filesArray Opcional: El array de archivos a procesar (por defecto usa $_FILES global).
-     * Esto es útil para manejar subidas de arrays múltiples (fotos_file[]).
      * @return array ['status'=>..., 'data' => ...] o ['status'=>'error', 'message'=>...]
      */
     public static function handleUpload($fileInputName, $allowedTypes = [], $maxFileSize = 5000000, $subfolder = '', $filesArray = null) {
@@ -26,7 +25,6 @@ class Documento {
         } 
         
         $file = $sourceFiles[$fileInputName];
-        
         if ($file['error'] !== UPLOAD_ERR_OK) { 
             $phpUploadErrors = [ 
                 UPLOAD_ERR_INI_SIZE => 'Excede tamaño servidor (php.ini).', 
@@ -122,8 +120,7 @@ class Documento {
 
         $socio_id = !empty($data['socio_id']) ? filter_var($data['socio_id'], FILTER_VALIDATE_INT) : null;
         $ejemplar_id = !empty($data['ejemplar_id']) ? filter_var($data['ejemplar_id'], FILTER_VALIDATE_INT) : null; 
-        $servicio_id = !empty($data['servicio_id']) ? filter_var($data['servicio_id'], FILTER_VALIDATE_INT) : null; 
-        
+        $servicio_id = !empty($data['servicio_id']) ? filter_var($data['servicio_id'], FILTER_VALIDATE_INT) : null;
         if ($socio_id === null && $ejemplar_id === null && $servicio_id === null) { 
             error_log("Error: Intento de guardar documento sin asociación a entidad (socio, ejemplar, servicio).");
             $_SESSION['error_details'] = "Error: El documento debe estar asociado a un Socio, Ejemplar o Servicio."; 
@@ -136,18 +133,17 @@ class Documento {
             $data['tipoDocumento'], $data['nombreArchivoOriginal'], $data['rutaArchivo'], $data['mimeType'], $data['sizeBytes'],
             $socio_id, $ejemplar_id, $servicio_id, $data['id_usuario'], $data['comentarios']
         );
-        
         $newId = false;
         try {
             if ($stmt->execute()) { 
                 $newId = $conn->insert_id;
             } else { 
                 error_log("Execute failed (doc store): " . $stmt->error);
-                $_SESSION['error_details'] = "Error de base de datos al guardar el documento: " . $stmt->error; 
+                $_SESSION['error_details'] = "Error de base de datos al guardar el documento: " . $stmt->error;
             }
         } catch (mysqli_sql_exception $e) { 
             error_log("Exception (doc store): " . $e->getMessage());
-            $_SESSION['error_details'] = 'Error de base de datos al guardar el documento (' . $e->getCode() . '): ' . $e->getMessage(); 
+            $_SESSION['error_details'] = 'Error de base de datos al guardar el documento (' . $e->getCode() . '): ' . $e->getMessage();
         }
 
         if ($stmt) $stmt->close();
@@ -199,7 +195,6 @@ class Documento {
                  FROM documentos d 
                  LEFT JOIN usuarios u ON d.id_usuario = u.id_usuario 
                  WHERE d.$columnName = ?";
-         
          if ($onlyMasters && $entityType !== 'servicio') { 
              $sql .= " AND d.servicio_id IS NULL";
          }
@@ -217,7 +212,6 @@ class Documento {
          }
          
          $stmt->bind_param("i", $entityIdValidated);
-         
          if ($stmt->execute()) { 
              $result = $stmt->get_result();
              if ($result) { 
@@ -250,11 +244,9 @@ class Documento {
             $result_get = $stmt_get->get_result();
             $documento = ($result_get && $result_get->num_rows === 1) ? $result_get->fetch_assoc() : null; 
             $stmt_get->close();
-            
             if (!$documento) throw new Exception("Documento con ID $id no encontrado para eliminar."); 
             
             $rutaArchivoRelativa = $documento['rutaArchivo'];
-            
             $stmt_del = $conn->prepare("DELETE FROM documentos WHERE id_documento = ?");
             if (!$stmt_del) throw new Exception("Error al preparar consulta de eliminación: " . $conn->error);
             $stmt_del->bind_param("i", $id); 
@@ -289,117 +281,57 @@ class Documento {
         } 
         return $result;
     }
-
-    public static function getDocumentStatusForSocio($socioId) {
+    
+    // --- INICIO DE MODIFICACIÓN: Devolver ID en lugar de true ---
+    private static function getDocumentStatus($entityId, $entityColumn, $docTypes) {
         $conn = dbConnect();
-        if (!$conn) return [];
-
-        $docTypes = [
-            'ID_OFICIAL_TITULAR',
-            'CONSTANCIA_FISCAL',
-            'COMPROBANTE_DOM_GANADERIA',
-            'TITULO_PROPIEDAD_RANCHO'
-        ];
+        if (!$conn) return array_fill_keys($docTypes, false);
 
         $status = array_fill_keys($docTypes, false);
-
-        $sql = "SELECT DISTINCT tipoDocumento FROM documentos WHERE socio_id = ?";
+        
+        // Obtenemos el ID del documento más reciente para cada tipo
+        $sql = "SELECT tipoDocumento, MAX(id_documento) as id_documento
+                FROM documentos 
+                WHERE {$entityColumn} = ? AND tipoDocumento IN ('" . implode("','", $docTypes) . "')
+                GROUP BY tipoDocumento";
+        
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
-            error_log("Prepare failed (getDocumentStatusForSocio): " . $conn->error);
+            error_log("Prepare failed (getDocumentStatus for {$entityColumn}): " . $conn->error);
             $conn->close();
             return $status;
         }
 
-        $stmt->bind_param("i", $socioId);
+        $stmt->bind_param("i", $entityId);
         if ($stmt->execute()) {
             $result = $stmt->get_result();
             while ($row = $result->fetch_assoc()) {
                 if (in_array($row['tipoDocumento'], $docTypes)) {
-                    $status[$row['tipoDocumento']] = true;
+                    $status[$row['tipoDocumento']] = $row['id_documento']; // Devolvemos el ID
                 }
             }
         } else {
-            error_log("Execute failed (getDocumentStatusForSocio): " . $stmt->error);
+            error_log("Execute failed (getDocumentStatus for {$entityColumn}): " . $stmt->error);
         }
 
         $stmt->close();
         $conn->close();
         return $status;
+    }
+
+    public static function getDocumentStatusForSocio($socioId) {
+        $docTypes = ['ID_OFICIAL_TITULAR', 'CONSTANCIA_FISCAL', 'COMPROBANTE_DOM_GANADERIA', 'TITULO_PROPIEDAD_RANCHO'];
+        return self::getDocumentStatus($socioId, 'socio_id', $docTypes);
     }
 
     public static function getDocumentStatusForEjemplar($ejemplarId) {
-        $conn = dbConnect();
-        if (!$conn) return [];
-
-        $docTypes = [
-            'PASAPORTE_DIE',
-            'RESULTADO_ADN',
-            'CERTIFICADO_INSCRIPCION_LG',
-            'FOTO_IDENTIFICACION'
-        ];
-
-        $status = array_fill_keys($docTypes, false);
-
-        $sql = "SELECT DISTINCT tipoDocumento FROM documentos WHERE ejemplar_id = ?";
-        $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            error_log("Prepare failed (getDocumentStatusForEjemplar): " . $conn->error);
-            $conn->close();
-            return $status;
-        }
-
-        $stmt->bind_param("i", $ejemplarId);
-        if ($stmt->execute()) {
-            $result = $stmt->get_result();
-            while ($row = $result->fetch_assoc()) {
-                if (in_array($row['tipoDocumento'], $docTypes)) {
-                    $status[$row['tipoDocumento']] = true;
-                }
-            }
-        } else {
-            error_log("Execute failed (getDocumentStatusForEjemplar): " . $stmt->error);
-        }
-
-        $stmt->close();
-        $conn->close();
-        return $status;
+        $docTypes = ['PASAPORTE_DIE', 'RESULTADO_ADN', 'CERTIFICADO_INSCRIPCION_LG', 'FOTO_IDENTIFICACION'];
+        return self::getDocumentStatus($ejemplarId, 'ejemplar_id', $docTypes);
     }
 
-    // AÑADIR ESTE NUEVO MÉTODO COMPLETO
     public static function getDocumentStatusForServicio($servicioId) {
-        $conn = dbConnect();
-        if (!$conn) return [];
-
-        $docTypes = [
-            'SOLICITUD_SERVICIO',
-            'COMPROBANTE_PAGO'
-        ];
-
-        $status = array_fill_keys($docTypes, false);
-
-        $sql = "SELECT DISTINCT tipoDocumento FROM documentos WHERE servicio_id = ?";
-        $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            error_log("Prepare failed (getDocumentStatusForServicio): " . $conn->error);
-            $conn->close();
-            return $status;
-        }
-
-        $stmt->bind_param("i", $servicioId);
-        if ($stmt->execute()) {
-            $result = $stmt->get_result();
-            while ($row = $result->fetch_assoc()) {
-                if (in_array($row['tipoDocumento'], $docTypes)) {
-                    $status[$row['tipoDocumento']] = true;
-                }
-            }
-        } else {
-            error_log("Execute failed (getDocumentStatusForServicio): " . $stmt->error);
-        }
-
-        $stmt->close();
-        $conn->close();
-        return $status;
+        $docTypes = ['SOLICITUD_SERVICIO', 'COMPROBANTE_PAGO'];
+        return self::getDocumentStatus($servicioId, 'servicio_id', $docTypes);
     }
+    // --- FIN DE MODIFICACIÓN ---
 }

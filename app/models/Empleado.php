@@ -20,7 +20,6 @@ class Empleado {
             $data['nombre'], $data['apellido_paterno'], $data['apellido_materno'], $data['email'], 
             $data['direccion'], $data['telefono'], $data['puesto'], $data['estado'], $data['fecha_ingreso']
         );
-        
         $result = $stmt->execute();
         if (!$result && $conn->errno == 1062) {
             $_SESSION['error_details'] = 'El email proporcionado ya existe para otro empleado.';
@@ -31,11 +30,6 @@ class Empleado {
         return $result;
     }
     
-    /**
-     * Cuenta el total de empleados, opcionalmente filtrados por un término de búsqueda.
-     * @param string $searchTerm Término para buscar.
-     * @return int Total de empleados.
-     */
     public static function countAll($searchTerm = '') {
         $conn = dbConnect();
         if (!$conn) return 0;
@@ -43,7 +37,6 @@ class Empleado {
         $query = "SELECT COUNT(id_empleado) as total FROM empleados";
         $params = [];
         $types = '';
-
         if (!empty($searchTerm)) {
             $query .= " WHERE nombre LIKE ? OR apellido_paterno LIKE ? OR apellido_materno LIKE ? OR email LIKE ? OR puesto LIKE ?";
             $searchTermWildcard = "%" . $searchTerm . "%";
@@ -67,14 +60,23 @@ class Empleado {
         $conn->close();
         return $total;
     }
+    
+    // --- INICIO DE NUEVA FUNCIÓN ---
+    public static function countActive() {
+        $conn = dbConnect();
+        if (!$conn) return 0;
+        $query = "SELECT COUNT(id_empleado) as total FROM empleados WHERE estado = 'activo'";
+        $result = $conn->query($query);
+        $total = 0;
+        if ($result) {
+            $total = $result->fetch_assoc()['total'];
+            $result->free();
+        }
+        $conn->close();
+        return $total;
+    }
+    // --- FIN DE NUEVA FUNCIÓN ---
 
-    /**
-     * Obtiene una lista paginada de empleados.
-     * @param string $searchTerm Término para buscar.
-     * @param int $limit Número de registros por página.
-     * @param int $offset Número de registros a saltar.
-     * @return array Lista de empleados.
-     */
     public static function getAll($searchTerm = '', $limit = 15, $offset = 0) {
         $conn = dbConnect();
         $empleados = [];
@@ -83,7 +85,6 @@ class Empleado {
         $query = "SELECT * FROM empleados";
         $params = [];
         $types = '';
-
         if (!empty($searchTerm)) {
             $query .= " WHERE nombre LIKE ? OR apellido_paterno LIKE ? OR apellido_materno LIKE ? OR email LIKE ? OR puesto LIKE ?";
             $searchTermWildcard = "%" . $searchTerm . "%";
@@ -141,7 +142,6 @@ class Empleado {
         if (!$conn) return false;
 
         $sql = "UPDATE empleados SET nombre = ?, apellido_paterno = ?, apellido_materno = ?, email = ?, direccion = ?, telefono = ?, puesto = ?, estado = ?, fecha_ingreso = ?";
-        
         if (isset($data['estado']) && $data['estado'] == 'activo') {
             $sql .= ", razon_desactivacion = NULL";
         }
@@ -156,7 +156,6 @@ class Empleado {
             $data['direccion'], $data['telefono'], $data['puesto'], $data['estado'], $data['fecha_ingreso'],
             $id
         );
-        
         $result = $stmt->execute();
         if (!$result && $conn->errno == 1062) { 
             $_SESSION['error_details'] = 'El email proporcionado ya existe para otro empleado.';
@@ -176,7 +175,6 @@ class Empleado {
 
         $stmt->bind_param("si", $razon, $id);
         $result = $stmt->execute();
-        
         if (!$result && $conn->errno == 1451) {
             $_SESSION['error_details'] = 'No se puede desactivar el empleado porque tiene registros asociados.';
         }

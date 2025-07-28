@@ -21,8 +21,10 @@ function build_pagination_url($page, $searchTerm) {
     <form action="index.php" method="GET" class="search-form">
         <input type="hidden" name="route" value="medicos_index">
         <input type="text" name="search" class="form-control" placeholder="Buscar por nombre, cédula, email..." value="<?php echo htmlspecialchars($searchTerm ?? ''); ?>">
-        <button type="submit" class="btn btn-secondary">Buscar</button>
-        <a href="index.php?route=medicos_index" class="btn btn-primary">Limpiar</a>
+        <div class="search-buttons">
+            <button type="submit" class="btn btn-secondary">Buscar</button>
+            <a href="index.php?route=medicos_index" class="btn btn-primary">Limpiar</a>
+        </div>
     </form>
 </div>
 
@@ -139,7 +141,7 @@ function build_pagination_url($page, $searchTerm) {
         <div class="modal-body">
             <div class="modal-section">
                 <div class="modal-section-title">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14C14.2091 14 16 12.2091 16 10C16 7.79086 14.2091 6 12 6C9.79086 6 8 7.79086 8 10C8 12.2091 9.79086 14 12 14ZM12 16C7.58172 16 4 17.7909 4 20V21H20V20C20 17.7909 16.4183 16 12 16Z"></path></svg>
+                    <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3H15V5H9V3ZM19 5H17V3C17 1.89543 16.1046 1 15 1H9C7.89543 1 7 1.89543 7 3V5H5C3.89543 5 3 5.89543 3 7V21C3 22.1046 3.89543 23 5 23H19C20.1046 23 21 22.1046 21 21V7C21 5.89543 20.1046 5 19 5ZM11 15H8V13H11V10H13V13H16V15H13V18H11V15Z"></path></svg>
                     <h4>Información Personal</h4>
                 </div>
                 <div class="modal-grid">
