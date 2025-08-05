@@ -78,6 +78,10 @@ class Router {
          $this->addRoute('servicios_update_status', 'ServiciosController@updateStatus');
          $this->addRoute('servicios_get_valid_states', 'ServiciosController@getValidNextStates');
 
+         // --- INICIO DE NUEVA SECCIÓN: Rutas de Reportes ---
+         $this->addRoute('reportes', 'ReportesController@index');
+         // --- FIN DE NUEVA SECCIÓN ---
+
          // --- Rutas de Documentos ---
          $this->addRoute('documento_download', 'DocumentosController@download');
          $this->addRoute('documento_delete', 'DocumentosController@delete');

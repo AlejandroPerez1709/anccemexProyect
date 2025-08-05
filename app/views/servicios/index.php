@@ -116,16 +116,29 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
         <tbody>
             <?php if(isset($servicios) && count($servicios) > 0): ?>
                 <?php foreach($servicios as $servicio): ?>
-                     <tr class="clickable-row"
+                     <?php
+                        $rowClass = 'clickable-row';
+                        if ($servicio['health_status'] === 'advertencia') {
+                            $rowClass .= ' fila-advertencia';
+                        } elseif ($servicio['health_status'] === 'retrasado') {
+                            $rowClass .= ' fila-retrasado';
+                        }
+                     ?>
+                     <tr class="<?php echo $rowClass; ?>"
                         data-id-servicio="<?php echo $servicio['id_servicio']; ?>"
                         data-tipo-servicio="<?php echo htmlspecialchars($servicio['tipo_servicio_nombre'] . ' (' . ($servicio['codigo_servicio'] ?: 'N/A') . ')'); ?>"
                         data-socio="<?php echo htmlspecialchars($servicio['socio_nombre'] . ' ' . $servicio['socio_apPaterno'] . ' (' . ($servicio['socio_codigo_ganadero'] ?? 'S/C') . ')'); ?>"
                         data-ejemplar="<?php echo htmlspecialchars(($servicio['ejemplar_nombre'] ?? 'N/A') . ' (' . ($servicio['ejemplar_codigo'] ?? 'S/C') . ')'); ?>"
                         data-observaciones="<?php echo htmlspecialchars($servicio['descripcion'] ?? ''); ?>"
-                        data-fecha-finalizacion="<?php echo !empty($servicio['fechaFinalizacion']) ? date('d/m/Y', strtotime($servicio['fechaFinalizacion'])) : ''; ?>"
                         data-medico-asignado="<?php echo !empty($servicio['medico_nombre']) ? htmlspecialchars($servicio['medico_nombre'] . ' ' . $servicio['medico_apPaterno']) : ''; ?>"
                         data-estado="<?php echo htmlspecialchars($servicio['estado']); ?>"
-                        data-fecha-solicitud="<?php echo !empty($servicio['fechaSolicitud']) ? date('d/m/Y', strtotime($servicio['fechaSolicitud'])) : '-'; ?>"
+                        
+                        data-fecha-solicitud="<?php echo !empty($servicio['fechaSolicitud']) ? date('d/m/Y', strtotime($servicio['fechaSolicitud'])) : ''; ?>"
+                        data-fecha-asignacion-medico="<?php echo !empty($servicio['fechaAsignacionMedico']) ? date('d/m/Y', strtotime($servicio['fechaAsignacionMedico'])) : ''; ?>"
+                        data-fecha-visita-medico="<?php echo !empty($servicio['fechaVisitaMedico']) ? date('d/m/Y', strtotime($servicio['fechaVisitaMedico'])) : ''; ?>"
+                        data-fecha-envio-lg="<?php echo !empty($servicio['fechaEnvioLG']) ? date('d/m/Y', strtotime($servicio['fechaEnvioLG'])) : ''; ?>"
+                        data-fecha-recepcion-lg="<?php echo !empty($servicio['fechaRecepcionLG']) ? date('d/m/Y', strtotime($servicio['fechaRecepcionLG'])) : ''; ?>"
+                        data-fecha-finalizacion="<?php echo !empty($servicio['fechaFinalizacion']) ? date('d/m/Y', strtotime($servicio['fechaFinalizacion'])) : ''; ?>"
                         data-ultima-modif="<?php echo !empty($servicio['fecha_modificacion']) ? date('d/m/Y H:i', strtotime($servicio['fecha_modificacion'])) . ' por ' . htmlspecialchars($servicio['modificador_username'] ?? 'Sistema') : '-'; ?>"
                         data-doc-solicitud-id="<?php echo $servicio['document_status']['SOLICITUD_SERVICIO'] ?: '0'; ?>"
                         data-doc-pago-id="<?php echo $servicio['document_status']['COMPROBANTE_PAGO'] ?: '0'; ?>">
@@ -214,22 +227,17 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
                         <label for="modalMotivoRechazo" class="modal-label">Motivo del Rechazo (Obligatorio):</label>
                         <textarea id="modalMotivoRechazo" rows="3" class="form-control"></textarea>
                     </div>
-                    <div class="modal-field"><span class="modal-label">Fecha de Solicitud:</span><span class="modal-value" id="modalFechaSolicitud"></span></div>
                     
-                    <div class="modal-field" id="modalFechaFinalizacionContainer">
-                        <span class="modal-label">Fecha de Finalización:</span>
-                        <span class="modal-value" id="modalFechaFinalizacion"></span>
+                    <div class="modal-field"><span class="modal-label">Fecha de Solicitud:</span><span class="modal-value" id="modalFechaSolicitud"></span></div>
+                    <div class="modal-field full-width" id="modalMedicoContainer"><span class="modal-label">Médico Asignado:</span><span class="modal-value" id="modalMedicoAsignado"></span></div>
+                    <div class="modal-field" id="modalFechaAsignacionMedicoContainer"><span class="modal-label">Fecha Asignación Médico:</span><span class="modal-value" id="modalFechaAsignacionMedico"></span></div>
+                    <div class="modal-field" id="modalFechaVisitaMedicoContainer"><span class="modal-label">Fecha Visita Médico:</span><span class="modal-value" id="modalFechaVisitaMedico"></span></div>
+                    <div class="modal-field" id="modalFechaEnvioLgContainer"><span class="modal-label">Fecha Envío a LG:</span><span class="modal-value" id="modalFechaEnvioLg"></span></div>
+                    <div class="modal-field" id="modalFechaRecepcionLgContainer"><span class="modal-label">Fecha Recepción LG:</span><span class="modal-value" id="modalFechaRecepcionLg"></span></div>
+                    <div class="modal-field" id="modalFechaFinalizacionContainer"><span class="modal-label">Fecha de Finalización:</span><span class="modal-value" id="modalFechaFinalizacion"></span></div>
+                    <div class="modal-field full-width"><span class="modal-label">Última Modificación:</span><span class="modal-value" id="modalUltimaModif"></span></div>
+                    <div class="modal-field full-width"><span class="modal-label">Observaciones:</span><span class="modal-value" id="modalObservaciones"></span></div>
                     </div>
-                    <div class="modal-field full-width" id="modalMedicoContainer">
-                        <span class="modal-label">Médico Asignado:</span>
-                        <span class="modal-value" id="modalMedicoAsignado"></span>
-                    </div>
-                     <div class="modal-field full-width"><span class="modal-label">Última Modificación:</span><span class="modal-value" id="modalUltimaModif"></span></div>
-                    <div class="modal-field full-width">
-                        <span class="modal-label">Observaciones:</span>
-                        <span class="modal-value" id="modalObservaciones"></span>
-                    </div>
-                </div>
                 <div class="modal-docs">
                     <label class="custom-checkbox-container">Solicitud de Servicio
                         <input type="checkbox" id="modalDocSolicitud" disabled><span class="checkmark"></span>
@@ -256,26 +264,40 @@ document.addEventListener('DOMContentLoaded', function() {
         const closeButtons = modal.querySelectorAll('.close-button');
         const rows = document.querySelectorAll('.clickable-row');
         
+        // --- INICIO DE CAMBIO: Declarar todas las variables del modal ---
         const modalIdServicio = document.getElementById('modalIdServicio');
         const modalTipoServicio = document.getElementById('modalTipoServicio');
         const modalSocio = document.getElementById('modalSocio');
         const modalEjemplar = document.getElementById('modalEjemplar');
-        const modalFechaSolicitud = document.getElementById('modalFechaSolicitud');
-        const modalUltimaModif = document.getElementById('modalUltimaModif');
         const modalObservaciones = document.getElementById('modalObservaciones');
-        const modalFechaFinalizacion = document.getElementById('modalFechaFinalizacion');
         const modalMedicoAsignado = document.getElementById('modalMedicoAsignado');
-        const modalFechaFinalizacionContainer = document.getElementById('modalFechaFinalizacionContainer');
-        const modalMedicoContainer = document.getElementById('modalMedicoContainer');
+        const modalUltimaModif = document.getElementById('modalUltimaModif');
         const modalDocSolicitud = document.getElementById('modalDocSolicitud');
         const modalDocPago = document.getElementById('modalDocPago');
         const modalDocSolicitudView = document.getElementById('modalDocSolicitudView');
         const modalDocPagoView = document.getElementById('modalDocPagoView');
-        
         const modalEstadoSelect = document.getElementById('modalEstadoSelect');
         const btnGuardarEstado = document.getElementById('btnGuardarEstado');
         const modalMotivoRechazoContainer = document.getElementById('modalMotivoRechazoContainer');
         const modalMotivoRechazo = document.getElementById('modalMotivoRechazo');
+        
+        // Fechas
+        const modalFechaSolicitud = document.getElementById('modalFechaSolicitud');
+        const modalFechaAsignacionMedico = document.getElementById('modalFechaAsignacionMedico');
+        const modalFechaVisitaMedico = document.getElementById('modalFechaVisitaMedico');
+        const modalFechaEnvioLg = document.getElementById('modalFechaEnvioLg');
+        const modalFechaRecepcionLg = document.getElementById('modalFechaRecepcionLg');
+        const modalFechaFinalizacion = document.getElementById('modalFechaFinalizacion');
+        
+        // Contenedores (para ocultarlos si no hay fecha)
+        const modalMedicoContainer = document.getElementById('modalMedicoContainer');
+        const modalFechaAsignacionMedicoContainer = document.getElementById('modalFechaAsignacionMedicoContainer');
+        const modalFechaVisitaMedicoContainer = document.getElementById('modalFechaVisitaMedicoContainer');
+        const modalFechaEnvioLgContainer = document.getElementById('modalFechaEnvioLgContainer');
+        const modalFechaRecepcionLgContainer = document.getElementById('modalFechaRecepcionLgContainer');
+        const modalFechaFinalizacionContainer = document.getElementById('modalFechaFinalizacionContainer');
+        // --- FIN DE CAMBIO ---
+        
         let currentServiceId = null;
         let currentRowElement = null;
 
@@ -286,30 +308,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentRowElement = this; 
                 currentServiceId = this.dataset.idServicio;
                 
+                // --- INICIO DE CAMBIO: Llenar todos los campos y controlar visibilidad ---
                 modalIdServicio.textContent = this.dataset.idServicio;
                 modalTipoServicio.textContent = this.dataset.tipoServicio;
                 modalSocio.textContent = this.dataset.socio;
                 modalEjemplar.textContent = this.dataset.ejemplar;
-                modalFechaSolicitud.textContent = this.dataset.fechaSolicitud;
-                modalUltimaModif.textContent = this.dataset.ultimaModif;
                 modalObservaciones.textContent = this.dataset.observaciones || 'Sin observaciones.';
-                
-                let fechaFin = this.dataset.fechaFinalizacion;
-                if (fechaFin) {
-                    modalFechaFinalizacion.textContent = fechaFin;
-                    modalFechaFinalizacionContainer.style.display = 'block';
-                } else {
-                    modalFechaFinalizacionContainer.style.display = 'none';
+                modalUltimaModif.textContent = this.dataset.ultimaModif;
+
+                // Llenar y mostrar/ocultar campos opcionales
+                function fillAndToggle(element, container, dataAttribute) {
+                    if (dataAttribute && dataAttribute.trim() !== '') {
+                        element.textContent = dataAttribute;
+                        container.style.display = 'block';
+                    } else {
+                        container.style.display = 'none';
+                    }
                 }
 
-                let medico = this.dataset.medicoAsignado;
-                if (medico) {
-                    modalMedicoAsignado.textContent = medico;
-                    modalMedicoContainer.style.display = 'block';
-                } else {
-                    modalMedicoContainer.style.display = 'none';
-                }
+                fillAndToggle(modalFechaSolicitud, modalFechaSolicitud.parentElement, this.dataset.fechaSolicitud);
+                fillAndToggle(modalMedicoAsignado, modalMedicoContainer, this.dataset.medicoAsignado);
+                fillAndToggle(modalFechaAsignacionMedico, modalFechaAsignacionMedicoContainer, this.dataset.fechaAsignacionMedico);
+                fillAndToggle(modalFechaVisitaMedico, modalFechaVisitaMedicoContainer, this.dataset.fechaVisitaMedico);
+                fillAndToggle(modalFechaEnvioLg, modalFechaEnvioLgContainer, this.dataset.fechaEnvioLg);
+                fillAndToggle(modalFechaRecepcionLg, modalFechaRecepcionLgContainer, this.dataset.fechaRecepcionLg);
+                fillAndToggle(modalFechaFinalizacion, modalFechaFinalizacionContainer, this.dataset.fechaFinalizacion);
                 
+                // Lógica de documentos y estados
                 modalMotivoRechazo.value = '';
                 
                 let docSolicitudId = this.dataset.docSolicitudId;
@@ -337,7 +362,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(response => response.json())
                     .then(estados => {
                         modalEstadoSelect.innerHTML = '';
-                        
                         estados.forEach(estado => {
                             const option = document.createElement('option');
                             option.value = estado;
@@ -355,6 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 
                 modal.style.display = 'block';
+                // --- FIN DE CAMBIO ---
             });
         });
 
@@ -399,22 +424,9 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    closeModal();
-                    Swal.fire({
-                        position: 'center',
-                        icon: 'success',
-                        title: data.message,
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
-                    
-                    if(currentRowElement) {
-                        const statusBadge = currentRowElement.querySelector(`#status-badge-${currentServiceId}`);
-                        if(statusBadge) {
-                            statusBadge.textContent = nuevoEstado;
-                            statusBadge.className = `status-badge status-${nuevoEstado.toLowerCase().replace(/[\/ ]/g, '-')}`;
-                        }
-                    }
+                    // Recargar la página para ver todos los cambios reflejados
+                    // Es más simple que actualizar cada campo individualmente
+                    window.location.reload(); 
                 } else {
                     Swal.fire('Error', data.message, 'error');
                 }

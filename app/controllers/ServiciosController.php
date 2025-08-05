@@ -51,7 +51,19 @@ class ServiciosController {
         check_permission();
         
         $filters = [];
-        if (!empty($_GET['filtro_estado'])) $filters['estado'] = $_GET['filtro_estado'];
+        
+        // --- INICIO DE LÓGICA CORREGIDA ---
+        // Se aplica el filtro por defecto solo si el parámetro NO se envió en la URL.
+        if (!isset($_GET['filtro_estado'])) {
+            $filters['estado_not_in'] = ['Completado', 'Rechazado', 'Cancelado'];
+        } else {
+            // Si el parámetro SÍ se envió pero está vacío (opción "-- Todos --"), no se aplica filtro de estado.
+            if (!empty($_GET['filtro_estado'])) {
+                $filters['estado'] = $_GET['filtro_estado'];
+            }
+        }
+        // --- FIN DE LÓGICA CORREGIDA ---
+        
         if (!empty($_GET['filtro_socio_id'])) $filters['socio_id'] = filter_input(INPUT_GET, 'filtro_socio_id', FILTER_VALIDATE_INT);
         if (!empty($_GET['filtro_tipo_id'])) $filters['tipo_servicio_id'] = filter_input(INPUT_GET, 'filtro_tipo_id', FILTER_VALIDATE_INT);
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -81,9 +93,17 @@ class ServiciosController {
         check_permission();
 
         $filters = [];
-        if (!empty($_GET['filtro_estado'])) $filters['estado'] = $_GET['filtro_estado'];
+        // Lógica corregida también para la exportación
+        if (!isset($_GET['filtro_estado'])) {
+            $filters['estado_not_in'] = ['Completado', 'Rechazado', 'Cancelado'];
+        } else {
+            if (!empty($_GET['filtro_estado'])) {
+                $filters['estado'] = $_GET['filtro_estado'];
+            }
+        }
         if (!empty($_GET['filtro_socio_id'])) $filters['socio_id'] = filter_input(INPUT_GET, 'filtro_socio_id', FILTER_VALIDATE_INT);
         if (!empty($_GET['filtro_tipo_id'])) $filters['tipo_servicio_id'] = filter_input(INPUT_GET, 'filtro_tipo_id', FILTER_VALIDATE_INT);
+        
         $servicios = Servicio::getAll($filters, -1);
 
         $spreadsheet = new Spreadsheet();

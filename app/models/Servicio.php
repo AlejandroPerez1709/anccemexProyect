@@ -23,7 +23,6 @@ class Servicio {
         try {
             if ($stmt->execute()) {
                 $newId = $conn->insert_id;
-                // Registrar el historial al crear
                 self::updateStatus($newId, $data['estado'], null, $data['id_usuario_registro']);
             }
         } catch (mysqli_sql_exception $e) {
@@ -47,6 +46,13 @@ class Servicio {
         if (!empty($filters['estado'])) { $whereClauses[] = "s.estado = ?"; $params[] = $filters['estado']; $types .= "s"; } 
         if (!empty($filters['socio_id'])) { $whereClauses[] = "s.socio_id = ?"; $params[] = $filters['socio_id']; $types .= "i"; } 
         if (!empty($filters['tipo_servicio_id'])) { $whereClauses[] = "s.tipo_servicio_id = ?"; $params[] = $filters['tipo_servicio_id']; $types .= "i"; }
+        
+        if (!empty($filters['estado_not_in']) && is_array($filters['estado_not_in'])) {
+            $placeholders = implode(',', array_fill(0, count($filters['estado_not_in']), '?'));
+            $whereClauses[] = "s.estado NOT IN ($placeholders)";
+            $params = array_merge($params, $filters['estado_not_in']);
+            $types .= str_repeat('s', count($filters['estado_not_in']));
+        }
 
         if (!empty($whereClauses)) { $sql .= " WHERE " . implode(" AND ", $whereClauses); }
 
@@ -107,6 +113,13 @@ class Servicio {
         if (!empty($filters['estado'])) { $whereClauses[] = "s.estado = ?"; $params[] = $filters['estado']; $types .= "s"; } 
         if (!empty($filters['socio_id'])) { $whereClauses[] = "s.socio_id = ?"; $params[] = $filters['socio_id']; $types .= "i"; } 
         if (!empty($filters['tipo_servicio_id'])) { $whereClauses[] = "s.tipo_servicio_id = ?"; $params[] = $filters['tipo_servicio_id']; $types .= "i"; }
+        
+        if (!empty($filters['estado_not_in']) && is_array($filters['estado_not_in'])) {
+            $placeholders = implode(',', array_fill(0, count($filters['estado_not_in']), '?'));
+            $whereClauses[] = "s.estado NOT IN ($placeholders)";
+            $params = array_merge($params, $filters['estado_not_in']);
+            $types .= str_repeat('s', count($filters['estado_not_in']));
+        }
 
         if (!empty($whereClauses)) { $sql .= " WHERE " . implode(" AND ", $whereClauses); } 
         
@@ -131,6 +144,7 @@ class Servicio {
         if($stmt->execute()) { 
             $result = $stmt->get_result();
             while($row = $result->fetch_assoc()){ 
+                $row['health_status'] = self::getServicioHealthStatus($row['estado'], $row['fecha_modificacion']);
                 $servicios[] = $row;
             } 
             $result->free();
@@ -320,36 +334,31 @@ class Servicio {
         return array_values($meses);
     }
     
-    public static function getAtencionRequerida($days = 15, $limit = 5) {
+    public static function getAtencionRequerida($limit = 5) {
         $conn = dbConnect();
-        $servicios = [];
-        if (!$conn) return $servicios;
+        $servicios_atencion = [];
+        if (!$conn) return $servicios_atencion;
 
-        $sql = "SELECT s.id_servicio, s.estado,
-                       DATEDIFF(CURDATE(), s.fecha_modificacion) as dias_sin_actualizar,
+        $sql = "SELECT s.id_servicio, s.estado, s.fecha_modificacion,
                        so.nombre as socio_nombre, so.apellido_paterno as socio_apPaterno
                 FROM servicios s
                 LEFT JOIN socios so ON s.socio_id = so.id_socio
                 WHERE s.estado NOT IN ('Completado', 'Rechazado', 'Cancelado')
-                AND DATEDIFF(CURDATE(), s.fecha_modificacion) > ?
-                ORDER BY dias_sin_actualizar DESC
-                LIMIT ?";
+                ORDER BY s.fecha_modificacion ASC";
         
-        $stmt = $conn->prepare($sql);
-        if ($stmt) {
-            $stmt->bind_param("ii", $days, $limit);
-            if ($stmt->execute()) {
-                $result = $stmt->get_result();
-                while ($row = $result->fetch_assoc()) {
-                    $servicios[] = $row;
+        $result = $conn->query($sql);
+        if ($result) {
+            while ($servicio = $result->fetch_assoc()) {
+                if (self::getServicioHealthStatus($servicio['estado'], $servicio['fecha_modificacion']) === 'retrasado') {
+                    $servicio['dias_sin_actualizar'] = (new DateTime())->diff(new DateTime($servicio['fecha_modificacion']))->days;
+                    $servicios_atencion[] = $servicio;
                 }
-                $result->free();
             }
-            $stmt->close();
+            $result->free();
         }
         
         $conn->close();
-        return $servicios;
+        return array_slice($servicios_atencion, 0, $limit);
     }
     
     public static function updateStatus($servicioId, $nuevoEstado, $motivoRechazo, $userId) {
@@ -362,16 +371,26 @@ class Servicio {
         $conn->begin_transaction();
 
         try {
-            $stmt_get = $conn->prepare("SELECT estado FROM servicios WHERE id_servicio = ?");
+            $stmt_get = $conn->prepare("SELECT estado, medico_id FROM servicios WHERE id_servicio = ?");
             if (!$stmt_get) throw new Exception("Error al preparar la consulta para obtener el estado actual.");
             $stmt_get->bind_param("i", $servicioId);
             $stmt_get->execute();
             $result_get = $stmt_get->get_result();
             if ($result_get->num_rows === 0) throw new Exception("Servicio no encontrado.");
-            $estadoAnterior = $result_get->fetch_assoc()['estado'];
+            $servicioActual = $result_get->fetch_assoc();
+            $estadoAnterior = $servicioActual['estado'];
             $stmt_get->close();
 
             if ($estadoAnterior === $nuevoEstado) {
+                if ($estadoAnterior !== null) {
+                     $comentarios = "Actualización manual sin cambio de estado.";
+                     $stmt_historial = $conn->prepare("INSERT INTO servicios_historial (servicio_id, usuario_id, estado_anterior, estado_nuevo, comentarios) VALUES (?, ?, ?, ?, ?)");
+                     if ($stmt_historial) {
+                         $stmt_historial->bind_param("iisss", $servicioId, $userId, $estadoAnterior, $nuevoEstado, $comentarios);
+                         $stmt_historial->execute();
+                         $stmt_historial->close();
+                     }
+                }
                 $conn->commit();
                 return true;
             }
@@ -380,10 +399,28 @@ class Servicio {
             $params = [$nuevoEstado, $userId];
             $types = "si";
 
-            if (in_array($nuevoEstado, ['Completado', 'Rechazado', 'Cancelado'])) {
-                $sql_parts[] = "fechaFinalizacion = NOW()";
+            switch ($nuevoEstado) {
+                case 'Pendiente Visita Medico':
+                    if ($servicioActual['medico_id']) {
+                        $sql_parts[] = "fechaAsignacionMedico = IF(fechaAsignacionMedico IS NULL, NOW(), fechaAsignacionMedico)";
+                    }
+                    break;
+                case 'Pendiente Resultado Lab':
+                    $sql_parts[] = "fechaVisitaMedico = IF(fechaVisitaMedico IS NULL, NOW(), fechaVisitaMedico)";
+                    break;
+                case 'Enviado a LG':
+                    $sql_parts[] = "fechaEnvioLG = IF(fechaEnvioLG IS NULL, NOW(), fechaEnvioLG)";
+                    break;
+                case 'Completado':
+                    $sql_parts[] = "fechaRecepcionLG = IF(fechaRecepcionLG IS NULL, NOW(), fechaRecepcionLG)";
+                    $sql_parts[] = "fechaFinalizacion = NOW()";
+                    break;
+                case 'Rechazado':
+                case 'Cancelado':
+                    $sql_parts[] = "fechaFinalizacion = NOW()";
+                    break;
             }
-            
+
             if ($nuevoEstado === 'Rechazado') {
                 $sql_parts[] = "motivo_rechazo = ?";
                 $params[] = $motivoRechazo;
@@ -431,32 +468,111 @@ class Servicio {
 
     public static function getSiguientesEstadosPosibles($estadoActual, $flujoTrabajo) {
         $estadosAdministrativos = [
-            'Pendiente Docs/Pago',
-            'Recibido Completo',
-            'Enviado a LG',
-            'Pendiente Respuesta LG',
-            'Completado',
-            'Rechazado',
-            'Cancelado'
+            'Pendiente Docs/Pago', 'Recibido Completo', 'Enviado a LG', 
+            'Pendiente Respuesta LG', 'Completado', 'Rechazado', 'Cancelado'
         ];
         
         $estadosZootecnicos = [
-            'Pendiente Docs/Pago',
-            'Recibido Completo',
-            'Pendiente Visita Medico',
-            'Pendiente Resultado Lab',
-            'Enviado a LG',
-            'Pendiente Respuesta LG',
-            'Completado',
-            'Rechazado',
-            'Cancelado'
+            'Pendiente Docs/Pago', 'Recibido Completo', 'Pendiente Visita Medico', 
+            'Pendiente Resultado Lab', 'Enviado a LG', 'Pendiente Respuesta LG', 
+            'Completado', 'Rechazado', 'Cancelado'
         ];
 
         if ($flujoTrabajo === 'ZOOTECNICO') {
             return $estadosZootecnicos;
         }
         
-        // Por defecto, se devuelve el flujo administrativo
         return $estadosAdministrativos;
+    }
+
+    private static function getServicioHealthStatus($estado, $fechaModificacion) {
+        $estadosFinales = ['Completado', 'Rechazado', 'Cancelado'];
+        if (in_array($estado, $estadosFinales)) {
+            return 'ok';
+        }
+
+        $diasEnEstado = (new DateTime())->diff(new DateTime($fechaModificacion))->days;
+
+        $sla = [
+            'Recibido Completo' => ['warn' => 3, 'danger' => 5],
+            'Pendiente Visita Medico' => ['warn' => 15, 'danger' => 20],
+            'Pendiente Resultado Lab' => ['warn' => 10, 'danger' => 15],
+            'Pendiente Respuesta LG' => ['warn' => 20, 'danger' => 30]
+        ];
+
+        if (isset($sla[$estado])) {
+            if ($diasEnEstado >= $sla[$estado]['danger']) {
+                return 'retrasado';
+            }
+            if ($diasEnEstado >= $sla[$estado]['warn']) {
+                return 'advertencia';
+            }
+        }
+
+        return 'ok';
+    }
+
+    public static function getServiciosParaReporte($filtros) {
+        $conn = dbConnect();
+        $servicios = [];
+        if (!$conn) return $servicios;
+
+        $sql = "SELECT s.*, 
+                       ts.nombre as tipo_servicio_nombre,
+                       so.nombre as socio_nombre, so.apellido_paterno as socio_apPaterno,
+                       e.nombre as ejemplar_nombre
+                FROM servicios s
+                LEFT JOIN tipos_servicios ts ON s.tipo_servicio_id = ts.id_tipo_servicio
+                LEFT JOIN socios so ON s.socio_id = so.id_socio
+                LEFT JOIN ejemplares e ON s.ejemplar_id = e.id_ejemplar";
+        
+        $whereClauses = [];
+        $params = [];
+        $types = "";
+
+        if (!empty($filtros['fecha_inicio'])) {
+            $whereClauses[] = "s.fechaSolicitud >= ?";
+            $params[] = $filtros['fecha_inicio'];
+            $types .= "s";
+        }
+        if (!empty($filtros['fecha_fin'])) {
+            $whereClauses[] = "s.fechaSolicitud <= ?";
+            $params[] = $filtros['fecha_fin'];
+            $types .= "s";
+        }
+        if (!empty($filtros['estado'])) {
+            $whereClauses[] = "s.estado = ?";
+            $params[] = $filtros['estado'];
+            $types .= "s";
+        }
+        if (!empty($filtros['tipo_servicio_id'])) {
+            $whereClauses[] = "s.tipo_servicio_id = ?";
+            $params[] = $filtros['tipo_servicio_id'];
+            $types .= "i";
+        }
+
+        if (!empty($whereClauses)) {
+            $sql .= " WHERE " . implode(" AND ", $whereClauses);
+        }
+
+        $sql .= " ORDER BY s.fechaSolicitud DESC";
+
+        $stmt = $conn->prepare($sql);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                while ($row = $result->fetch_assoc()) {
+                    $servicios[] = $row;
+                }
+                $result->free();
+            }
+            $stmt->close();
+        }
+        
+        $conn->close();
+        return $servicios;
     }
 }

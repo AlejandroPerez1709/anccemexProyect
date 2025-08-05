@@ -659,7 +659,7 @@ td .btn-danger { background-color: #dc3545; color: #fff; }
 .modal-label {
     font-size: 0.85rem;
     color: #6c757d;
-    margin-bottom: 4px;
+    margin: 4px 6px;
 }
 .modal-value {
     font-size: 1rem;
@@ -681,6 +681,10 @@ td .btn-danger { background-color: #dc3545; color: #fff; }
 .modal-footer .btn {
     font-size: 0.9em; /* Asegura el mismo tamaño de fuente para ambos */
     padding: 8px 18px; /* Asegura el mismo espaciado interno */
+}
+
+#modalUltimaModif{
+    margin-left: 8px;
 }
 
 /* --- Estilos para el ícono de ver documento en el modal --- */
@@ -758,3 +762,117 @@ td .btn-danger { background-color: #dc3545; color: #fff; }
     .btn-logout{font-size: 14px;}
     
 }
+
+/* --- INICIO DE ESTILOS PARA ALERTAS DE ESTADO DE SERVICIO --- */
+
+/* Estilo para filas en estado de advertencia (amarillo) */
+tr.fila-advertencia {
+    background-color: #fffde7 !important; /* Un amarillo pálido */
+}
+tr.fila-advertencia:hover {
+    background-color: #fff9c4 !important; /* Un amarillo un poco más oscuro al pasar el mouse */
+}
+
+/* Estilo para filas en estado retrasado (rojo) */
+tr.fila-retrasado {
+    background-color: #ffebee !important; /* Un rojo/rosa muy pálido */
+}
+tr.fila-retrasado:hover {
+    background-color: #ffcdd2 !important; /* Un rojo/rosa un poco más oscuro al pasar el mouse */
+}
+
+
+/* --- INICIO DE NUEVOS ESTILOS PARA FILTROS Y REPORTES --- */
+
+/* Contenedor principal del formulario de filtros/reportes */
+.filter-form {
+    margin-bottom: 30px;
+    padding: 25px;
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Título de la sección de filtros */
+.filter-form legend {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: #2E7D32;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    width: 100%;
+    border-bottom: 2px solid #e9ecef;
+}
+
+/* Contenedor de los controles de filtro */
+.filter-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    align-items: flex-end;
+}
+
+/* Cada item individual del filtro (label + input) */
+.filter-item {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Etiqueta del filtro (ej. "Fecha Desde:") */
+.filter-label {
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #495057;
+}
+
+/* Estilo unificado para inputs y selects en los filtros */
+.filter-controls .form-control {
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filter-controls .form-control:focus {
+    border-color: #4CAF50;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.15);
+}
+
+/* Contenedor para los botones */
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-buttons .btn {
+    margin-top: 0; /* Anula cualquier margen superior */
+}
+
+/* --- Estilos para la sección de resultados del reporte --- */
+.report-results {
+    margin-top: 30px;
+    padding: 25px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.report-results h3 {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: #2E7D32;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+/* --- FIN DE NUEVOS ESTILOS --- */
+
+
+
+

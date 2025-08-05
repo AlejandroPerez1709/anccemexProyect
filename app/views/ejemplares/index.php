@@ -23,7 +23,7 @@ function build_pagination_url($page, $searchTerm) {
         <input type="text" name="search" class="form-control" placeholder="Buscar por nombre, código, cód. ganadero..." value="<?php echo htmlspecialchars($searchTerm ?? ''); ?>">
         <div class="search-buttons">
             <button type="submit" class="btn btn-secondary">Buscar</button>
-        <a href="index.php?route=ejemplares_index" class="btn btn-primary">Limpiar</a>
+            <a href="index.php?route=ejemplares_index" class="btn btn-primary">Limpiar</a>
         </div>
     </form>
 </div>
