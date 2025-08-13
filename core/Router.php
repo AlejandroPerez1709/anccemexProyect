@@ -15,6 +15,7 @@ class Router {
 
         // --- Rutas del Dashboard ---
         $this->addRoute('dashboard', 'DashboardController@index');
+        
         // --- Rutas de Empleados ---
         $this->addRoute('empleados_index', 'EmpleadosController@index');
         $this->addRoute('empleados/create', 'EmpleadosController@create');
@@ -32,6 +33,7 @@ class Router {
         $this->addRoute('usuarios_update', 'UsuariosController@update');
         $this->addRoute('usuarios_delete', 'UsuariosController@delete');
         $this->addRoute('usuarios_export_excel', 'UsuariosController@exportToExcel');
+        
         // --- Rutas de Socios ---
         $this->addRoute('socios_index', 'SociosController@index');
         $this->addRoute('socios/create', 'SociosController@create');
@@ -49,6 +51,7 @@ class Router {
         $this->addRoute('ejemplares_update', 'EjemplaresController@update');
         $this->addRoute('ejemplares_delete', 'EjemplaresController@delete');
         $this->addRoute('ejemplares_export_excel', 'EjemplaresController@exportToExcel');
+        
         // --- Rutas de Médicos ---
         $this->addRoute('medicos_index', 'MedicosController@index');
         $this->addRoute('medicos/create', 'MedicosController@create');
@@ -77,10 +80,11 @@ class Router {
          $this->addRoute('servicios_export_excel', 'ServiciosController@exportToExcel');
          $this->addRoute('servicios_update_status', 'ServiciosController@updateStatus');
          $this->addRoute('servicios_get_valid_states', 'ServiciosController@getValidNextStates');
-
-         // --- INICIO DE NUEVA SECCIÓN: Rutas de Reportes ---
+         
+         // --- INICIO DE SECCIÓN MODIFICADA: Rutas de Reportes ---
          $this->addRoute('reportes', 'ReportesController@index');
-         // --- FIN DE NUEVA SECCIÓN ---
+         $this->addRoute('reportes_export', 'ReportesController@export'); // <-- NUEVA RUTA
+         // --- FIN DE SECCIÓN MODIFICADA ---
 
          // --- Rutas de Documentos ---
          $this->addRoute('documento_download', 'DocumentosController@download');

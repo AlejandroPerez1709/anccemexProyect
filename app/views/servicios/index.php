@@ -1,23 +1,23 @@
 <?php
 //app/views/servicios/index.php
 
-function build_pagination_url($page, $filters) {
-    $query_params = ['route' => 'servicios_index', 'page' => $page];
-    if (!empty($filters['estado'])) {
-        $query_params['filtro_estado'] = $filters['estado'];
+// --- INICIO DE CORRECCIÓN ---
+// La función ahora comprueba si los filtros existen en la URL ($_GET)
+// para preservar selecciones como "-- Todos --" (que tienen valor vacío).
+function build_pagination_url($page) {
+    // Usamos directamente $_GET para reconstruir la URL, asegurando que todos los filtros se mantengan.
+    $query_params = $_GET; 
+    $query_params['page'] = $page;
+    // Nos aseguramos que 'route' esté presente
+    if (!isset($query_params['route'])) {
+        $query_params['route'] = 'servicios_index';
     }
-    if (!empty($filters['socio_id'])) {
-        $query_params['filtro_socio_id'] = $filters['socio_id'];
-    }
-    if (!empty($filters['tipo_servicio_id'])) {
-        $query_params['filtro_tipo_id'] = $filters['tipo_servicio_id'];
-    }
-    
     return 'index.php?' . http_build_query($query_params);
 }
+// --- FIN DE CORRECCIÓN ---
 
 $export_filters = [];
-if (!empty($_GET['filtro_estado'])) $export_filters['filtro_estado'] = $_GET['filtro_estado'];
+if (isset($_GET['filtro_estado'])) $export_filters['filtro_estado'] = $_GET['filtro_estado'];
 if (!empty($_GET['filtro_socio_id'])) $export_filters['filtro_socio_id'] = $_GET['filtro_socio_id'];
 if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['filtro_tipo_id'];
 ?>
@@ -50,7 +50,7 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
          <div class="filter-item">
               <label for="filtro_socio_id" class="filter-label">Socio:</label>
               <select name="filtro_socio_id" id="filtro_socio_id" class="form-control">
-                   <option value="">-- Todos --</option>
+                    <option value="">-- Todos --</option>
                   <?php
                    $socioSeleccionado = $_GET['filtro_socio_id'] ?? '';
                    foreach($sociosList as $id => $display) {
@@ -62,7 +62,7 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
           <div class="filter-item">
                 <label for="filtro_tipo_id" class="filter-label">Tipo Servicio:</label>
                 <select name="filtro_tipo_id" id="filtro_tipo_id" class="form-control">
-                     <option value="">-- Todos --</option>
+                      <option value="">-- Todos --</option>
                       <?php
                        $tipoSeleccionado = $_GET['filtro_tipo_id'] ?? '';
                        foreach($tiposServicioList as $id => $display) {
@@ -74,7 +74,7 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
           <div class="filter-buttons">
                <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
                <a href="index.php?route=servicios_index" class="btn btn-primary btn-sm">Limpiar</a>
-          </div>
+         </div>
         </div>
 </form>
 
@@ -82,15 +82,15 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
 <nav class="pagination-container">
     <ul class="pagination">
         <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
-            <a class="page-link" href="<?php echo build_pagination_url($page - 1, $filters); ?>">Anterior</a>
+            <a class="page-link" href="<?php echo build_pagination_url($page - 1); ?>">Anterior</a>
         </li>
         <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-             <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
-                <a class="page-link" href="<?php echo build_pagination_url($i, $filters); ?>"><?php echo $i; ?></a>
+              <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
+                <a class="page-link" href="<?php echo build_pagination_url($i); ?>"><?php echo $i; ?></a>
             </li>
         <?php endfor; ?>
         <li class="page-item <?php echo ($page >= $total_pages) ? 'disabled' : ''; ?>">
-            <a class="page-link" href="<?php echo build_pagination_url($page + 1, $filters); ?>">Siguiente</a>
+            <a class="page-link" href="<?php echo build_pagination_url($page + 1); ?>">Siguiente</a>
         </li>
     </ul>
 </nav>
@@ -116,7 +116,7 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
         <tbody>
             <?php if(isset($servicios) && count($servicios) > 0): ?>
                 <?php foreach($servicios as $servicio): ?>
-                     <?php
+                      <?php
                         $rowClass = 'clickable-row';
                         if ($servicio['health_status'] === 'advertencia') {
                             $rowClass .= ' fila-advertencia';
@@ -145,10 +145,10 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
                         
                         <td><?php echo $servicio['id_servicio']; ?></td>
                         <td><?php echo htmlspecialchars($servicio['tipo_servicio_nombre'] ?? 'N/A'); ?> (<?php echo htmlspecialchars($servicio['codigo_servicio'] ?: 'N/A'); ?>)</td>
-                        <td><?php echo htmlspecialchars($servicio['socio_apPaterno'] . ', ' . $servicio['socio_nombre']); ?> (<?php echo htmlspecialchars($servicio['socio_codigo_ganadero'] ?? 'S/C'); ?>)</td>
+                         <td><?php echo htmlspecialchars($servicio['socio_apPaterno'] . ', ' . $servicio['socio_nombre']); ?> (<?php echo htmlspecialchars($servicio['socio_codigo_ganadero'] ?? 'S/C'); ?>)</td>
                         <td><?php echo htmlspecialchars($servicio['ejemplar_nombre'] ?? 'N/A'); ?></td>
                         <td>
-                            <span id="status-badge-<?php echo $servicio['id_servicio']; ?>" class="status-badge status-<?php echo strtolower(str_replace(['/', ' '], ['-', '-'], $servicio['estado'])); ?>">
+                             <span id="status-badge-<?php echo $servicio['id_servicio']; ?>" class="status-badge status-<?php echo strtolower(str_replace(['/', ' '], ['-', '-'], $servicio['estado'])); ?>">
                                  <?php echo htmlspecialchars($servicio['estado']); ?>
                             </span>
                         </td>
@@ -162,12 +162,12 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
                                 <?php endif; ?>
                             </div>
                         </td>
-                     </tr>
+                    </tr>
                 <?php endforeach; ?>
             <?php else: ?>
                 <tr>
                     <td colspan="8" class="text-center">No hay servicios que coincidan con los filtros aplicados.</td>
-                 </tr>
+                  </tr>
             <?php endif; ?>
         </tbody>
     </table>
@@ -177,15 +177,15 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
 <nav class="pagination-container">
     <ul class="pagination">
         <li class="page-item <?php echo ($page <= 1) ? 'disabled' : ''; ?>">
-            <a class="page-link" href="<?php echo build_pagination_url($page - 1, $filters); ?>">Anterior</a>
+            <a class="page-link" href="<?php echo build_pagination_url($page - 1); ?>">Anterior</a>
         </li>
         <?php for ($i = 1; $i <= $total_pages; $i++): ?>
              <li class="page-item <?php echo ($page == $i) ? 'active' : ''; ?>">
-                <a class="page-link" href="<?php echo build_pagination_url($i, $filters); ?>"><?php echo $i; ?></a>
+                <a class="page-link" href="<?php echo build_pagination_url($i); ?>"><?php echo $i; ?></a>
             </li>
         <?php endfor; ?>
         <li class="page-item <?php echo ($page >= $total_pages) ? 'disabled' : ''; ?>">
-            <a class="page-link" href="<?php echo build_pagination_url($page + 1, $filters); ?>">Siguiente</a>
+            <a class="page-link" href="<?php echo build_pagination_url($page + 1); ?>">Siguiente</a>
         </li>
     </ul>
 </nav>
@@ -201,7 +201,7 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
             <div class="modal-section">
                  <div class="modal-section-title">
                     <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M14.1213 10.4792C13.7308 10.0886 13.0976 10.0886 12.7071 10.4792L12 11.1863C11.2189 11.9673 9.95259 11.9673 9.17154 11.1863C8.39049 10.4052 8.39049 9.13888 9.17154 8.35783L14.8022 2.72568C16.9061 2.24973 19.2008 2.83075 20.8388 4.46875C23.2582 6.88811 23.3716 10.7402 21.1792 13.2939L19.071 15.4289L14.1213 10.4792ZM3.16113 4.46875C5.33452 2.29536 8.66411 1.98283 11.17 3.53116L7.75732 6.94362C6.19523 8.50572 6.19523 11.0384 7.75732 12.6005C9.27209 14.1152 11.6995 14.1611 13.2695 12.7382L13.4142 12.6005L17.6568 16.8431L13.4142 21.0858C12.6331 21.8668 11.3668 21.8668 10.5858 21.0858L3.16113 13.6611C0.622722 11.1227 0.622722 7.00715 3.16113 4.46875Z"></path></svg>
-                    <h4>Información del Trámite</h4>
+                     <h4>Información del Trámite</h4>
                 </div>
                 <div class="modal-grid">
                     <div class="modal-field"><span class="modal-label">Número de Servicio:</span><span class="modal-value" id="modalIdServicio"></span></div>
@@ -211,27 +211,27 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
                 </div>
             </div>
             
-            <div class="modal-section">
+             <div class="modal-section">
                 <div class="modal-section-title">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4ZM12.5 8V12.5L16 14.25L15.25 15.4L11 13V8H12.5Z"></path></svg>
-                     <h4>Seguimiento y Documentos</h4>
+                      <h4>Seguimiento y Documentos</h4>
                 </div>
                 <div class="modal-grid">
                     <div class="modal-field full-width">
                         <label for="modalEstadoSelect" class="modal-label">Cambiar Estado:</label>
-                        <select id="modalEstadoSelect" class="form-control">
+                         <select id="modalEstadoSelect" class="form-control">
                             <option>Cargando estados...</option>
                         </select>
                     </div>
-                    <div class="modal-field full-width" id="modalMotivoRechazoContainer" style="display: none;">
+                     <div class="modal-field full-width" id="modalMotivoRechazoContainer" style="display: none;">
                         <label for="modalMotivoRechazo" class="modal-label">Motivo del Rechazo (Obligatorio):</label>
                         <textarea id="modalMotivoRechazo" rows="3" class="form-control"></textarea>
                     </div>
-                    
+                   
                     <div class="modal-field"><span class="modal-label">Fecha de Solicitud:</span><span class="modal-value" id="modalFechaSolicitud"></span></div>
                     <div class="modal-field full-width" id="modalMedicoContainer"><span class="modal-label">Médico Asignado:</span><span class="modal-value" id="modalMedicoAsignado"></span></div>
                     <div class="modal-field" id="modalFechaAsignacionMedicoContainer"><span class="modal-label">Fecha Asignación Médico:</span><span class="modal-value" id="modalFechaAsignacionMedico"></span></div>
-                    <div class="modal-field" id="modalFechaVisitaMedicoContainer"><span class="modal-label">Fecha Visita Médico:</span><span class="modal-value" id="modalFechaVisitaMedico"></span></div>
+                     <div class="modal-field" id="modalFechaVisitaMedicoContainer"><span class="modal-label">Fecha Visita Médico:</span><span class="modal-value" id="modalFechaVisitaMedico"></span></div>
                     <div class="modal-field" id="modalFechaEnvioLgContainer"><span class="modal-label">Fecha Envío a LG:</span><span class="modal-value" id="modalFechaEnvioLg"></span></div>
                     <div class="modal-field" id="modalFechaRecepcionLgContainer"><span class="modal-label">Fecha Recepción LG:</span><span class="modal-value" id="modalFechaRecepcionLg"></span></div>
                     <div class="modal-field" id="modalFechaFinalizacionContainer"><span class="modal-label">Fecha de Finalización:</span><span class="modal-value" id="modalFechaFinalizacion"></span></div>
@@ -239,15 +239,15 @@ if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['
                     <div class="modal-field full-width"><span class="modal-label">Observaciones:</span><span class="modal-value" id="modalObservaciones"></span></div>
                     </div>
                 <div class="modal-docs">
-                    <label class="custom-checkbox-container">Solicitud de Servicio
+                     <label class="custom-checkbox-container">Solicitud de Servicio
                         <input type="checkbox" id="modalDocSolicitud" disabled><span class="checkmark"></span>
                         <a href="#" target="_blank" class="view-doc-icon" id="modalDocSolicitudView" title="Ver Documento">👁️</a>
                     </label>
-                    <label class="custom-checkbox-container">Comprobante de Pago
+                     <label class="custom-checkbox-container">Comprobante de Pago
                         <input type="checkbox" id="modalDocPago" disabled><span class="checkmark"></span>
                         <a href="#" target="_blank" class="view-doc-icon" id="modalDocPagoView" title="Ver Documento">👁️</a>
                     </label>
-                </div>
+                 </div>
             </div>
         </div>
         <div class="modal-footer">
@@ -263,8 +263,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if(modal) {
         const closeButtons = modal.querySelectorAll('.close-button');
         const rows = document.querySelectorAll('.clickable-row');
-        
-        // --- INICIO DE CAMBIO: Declarar todas las variables del modal ---
         const modalIdServicio = document.getElementById('modalIdServicio');
         const modalTipoServicio = document.getElementById('modalTipoServicio');
         const modalSocio = document.getElementById('modalSocio');
@@ -280,23 +278,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const btnGuardarEstado = document.getElementById('btnGuardarEstado');
         const modalMotivoRechazoContainer = document.getElementById('modalMotivoRechazoContainer');
         const modalMotivoRechazo = document.getElementById('modalMotivoRechazo');
-        
-        // Fechas
         const modalFechaSolicitud = document.getElementById('modalFechaSolicitud');
         const modalFechaAsignacionMedico = document.getElementById('modalFechaAsignacionMedico');
         const modalFechaVisitaMedico = document.getElementById('modalFechaVisitaMedico');
         const modalFechaEnvioLg = document.getElementById('modalFechaEnvioLg');
         const modalFechaRecepcionLg = document.getElementById('modalFechaRecepcionLg');
         const modalFechaFinalizacion = document.getElementById('modalFechaFinalizacion');
-        
-        // Contenedores (para ocultarlos si no hay fecha)
         const modalMedicoContainer = document.getElementById('modalMedicoContainer');
         const modalFechaAsignacionMedicoContainer = document.getElementById('modalFechaAsignacionMedicoContainer');
         const modalFechaVisitaMedicoContainer = document.getElementById('modalFechaVisitaMedicoContainer');
         const modalFechaEnvioLgContainer = document.getElementById('modalFechaEnvioLgContainer');
         const modalFechaRecepcionLgContainer = document.getElementById('modalFechaRecepcionLgContainer');
         const modalFechaFinalizacionContainer = document.getElementById('modalFechaFinalizacionContainer');
-        // --- FIN DE CAMBIO ---
         
         let currentServiceId = null;
         let currentRowElement = null;
@@ -307,18 +300,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 currentRowElement = this; 
                 currentServiceId = this.dataset.idServicio;
-                
-                // --- INICIO DE CAMBIO: Llenar todos los campos y controlar visibilidad ---
+                 
                 modalIdServicio.textContent = this.dataset.idServicio;
                 modalTipoServicio.textContent = this.dataset.tipoServicio;
                 modalSocio.textContent = this.dataset.socio;
-                modalEjemplar.textContent = this.dataset.ejemplar;
+                 modalEjemplar.textContent = this.dataset.ejemplar;
                 modalObservaciones.textContent = this.dataset.observaciones || 'Sin observaciones.';
                 modalUltimaModif.textContent = this.dataset.ultimaModif;
 
-                // Llenar y mostrar/ocultar campos opcionales
                 function fillAndToggle(element, container, dataAttribute) {
-                    if (dataAttribute && dataAttribute.trim() !== '') {
+                     if (dataAttribute && dataAttribute.trim() !== '') {
                         element.textContent = dataAttribute;
                         container.style.display = 'block';
                     } else {
@@ -333,10 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 fillAndToggle(modalFechaEnvioLg, modalFechaEnvioLgContainer, this.dataset.fechaEnvioLg);
                 fillAndToggle(modalFechaRecepcionLg, modalFechaRecepcionLgContainer, this.dataset.fechaRecepcionLg);
                 fillAndToggle(modalFechaFinalizacion, modalFechaFinalizacionContainer, this.dataset.fechaFinalizacion);
-                
-                // Lógica de documentos y estados
                 modalMotivoRechazo.value = '';
-                
                 let docSolicitudId = this.dataset.docSolicitudId;
                 modalDocSolicitud.checked = docSolicitudId !== '0';
                 if (docSolicitudId && docSolicitudId !== '0') {
@@ -363,23 +351,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(estados => {
                         modalEstadoSelect.innerHTML = '';
                         estados.forEach(estado => {
-                            const option = document.createElement('option');
+                             const option = document.createElement('option');
                             option.value = estado;
                             option.textContent = estado;
-                            modalEstadoSelect.appendChild(option);
+                             modalEstadoSelect.appendChild(option);
                         });
                         
                         modalEstadoSelect.value = currentRowElement.dataset.estado;
-                        modalEstadoSelect.disabled = false;
+                         modalEstadoSelect.disabled = false;
                         toggleMotivoRechazo();
                     })
                     .catch(error => {
-                        console.error('Error al cargar los estados:', error);
+                         console.error('Error al cargar los estados:', error);
                         modalEstadoSelect.innerHTML = '<option>Error al cargar</option>';
-                    });
+                });
                 
                 modal.style.display = 'block';
-                // --- FIN DE CAMBIO ---
             });
         });
 
@@ -393,7 +380,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 closeModal();
             }
         });
-        
         function toggleMotivoRechazo() {
             if (modalEstadoSelect.value === 'Rechazado') {
                 modalMotivoRechazoContainer.style.display = 'block';
@@ -402,7 +388,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         modalEstadoSelect.addEventListener('change', toggleMotivoRechazo);
-
         btnGuardarEstado.addEventListener('click', function() {
             const nuevoEstado = modalEstadoSelect.value;
             const motivo = modalMotivoRechazo.value;
@@ -419,14 +404,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             fetch('index.php?route=servicios_update_status', {
                 method: 'POST',
-                body: formData
+                 body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // Recargar la página para ver todos los cambios reflejados
-                    // Es más simple que actualizar cada campo individualmente
-                    window.location.reload(); 
+                    window.location.reload();
                 } else {
                     Swal.fire('Error', data.message, 'error');
                 }
@@ -441,7 +424,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function confirmCancel(event, url, servicioId) {
     event.preventDefault(); 
-    event.stopPropagation(); 
+    event.stopPropagation();
     Swal.fire({
         title: '¿Estás seguro?',
         text: `Se cancelará el servicio #${servicioId}. ¡Esta acción no se puede deshacer!`,

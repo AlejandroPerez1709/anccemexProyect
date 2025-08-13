@@ -3,31 +3,66 @@
 
 require_once __DIR__ . '/../models/Socio.php';
 require_once __DIR__ . '/../models/Servicio.php';
-// --- INICIO DE NUEVOS MODELOS A INCLUIR ---
 require_once __DIR__ . '/../models/Ejemplar.php';
 require_once __DIR__ . '/../models/Medico.php';
 require_once __DIR__ . '/../models/Empleado.php';
-// --- FIN DE NUEVOS MODELOS A INCLUIR ---
 
 class DashboardController {
     public function index(){
         check_permission();
-        
-        // --- OBTENER TODOS LOS DATOS PARA EL DASHBOARD ---
-        
-        // Datos de Módulos para las nuevas tarjetas
-        $totalSociosActivos = Socio::countActive();
-        $totalEjemplaresActivos = Ejemplar::countActive();
-        $totalMedicosActivos = Medico::countActive();
-        $totalEmpleadosActivos = Empleado::countActive();
 
-        // Datos de Servicios
-        $totalServiciosActivos = Servicio::countActive();
-        $statsServicios = Servicio::getDashboardStats();
-        $serviciosRecientes = Servicio::getRecientes();
-        $serviciosAtencion = Servicio::getAtencionRequerida();
+        // --- INICIO DE NUEVA LÓGICA DE FILTROS DE FECHA ---
+        $periodo = $_GET['periodo'] ?? 'all_time';
+        $filtros_fecha = [];
+        $titulo_kpi_nuevos = "Activos (Total)";
+        $titulo_kpi_servicios = "Completados (Mes Actual)";
 
-        // --- PREPARAR DATOS PARA LA GRÁFICA DE DONA ---
+        switch ($periodo) {
+            case 'mes':
+                $filtros_fecha['fecha_inicio'] = date('Y-m-01');
+                $filtros_fecha['fecha_fin'] = date('Y-m-t');
+                $titulo_kpi_nuevos = "Nuevos (Este Mes)";
+                $titulo_kpi_servicios = "Completados (Este Mes)";
+                break;
+            case 'trimestre':
+                $month = date('n');
+                if ($month <= 3) {
+                    $filtros_fecha['fecha_inicio'] = date('Y-01-01');
+                    $filtros_fecha['fecha_fin'] = date('Y-03-31');
+                } elseif ($month <= 6) {
+                    $filtros_fecha['fecha_inicio'] = date('Y-04-01');
+                    $filtros_fecha['fecha_fin'] = date('Y-06-30');
+                } elseif ($month <= 9) {
+                    $filtros_fecha['fecha_inicio'] = date('Y-07-01');
+                    $filtros_fecha['fecha_fin'] = date('Y-09-30');
+                } else {
+                    $filtros_fecha['fecha_inicio'] = date('Y-10-01');
+                    $filtros_fecha['fecha_fin'] = date('Y-12-31');
+                }
+                $titulo_kpi_nuevos = "Nuevos (Este Trimestre)";
+                $titulo_kpi_servicios = "Completados (Trimestre)";
+                break;
+            case 'anio':
+                $filtros_fecha['fecha_inicio'] = date('Y-01-01');
+                $filtros_fecha['fecha_fin'] = date('Y-12-31');
+                $titulo_kpi_nuevos = "Nuevos (Este Año)";
+                $titulo_kpi_servicios = "Completados (Este Año)";
+                break;
+        }
+        // --- FIN DE NUEVA LÓGICA DE FILTROS DE FECHA ---
+
+        // --- OBTENER TODOS LOS DATOS PARA EL DASHBOARD (AHORA CON FILTROS) ---
+        $totalSocios = Socio::countActive($filtros_fecha);
+        $totalEjemplares = Ejemplar::countActive($filtros_fecha);
+        $totalMedicos = Medico::countActive($filtros_fecha);
+        $totalEmpleados = Empleado::countActive($filtros_fecha);
+
+        $totalServiciosActivos = Servicio::countActive($filtros_fecha);
+        $statsServicios = Servicio::getDashboardStats($filtros_fecha);
+        $serviciosRecientes = Servicio::getRecientes(); // Se mantiene como actividad global reciente
+        $serviciosAtencion = Servicio::getAtencionRequerida(); // Se mantiene como alerta global
+
+        // --- PREPARAR DATOS PARA LA GRÁFICA DE DONA (AHORA FILTRADA) ---
         $doughnutChartLabels = [];
         $doughnutChartData = [];
         if (!empty($statsServicios['distribucion_estados'])) {
@@ -39,7 +74,7 @@ class DashboardController {
         $doughnutChartLabelsJSON = json_encode($doughnutChartLabels);
         $doughnutChartDataJSON = json_encode($doughnutChartData);
 
-        // --- PREPARAR DATOS PARA GRÁFICA DE LÍNEAS ---
+        // --- PREPARAR DATOS PARA GRÁFICA DE LÍNEAS (SE MANTIENE ÚLTIMOS 12 MESES) ---
         $monthlyStats = Servicio::getMonthlyStats();
         $lineChartLabels = [];
         $lineChartCreadosData = [];
@@ -52,7 +87,6 @@ class DashboardController {
         $lineChartLabelsJSON = json_encode($lineChartLabels);
         $lineChartCreadosJSON = json_encode($lineChartCreadosData);
         $lineChartCompletadosJSON = json_encode($lineChartCompletadosData);
-
 
         // --- CARGAR LA VISTA Y PASARLE LOS DATOS ---
         $pageTitle = 'Dashboard';

@@ -4,8 +4,6 @@ require_once __DIR__ . '/../../config/config.php';
 
 class Socio {
 
-    // ... (métodos store, countAll, getAll, getById, etc. se mantienen igual) ...
-
     public static function store($data) {
         $conn = dbConnect();
         if (!$conn) {
@@ -16,8 +14,7 @@ class Socio {
         $sql = "INSERT INTO socios (nombre, apellido_paterno, apellido_materno, nombre_ganaderia, direccion,
                                    codigoGanadero, telefono, email, fechaRegistro, estado, id_usuario,
                                    identificacion_fiscal_titular) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
             error_log("Prepare failed (Socio store): " . $conn->error);
@@ -31,7 +28,6 @@ class Socio {
             $data['direccion'], $data['codigoGanadero'], $data['telefono'], $data['email'], 
             $data['fechaRegistro'], $data['estado'], $data['id_usuario'], $data['identificacion_fiscal_titular']
         );
-
         $newId = false;
         try {
             if ($stmt->execute()) {
@@ -61,7 +57,6 @@ class Socio {
         $query = "SELECT COUNT(id_socio) as total FROM socios";
         $params = [];
         $types = '';
-
         if (!empty($searchTerm)) {
             $query .= " WHERE nombre LIKE ? OR apellido_paterno LIKE ? OR apellido_materno LIKE ? OR codigoGanadero LIKE ? OR email LIKE ? OR nombre_ganaderia LIKE ?";
             $searchTermWildcard = "%" . $searchTerm . "%";
@@ -86,21 +81,44 @@ class Socio {
         return $total;
     }
     
-    // AÑADIR ESTE NUEVO MÉTODO
-    public static function countActive() {
+    // --- INICIO DE CÓDIGO MODIFICADO ---
+    public static function countActive($filtros = []) {
         $conn = dbConnect();
         if (!$conn) return 0;
+        
+        $sql = "SELECT COUNT(id_socio) as total FROM socios WHERE estado = 'activo'";
+        $params = [];
+        $types = '';
 
-        $query = "SELECT COUNT(id_socio) as total FROM socios WHERE estado = 'activo'";
-        $result = $conn->query($query);
-        $total = 0;
-        if ($result) {
-            $total = $result->fetch_assoc()['total'];
-            $result->free();
+        if (!empty($filtros['fecha_inicio'])) {
+            $sql .= " AND fechaRegistro >= ?";
+            $params[] = $filtros['fecha_inicio'];
+            $types .= 's';
         }
+        if (!empty($filtros['fecha_fin'])) {
+            $sql .= " AND fechaRegistro <= ?";
+            $params[] = $filtros['fecha_fin'];
+            $types .= 's';
+        }
+        
+        $total = 0;
+        $stmt = $conn->prepare($sql);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                $total = $result->fetch_assoc()['total'];
+                $result->free();
+            }
+            $stmt->close();
+        }
+
         $conn->close();
         return $total;
     }
+    // --- FIN DE CÓDIGO MODIFICADO ---
 
     public static function getAll($searchTerm = '', $limit = 15, $offset = 0) {
         $conn = dbConnect();
@@ -110,7 +128,6 @@ class Socio {
         $query = "SELECT * FROM socios";
         $params = [];
         $types = '';
-
         if (!empty($searchTerm)) {
             $query .= " WHERE nombre LIKE ? OR apellido_paterno LIKE ? OR apellido_materno LIKE ? OR codigoGanadero LIKE ? OR email LIKE ? OR nombre_ganaderia LIKE ?";
             $searchTermWildcard = "%" . $searchTerm . "%";
@@ -128,7 +145,6 @@ class Socio {
         }
 
         $stmt = $conn->prepare($query);
-
         if ($stmt) {
             if (!empty($params)) {
                 $stmt->bind_param($types, ...$params);
@@ -188,7 +204,7 @@ class Socio {
         $sql = "UPDATE socios SET
                 nombre = ?, apellido_paterno = ?, apellido_materno = ?, nombre_ganaderia = ?, direccion = ?,
                 codigoGanadero = ?, telefono = ?, email = ?, fechaRegistro = ?, estado = ?, id_usuario = ?,
-                identificacion_fiscal_titular = ?";
+                 identificacion_fiscal_titular = ?";
 
         if (isset($data['estado']) && $data['estado'] == 'activo') {
             $sql .= ", razon_desactivacion = NULL";
@@ -210,7 +226,6 @@ class Socio {
             $data['fechaRegistro'], $data['estado'], $data['id_usuario'],
             $data['identificacion_fiscal_titular'], $id
         );
-
         $result = false;
         try {
             $result = $stmt->execute();
@@ -248,7 +263,6 @@ class Socio {
         }
         
         $stmt->bind_param("si", $razon, $id);
-
         $result = false;
         try {
             $result = $stmt->execute();
@@ -283,5 +297,85 @@ class Socio {
         }
         $conn->close();
         return $sociosList;
+    }
+    
+    private static function buildReportWhereClause($filtros, &$params, &$types) {
+        $whereClauses = [];
+        if (!empty($filtros['socio_id'])) {
+            $whereClauses[] = "s.id_socio = ?";
+            $params[] = $filtros['socio_id'];
+            $types .= "i";
+        }
+        if (!empty($filtros['estado'])) {
+            $whereClauses[] = "s.estado = ?";
+            $params[] = $filtros['estado'];
+            $types .= "s";
+        }
+        return !empty($whereClauses) ? " WHERE " . implode(" AND ", $whereClauses) : "";
+    }
+
+    public static function countSociosParaReporte($filtros) {
+        $conn = dbConnect();
+        if (!$conn) return 0;
+
+        $params = [];
+        $types = "";
+        $whereSql = self::buildReportWhereClause($filtros, $params, $types);
+        
+        $sql = "SELECT COUNT(s.id_socio) as total FROM socios s" . $whereSql;
+        
+        $total = 0;
+        $stmt = $conn->prepare($sql);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                $total = $result->fetch_assoc()['total'];
+                $result->free();
+            }
+            $stmt->close();
+        }
+        
+        $conn->close();
+        return $total;
+    }
+
+    public static function getSociosParaReporte($filtros, $limit = -1, $offset = 0) {
+        $conn = dbConnect();
+        $socios = [];
+        if (!$conn) return $socios;
+        
+        $params = [];
+        $types = "";
+        $whereSql = self::buildReportWhereClause($filtros, $params, $types);
+
+        $sql = "SELECT s.* FROM socios s" . $whereSql . " ORDER BY s.id_socio ASC";
+        
+        if ($limit != -1) {
+            $sql .= " LIMIT ? OFFSET ?";
+            $params[] = $limit;
+            $params[] = $offset;
+            $types .= 'ii';
+        }
+        
+        $stmt = $conn->prepare($sql);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                while ($row = $result->fetch_assoc()) {
+                    $socios[] = $row;
+                }
+                $result->free();
+            }
+            $stmt->close();
+        }
+        
+        $conn->close();
+        return $socios;
     }
 }

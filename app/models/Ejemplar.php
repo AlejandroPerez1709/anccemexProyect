@@ -3,7 +3,6 @@
 require_once __DIR__ . '/../../config/config.php';
 class Ejemplar {
 
-    // ... (El método store se mantiene igual) ...
     public static function store($data) {
         $conn = dbConnect();
         if (!$conn) {
@@ -76,21 +75,44 @@ class Ejemplar {
         return $total;
     }
 
-    // --- INICIO DE NUEVA FUNCIÓN ---
-    public static function countActive() {
+    // --- INICIO DE CÓDIGO MODIFICADO ---
+    public static function countActive($filtros = []) {
         $conn = dbConnect();
         if (!$conn) return 0;
-        $query = "SELECT COUNT(id_ejemplar) as total FROM ejemplares WHERE estado = 'activo'";
-        $result = $conn->query($query);
-        $total = 0;
-        if ($result) {
-            $total = $result->fetch_assoc()['total'];
-            $result->free();
+
+        $sql = "SELECT COUNT(id_ejemplar) as total FROM ejemplares WHERE estado = 'activo'";
+        $params = [];
+        $types = '';
+
+        if (!empty($filtros['fecha_inicio'])) {
+            $sql .= " AND fecha_registro >= ?";
+            $params[] = $filtros['fecha_inicio'];
+            $types .= 's';
         }
+        if (!empty($filtros['fecha_fin'])) {
+            $sql .= " AND fecha_registro <= ?";
+            $params[] = $filtros['fecha_fin'];
+            $types .= 's';
+        }
+        
+        $total = 0;
+        $stmt = $conn->prepare($sql);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                $total = $result->fetch_assoc()['total'];
+                $result->free();
+            }
+            $stmt->close();
+        }
+        
         $conn->close();
         return $total;
     }
-    // --- FIN DE NUEVA FUNCIÓN ---
+    // --- FIN DE CÓDIGO MODIFICADO ---
 
     public static function getAll($searchTerm = '', $limit = 15, $offset = 0) {
         $conn = dbConnect();
@@ -206,5 +228,83 @@ class Ejemplar {
         $stmt->close(); 
         $conn->close();
         return $result;
+    }
+
+    private static function buildReportWhereClause($filtros, &$params, &$types) {
+        $whereClauses = [];
+        if (!empty($filtros['socio_id'])) {
+            $whereClauses[] = "e.socio_id = ?";
+            $params[] = $filtros['socio_id'];
+            $types .= "i";
+        }
+        return !empty($whereClauses) ? " WHERE " . implode(" AND ", $whereClauses) : "";
+    }
+
+    public static function countEjemplaresParaReporte($filtros) {
+        $conn = dbConnect();
+        if (!$conn) return 0;
+
+        $params = [];
+        $types = "";
+        $whereSql = self::buildReportWhereClause($filtros, $params, $types);
+        
+        $sql = "SELECT COUNT(e.id_ejemplar) as total FROM ejemplares e" . $whereSql;
+        
+        $total = 0;
+        $stmt = $conn->prepare($sql);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                $total = $result->fetch_assoc()['total'];
+                $result->free();
+            }
+            $stmt->close();
+        }
+        
+        $conn->close();
+        return $total;
+    }
+
+    public static function getEjemplaresParaReporte($filtros, $limit = -1, $offset = 0) {
+        $conn = dbConnect();
+        $ejemplares = [];
+        if (!$conn) return $ejemplares;
+
+        $sql_select = "SELECT e.*, CONCAT(s.nombre, ' ', s.apellido_paterno) as nombre_socio, s.codigoGanadero as socio_codigo_ganadero 
+                       FROM ejemplares e
+                       LEFT JOIN socios s ON e.socio_id = s.id_socio";
+        
+        $params = [];
+        $types = "";
+        $whereSql = self::buildReportWhereClause($filtros, $params, $types);
+        $sql = $sql_select . $whereSql . " ORDER BY e.id_ejemplar ASC";
+
+        if ($limit != -1) {
+            $sql .= " LIMIT ? OFFSET ?";
+            $params[] = $limit;
+            $params[] = $offset;
+            $types .= 'ii';
+        }
+
+        $stmt = $conn->prepare($sql);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                while ($row = $result->fetch_assoc()) {
+                    $ejemplares[] = $row;
+                }
+                $result->free();
+            }
+            $stmt->close();
+        }
+        
+        $conn->close();
+        return $ejemplares;
     }
 }

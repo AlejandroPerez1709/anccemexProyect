@@ -1,9 +1,9 @@
 <?php
 // app/models/Servicio.php
 require_once __DIR__ . '/../../config/config.php';
-
 class Servicio {
 
+    // ... (MANTENER IGUALES LOS MÉTODOS store y countAll) ...
     public static function store($data) {
         $conn = dbConnect();
         if (!$conn) {
@@ -73,20 +73,44 @@ class Servicio {
         return $total;
     }
 
-    public static function countActive() {
+    // --- INICIO DE CÓDIGO MODIFICADO ---
+    public static function countActive($filtros = []) {
         $conn = dbConnect();
         if (!$conn) return 0;
 
-        $query = "SELECT COUNT(id_servicio) as total FROM servicios WHERE estado NOT IN ('Completado', 'Rechazado', 'Cancelado')";
-        $result = $conn->query($query);
-        $total = 0;
-        if ($result) {
-            $total = $result->fetch_assoc()['total'];
-            $result->free();
+        $sql = "SELECT COUNT(id_servicio) as total FROM servicios WHERE estado NOT IN ('Completado', 'Rechazado', 'Cancelado')";
+        $params = [];
+        $types = '';
+
+        if (!empty($filtros['fecha_inicio'])) {
+            $sql .= " AND fechaSolicitud >= ?";
+            $params[] = $filtros['fecha_inicio'];
+            $types .= 's';
         }
+        if (!empty($filtros['fecha_fin'])) {
+            $sql .= " AND fechaSolicitud <= ?";
+            $params[] = $filtros['fecha_fin'];
+            $types .= 's';
+        }
+        
+        $total = 0;
+        $stmt = $conn->prepare($sql);
+        if($stmt){
+            if(!empty($params)){
+                $stmt->bind_param($types, ...$params);
+            }
+            if($stmt->execute()){
+                $result = $stmt->get_result();
+                $total = $result->fetch_assoc()['total'];
+                $result->free();
+            }
+            $stmt->close();
+        }
+        
         $conn->close();
         return $total;
     }
+    // --- FIN DE CÓDIGO MODIFICADO ---
     
     public static function getAll($filters = [], $limit = 15, $offset = 0) {
         $conn = dbConnect();
@@ -105,7 +129,6 @@ class Servicio {
                 LEFT JOIN ejemplares e ON s.ejemplar_id = e.id_ejemplar 
                 LEFT JOIN medicos m ON s.medico_id = m.id_medico
                 LEFT JOIN usuarios umod ON s.id_usuario_ultima_mod = umod.id_usuario";
-        
         $whereClauses = []; 
         $params = [];
         $types = "";
@@ -124,7 +147,6 @@ class Servicio {
         if (!empty($whereClauses)) { $sql .= " WHERE " . implode(" AND ", $whereClauses); } 
         
         $orderBy = " ORDER BY s.fechaSolicitud DESC, s.id_servicio DESC";
-
         if ($limit != -1) {
             $sql .= $orderBy . " LIMIT ? OFFSET ?";
             $params[] = $limit;
@@ -186,7 +208,7 @@ class Servicio {
         if (!$conn) return false;
         
         $servicioActual = self::getById($id);
-        if (!$servicioActual) {
+         if (!$servicioActual) {
             $_SESSION['error_details'] = "Servicio no encontrado para actualizar.";
             return false;
         }
@@ -216,52 +238,89 @@ class Servicio {
         return self::updateStatus($id, 'Cancelado', 'Cancelado por el usuario desde el listado.', $userId);
     }
     
-    public static function getDashboardStats() {
+    // --- INICIO DE CÓDIGO MODIFICADO ---
+    public static function getDashboardStats($filtros = []) {
         $conn = dbConnect();
         if (!$conn) return [];
 
         $stats = [
-            'completados_mes_actual' => 0,
+            'completados_periodo' => 0,
             'promedio_resolucion_dias' => 0,
             'distribucion_estados' => [],
             'pendientes_docs_pago' => 0,
-            'nuevas_solicitudes_semana' => 0
+            'nuevas_solicitudes_periodo' => 0
         ];
 
-        $query1 = "SELECT COUNT(id_servicio) as total FROM servicios WHERE estado = 'Completado' AND MONTH(fechaFinalizacion) = MONTH(CURDATE()) AND YEAR(fechaFinalizacion) = YEAR(CURDATE())";
-        if ($result = $conn->query($query1)) {
-            $stats['completados_mes_actual'] = $result->fetch_assoc()['total'] ?? 0;
-            $result->free();
+        $where_clause = "";
+        $params = [];
+        $types = '';
+        if (!empty($filtros['fecha_inicio']) && !empty($filtros['fecha_fin'])) {
+            $where_clause = " WHERE fechaSolicitud BETWEEN ? AND ?";
+            $params = [$filtros['fecha_inicio'], $filtros['fecha_fin']];
+            $types = 'ss';
         }
 
-        $query2 = "SELECT AVG(DATEDIFF(fechaFinalizacion, fechaSolicitud)) as promedio FROM servicios WHERE estado = 'Completado' AND fechaFinalizacion IS NOT NULL AND fechaSolicitud IS NOT NULL";
-        if ($result = $conn->query($query2)) {
+        // 1. Completados en el período
+        $sql1 = "SELECT COUNT(id_servicio) as total FROM servicios WHERE estado = 'Completado'" . (empty($params) ? " AND MONTH(fechaFinalizacion) = MONTH(CURDATE()) AND YEAR(fechaFinalizacion) = YEAR(CURDATE())" : " AND fechaFinalizacion BETWEEN ? AND ?");
+        $stmt1 = $conn->prepare($sql1);
+        if($stmt1){
+            if(!empty($params)) $stmt1->bind_param($types, ...$params);
+            $stmt1->execute();
+            $result = $stmt1->get_result();
+            $stats['completados_periodo'] = $result->fetch_assoc()['total'] ?? 0;
+            $stmt1->close();
+        }
+
+        // 2. Promedio resolución
+        $sql2 = "SELECT AVG(DATEDIFF(fechaFinalizacion, fechaSolicitud)) as promedio FROM servicios WHERE estado = 'Completado' AND fechaFinalizacion IS NOT NULL AND fechaSolicitud IS NOT NULL" . (empty($params) ? "" : " AND fechaSolicitud BETWEEN ? AND ?");
+        $stmt2 = $conn->prepare($sql2);
+        if($stmt2){
+            if(!empty($params)) $stmt2->bind_param($types, ...$params);
+            $stmt2->execute();
+            $result = $stmt2->get_result();
             $stats['promedio_resolucion_dias'] = $result->fetch_assoc()['promedio'] ?? 0;
+            $stmt2->close();
         }
 
-        $query3 = "SELECT estado, COUNT(id_servicio) as total FROM servicios WHERE estado NOT IN ('Completado', 'Rechazado', 'Cancelado') GROUP BY estado ORDER BY estado";
-        if ($result = $conn->query($query3)) {
+        // 3. Distribución de estados (de los servicios creados en el período)
+        $sql3 = "SELECT estado, COUNT(id_servicio) as total FROM servicios " . $where_clause . " GROUP BY estado ORDER BY estado";
+        $stmt3 = $conn->prepare($sql3);
+        if($stmt3){
+            if(!empty($params)) $stmt3->bind_param($types, ...$params);
+            $stmt3->execute();
+            $result = $stmt3->get_result();
             while ($row = $result->fetch_assoc()) {
                 $stats['distribucion_estados'][] = $row;
             }
-            $result->free();
-        }
-        
-        $query4 = "SELECT COUNT(id_servicio) as total FROM servicios WHERE estado = 'Pendiente Docs/Pago'";
-        if ($result = $conn->query($query4)) {
-            $stats['pendientes_docs_pago'] = $result->fetch_assoc()['total'] ?? 0;
-            $result->free();
+            $stmt3->close();
         }
 
-        $query5 = "SELECT COUNT(id_servicio) as total FROM servicios WHERE fechaSolicitud >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
-        if ($result = $conn->query($query5)) {
-            $stats['nuevas_solicitudes_semana'] = $result->fetch_assoc()['total'] ?? 0;
-            $result->free();
+        // 4. Pendientes Docs/Pago (de los servicios creados en el período)
+        $sql4 = "SELECT COUNT(id_servicio) as total FROM servicios WHERE estado = 'Pendiente Docs/Pago'" . (empty($params) ? "" : " AND fechaSolicitud BETWEEN ? AND ?");
+        $stmt4 = $conn->prepare($sql4);
+         if($stmt4){
+            if(!empty($params)) $stmt4->bind_param($types, ...$params);
+            $stmt4->execute();
+            $result = $stmt4->get_result();
+            $stats['pendientes_docs_pago'] = $result->fetch_assoc()['total'] ?? 0;
+            $stmt4->close();
+        }
+
+        // 5. Nuevas solicitudes en el período
+        $sql5 = "SELECT COUNT(id_servicio) as total FROM servicios" . $where_clause;
+        $stmt5 = $conn->prepare($sql5);
+        if($stmt5){
+            if(!empty($params)) $stmt5->bind_param($types, ...$params);
+            $stmt5->execute();
+            $result = $stmt5->get_result();
+            $stats['nuevas_solicitudes_periodo'] = $result->fetch_assoc()['total'] ?? 0;
+            $stmt5->close();
         }
 
         $conn->close();
         return $stats;
     }
+    // --- FIN DE CÓDIGO MODIFICADO ---
 
     public static function getRecientes($limit = 5) {
         $conn = dbConnect();
@@ -276,7 +335,6 @@ class Servicio {
                 LEFT JOIN socios so ON s.socio_id = so.id_socio
                 ORDER BY s.fecha_modificacion DESC
                 LIMIT ?";
-        
         $stmt = $conn->prepare($sql);
         if ($stmt) {
             $stmt->bind_param("i", $limit);
@@ -345,7 +403,6 @@ class Servicio {
                 LEFT JOIN socios so ON s.socio_id = so.id_socio
                 WHERE s.estado NOT IN ('Completado', 'Rechazado', 'Cancelado')
                 ORDER BY s.fecha_modificacion ASC";
-        
         $result = $conn->query($sql);
         if ($result) {
             while ($servicio = $result->fetch_assoc()) {
@@ -369,7 +426,6 @@ class Servicio {
         }
 
         $conn->begin_transaction();
-
         try {
             $stmt_get = $conn->prepare("SELECT estado, medico_id FROM servicios WHERE id_servicio = ?");
             if (!$stmt_get) throw new Exception("Error al preparar la consulta para obtener el estado actual.");
@@ -380,7 +436,6 @@ class Servicio {
             $servicioActual = $result_get->fetch_assoc();
             $estadoAnterior = $servicioActual['estado'];
             $stmt_get->close();
-
             if ($estadoAnterior === $nuevoEstado) {
                 if ($estadoAnterior !== null) {
                      $comentarios = "Actualización manual sin cambio de estado.";
@@ -431,7 +486,6 @@ class Servicio {
 
             $params[] = $servicioId;
             $types .= "i";
-
             $sql = "UPDATE servicios SET " . implode(', ', $sql_parts) . " WHERE id_servicio = ?";
             
             $stmt_update = $conn->prepare($sql);
@@ -456,7 +510,6 @@ class Servicio {
             $conn->commit();
             $conn->close();
             return true;
-
         } catch (Exception $e) {
             $conn->rollback();
             error_log("Error en la transacción de updateStatus: " . $e->getMessage());
@@ -471,13 +524,11 @@ class Servicio {
             'Pendiente Docs/Pago', 'Recibido Completo', 'Enviado a LG', 
             'Pendiente Respuesta LG', 'Completado', 'Rechazado', 'Cancelado'
         ];
-        
         $estadosZootecnicos = [
             'Pendiente Docs/Pago', 'Recibido Completo', 'Pendiente Visita Medico', 
             'Pendiente Resultado Lab', 'Enviado a LG', 'Pendiente Respuesta LG', 
             'Completado', 'Rechazado', 'Cancelado'
         ];
-
         if ($flujoTrabajo === 'ZOOTECNICO') {
             return $estadosZootecnicos;
         }
@@ -492,14 +543,12 @@ class Servicio {
         }
 
         $diasEnEstado = (new DateTime())->diff(new DateTime($fechaModificacion))->days;
-
         $sla = [
             'Recibido Completo' => ['warn' => 3, 'danger' => 5],
             'Pendiente Visita Medico' => ['warn' => 15, 'danger' => 20],
             'Pendiente Resultado Lab' => ['warn' => 10, 'danger' => 15],
             'Pendiente Respuesta LG' => ['warn' => 20, 'danger' => 30]
         ];
-
         if (isset($sla[$estado])) {
             if ($diasEnEstado >= $sla[$estado]['danger']) {
                 return 'retrasado';
@@ -511,25 +560,9 @@ class Servicio {
 
         return 'ok';
     }
-
-    public static function getServiciosParaReporte($filtros) {
-        $conn = dbConnect();
-        $servicios = [];
-        if (!$conn) return $servicios;
-
-        $sql = "SELECT s.*, 
-                       ts.nombre as tipo_servicio_nombre,
-                       so.nombre as socio_nombre, so.apellido_paterno as socio_apPaterno,
-                       e.nombre as ejemplar_nombre
-                FROM servicios s
-                LEFT JOIN tipos_servicios ts ON s.tipo_servicio_id = ts.id_tipo_servicio
-                LEFT JOIN socios so ON s.socio_id = so.id_socio
-                LEFT JOIN ejemplares e ON s.ejemplar_id = e.id_ejemplar";
-        
+    
+    private static function buildReportWhereClause($filtros, &$params, &$types) {
         $whereClauses = [];
-        $params = [];
-        $types = "";
-
         if (!empty($filtros['fecha_inicio'])) {
             $whereClauses[] = "s.fechaSolicitud >= ?";
             $params[] = $filtros['fecha_inicio'];
@@ -550,12 +583,67 @@ class Servicio {
             $params[] = $filtros['tipo_servicio_id'];
             $types .= "i";
         }
-
-        if (!empty($whereClauses)) {
-            $sql .= " WHERE " . implode(" AND ", $whereClauses);
+        if (!empty($filtros['socio_id'])) {
+            $whereClauses[] = "s.socio_id = ?";
+            $params[] = $filtros['socio_id'];
+            $types .= "i";
         }
+        return !empty($whereClauses) ? " WHERE " . implode(" AND ", $whereClauses) : "";
+    }
 
-        $sql .= " ORDER BY s.fechaSolicitud DESC";
+    public static function countServiciosParaReporte($filtros) {
+        $conn = dbConnect();
+        if (!$conn) return 0;
+
+        $params = [];
+        $types = "";
+        $whereSql = self::buildReportWhereClause($filtros, $params, $types);
+        
+        $sql = "SELECT COUNT(s.id_servicio) as total FROM servicios s" . $whereSql;
+        
+        $total = 0;
+        $stmt = $conn->prepare($sql);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                $total = $result->fetch_assoc()['total'];
+                $result->free();
+            }
+            $stmt->close();
+        }
+        
+        $conn->close();
+        return $total;
+    }
+
+    public static function getServiciosParaReporte($filtros, $limit = -1, $offset = 0) {
+        $conn = dbConnect();
+        $servicios = [];
+        if (!$conn) return $servicios;
+
+        $sql_select = "SELECT s.*, 
+                       ts.nombre as tipo_servicio_nombre,
+                       so.nombre as socio_nombre, so.apellido_paterno as socio_apPaterno,
+                       e.nombre as ejemplar_nombre
+                FROM servicios s
+                LEFT JOIN tipos_servicios ts ON s.tipo_servicio_id = ts.id_tipo_servicio
+                LEFT JOIN socios so ON s.socio_id = so.id_socio
+                LEFT JOIN ejemplares e ON s.ejemplar_id = e.id_ejemplar";
+        
+        $params = [];
+        $types = "";
+        $whereSql = self::buildReportWhereClause($filtros, $params, $types);
+        $sql = $sql_select . $whereSql . " ORDER BY s.fechaSolicitud DESC";
+
+        if ($limit != -1) {
+            $sql .= " LIMIT ? OFFSET ?";
+            $params[] = $limit;
+            $params[] = $offset;
+            $types .= 'ii';
+        }
 
         $stmt = $conn->prepare($sql);
         if ($stmt) {

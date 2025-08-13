@@ -66,21 +66,44 @@ class Medico {
         return $total;
     }
 
-    // --- INICIO DE NUEVA FUNCIÓN ---
-    public static function countActive() {
+    // --- INICIO DE CÓDIGO MODIFICADO ---
+    public static function countActive($filtros = []) {
         $conn = dbConnect();
         if (!$conn) return 0;
-        $query = "SELECT COUNT(id_medico) as total FROM medicos WHERE estado = 'activo'";
-        $result = $conn->query($query);
-        $total = 0;
-        if ($result) {
-            $total = $result->fetch_assoc()['total'];
-            $result->free();
+
+        $sql = "SELECT COUNT(id_medico) as total FROM medicos WHERE estado = 'activo'";
+        $params = [];
+        $types = '';
+
+        if (!empty($filtros['fecha_inicio'])) {
+            $sql .= " AND fecha_registro >= ?";
+            $params[] = $filtros['fecha_inicio'];
+            $types .= 's';
         }
+        if (!empty($filtros['fecha_fin'])) {
+            $sql .= " AND fecha_registro <= ?";
+            $params[] = $filtros['fecha_fin'];
+            $types .= 's';
+        }
+        
+        $total = 0;
+        $stmt = $conn->prepare($sql);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                $total = $result->fetch_assoc()['total'];
+                $result->free();
+            }
+            $stmt->close();
+        }
+        
         $conn->close();
         return $total;
     }
-    // --- FIN DE NUEVA FUNCIÓN ---
+    // --- FIN DE CÓDIGO MODIFICADO ---
 
     public static function getAll($searchTerm = '', $limit = 15, $offset = 0) {
         $conn = dbConnect();
