@@ -1,7 +1,6 @@
 <?php
 // app/controllers/DocumentosController.php
 require_once __DIR__ . '/../models/Documento.php';
-
 class DocumentosController {
 
     /**
@@ -13,7 +12,8 @@ class DocumentosController {
         
         $docId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if (!$docId) {
-            http_response_code(400); echo "ID de documento inválido.";
+            http_response_code(400);
+            echo "ID de documento inválido.";
             exit;
         }
 
@@ -60,12 +60,45 @@ class DocumentosController {
 
     /**
      * Maneja la eliminación de un documento (registro y archivo).
+     * MODIFICADO: Ahora puede responder a solicitudes AJAX con JSON.
      */
     public function delete($id = null) {
         check_permission('superusuario');
-
         $docId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         
+        // Detectar si es una solicitud AJAX
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+
+        if (!$docId) {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'ID de documento inválido.']);
+                exit;
+            }
+            $_SESSION['error'] = "ID de documento inválido.";
+        } else {
+            if (Documento::delete($docId)) {
+                if ($isAjax) {
+                    header('Content-Type: application/json');
+                    echo json_encode(['status' => 'success', 'message' => "Documento ID:{$docId} eliminado correctamente."]);
+                    exit;
+                }
+                $_SESSION['message'] = "Documento ID:{$docId} eliminado correctamente.";
+            } else {
+                $errorMessage = "No se pudo eliminar el documento ID:{$docId}. " . ($_SESSION['error_details'] ?? '');
+                unset($_SESSION['error_details']);
+                if ($isAjax) {
+                    header('Content-Type: application/json');
+                    http_response_code(500);
+                    echo json_encode(['status' => 'error', 'message' => $errorMessage]);
+                    exit;
+                }
+                $_SESSION['error'] = $errorMessage;
+            }
+        }
+        
+        // Esta parte solo se ejecutará para solicitudes no-AJAX (las tradicionales)
         $redirectRoute = 'dashboard';
         $redirectParams = '';
         $redirectId = null;
@@ -86,17 +119,6 @@ class DocumentosController {
                 $redirectRoute = 'dashboard';
            }
 
-        if (!$docId) {
-            $_SESSION['error'] = "ID de documento inválido.";
-        } else {
-            if (Documento::delete($docId)) {
-                 $_SESSION['message'] = "Documento ID:{$docId} eliminado correctamente.";
-            } else {
-                 $_SESSION['error'] = "No se pudo eliminar el documento ID:{$docId}. " . ($_SESSION['error_details'] ?? '');
-                 unset($_SESSION['error_details']);
-            }
-        }
-        
         header("Location: index.php?route=" . $redirectRoute . $redirectParams);
         exit;
     }

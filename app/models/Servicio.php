@@ -43,9 +43,12 @@ class Servicio {
         $params = [];
         $types = "";
 
-        if (!empty($filters['estado'])) { $whereClauses[] = "s.estado = ?"; $params[] = $filters['estado']; $types .= "s"; } 
-        if (!empty($filters['socio_id'])) { $whereClauses[] = "s.socio_id = ?"; $params[] = $filters['socio_id']; $types .= "i"; } 
-        if (!empty($filters['tipo_servicio_id'])) { $whereClauses[] = "s.tipo_servicio_id = ?"; $params[] = $filters['tipo_servicio_id']; $types .= "i"; }
+        if (!empty($filters['estado'])) { $whereClauses[] = "s.estado = ?"; $params[] = $filters['estado']; $types .= "s";
+        } 
+        if (!empty($filters['socio_id'])) { $whereClauses[] = "s.socio_id = ?"; $params[] = $filters['socio_id'];
+        $types .= "i"; } 
+        if (!empty($filters['tipo_servicio_id'])) { $whereClauses[] = "s.tipo_servicio_id = ?";
+        $params[] = $filters['tipo_servicio_id']; $types .= "i"; }
         
         if (!empty($filters['estado_not_in']) && is_array($filters['estado_not_in'])) {
             $placeholders = implode(',', array_fill(0, count($filters['estado_not_in']), '?'));
@@ -54,7 +57,8 @@ class Servicio {
             $types .= str_repeat('s', count($filters['estado_not_in']));
         }
 
-        if (!empty($whereClauses)) { $sql .= " WHERE " . implode(" AND ", $whereClauses); }
+        if (!empty($whereClauses)) { $sql .= " WHERE " .
+        implode(" AND ", $whereClauses); }
 
         $stmt = $conn->prepare($sql);
         if ($stmt) {
@@ -73,7 +77,6 @@ class Servicio {
         return $total;
     }
 
-    // --- INICIO DE CÓDIGO MODIFICADO ---
     public static function countActive($filtros = []) {
         $conn = dbConnect();
         if (!$conn) return 0;
@@ -110,7 +113,6 @@ class Servicio {
         $conn->close();
         return $total;
     }
-    // --- FIN DE CÓDIGO MODIFICADO ---
     
     public static function getAll($filters = [], $limit = 15, $offset = 0) {
         $conn = dbConnect();
@@ -133,9 +135,12 @@ class Servicio {
         $params = [];
         $types = "";
 
-        if (!empty($filters['estado'])) { $whereClauses[] = "s.estado = ?"; $params[] = $filters['estado']; $types .= "s"; } 
-        if (!empty($filters['socio_id'])) { $whereClauses[] = "s.socio_id = ?"; $params[] = $filters['socio_id']; $types .= "i"; } 
-        if (!empty($filters['tipo_servicio_id'])) { $whereClauses[] = "s.tipo_servicio_id = ?"; $params[] = $filters['tipo_servicio_id']; $types .= "i"; }
+        if (!empty($filters['estado'])) { $whereClauses[] = "s.estado = ?"; $params[] = $filters['estado'];
+        $types .= "s"; } 
+        if (!empty($filters['socio_id'])) { $whereClauses[] = "s.socio_id = ?";
+        $params[] = $filters['socio_id']; $types .= "i"; } 
+        if (!empty($filters['tipo_servicio_id'])) { $whereClauses[] = "s.tipo_servicio_id = ?";
+        $params[] = $filters['tipo_servicio_id']; $types .= "i"; }
         
         if (!empty($filters['estado_not_in']) && is_array($filters['estado_not_in'])) {
             $placeholders = implode(',', array_fill(0, count($filters['estado_not_in']), '?'));
@@ -144,11 +149,13 @@ class Servicio {
             $types .= str_repeat('s', count($filters['estado_not_in']));
         }
 
-        if (!empty($whereClauses)) { $sql .= " WHERE " . implode(" AND ", $whereClauses); } 
+        if (!empty($whereClauses)) { $sql .= " WHERE " .
+        implode(" AND ", $whereClauses); } 
         
         $orderBy = " ORDER BY s.fechaSolicitud DESC, s.id_servicio DESC";
         if ($limit != -1) {
-            $sql .= $orderBy . " LIMIT ? OFFSET ?";
+            $sql .= $orderBy .
+            " LIMIT ? OFFSET ?";
             $params[] = $limit;
             $params[] = $offset;
             $types .= 'ii';
@@ -188,7 +195,8 @@ class Servicio {
                  LEFT JOIN medicos m ON s.medico_id = m.id_medico 
                  LEFT JOIN usuarios ureg ON s.id_usuario_registro = ureg.id_usuario 
                  LEFT JOIN usuarios umod ON s.id_usuario_ultima_mod = umod.id_usuario 
-                 WHERE s.id_servicio = ? LIMIT 1";
+                 WHERE s.id_servicio = ?
+                 LIMIT 1";
          $stmt = $conn->prepare($sql);
          if (!$stmt) { $conn->close(); return null; }
          $stmt->bind_param("i", $id); 
@@ -208,7 +216,7 @@ class Servicio {
         if (!$conn) return false;
         
         $servicioActual = self::getById($id);
-         if (!$servicioActual) {
+        if (!$servicioActual) {
             $_SESSION['error_details'] = "Servicio no encontrado para actualizar.";
             return false;
         }
@@ -217,7 +225,8 @@ class Servicio {
              self::updateStatus($id, $data['estado'], $data['motivo_rechazo'] ?? null, $data['id_usuario_ultima_mod']);
         }
 
-        $sql = "UPDATE servicios SET ejemplar_id = ?, medico_id = ?, fechaSolicitud = ?, fechaRecepcionDocs = ?, fechaPago = ?, fechaAsignacionMedico = ?, fechaVisitaMedico = ?, fechaEnvioLG = ?, fechaRecepcionLG = ?, fechaFinalizacion = ?, descripcion = ?, referencia_pago = ?, id_usuario_ultima_mod = ? WHERE id_servicio = ?";
+        $sql = "UPDATE servicios SET ejemplar_id = ?, medico_id = ?, fechaSolicitud = ?, fechaRecepcionDocs = ?, fechaPago = ?, fechaAsignacionMedico = ?, fechaVisitaMedico = ?, fechaEnvioLG = ?, fechaRecepcionLG = ?, fechaFinalizacion = ?, descripcion = ?, referencia_pago = ?, id_usuario_ultima_mod = ?
+        WHERE id_servicio = ?";
         $stmt = $conn->prepare($sql);
         if (!$stmt) { $conn->close(); return false; }
         
@@ -238,7 +247,6 @@ class Servicio {
         return self::updateStatus($id, 'Cancelado', 'Cancelado por el usuario desde el listado.', $userId);
     }
     
-    // --- INICIO DE CÓDIGO MODIFICADO ---
     public static function getDashboardStats($filtros = []) {
         $conn = dbConnect();
         if (!$conn) return [];
@@ -250,7 +258,6 @@ class Servicio {
             'pendientes_docs_pago' => 0,
             'nuevas_solicitudes_periodo' => 0
         ];
-
         $where_clause = "";
         $params = [];
         $types = '';
@@ -261,7 +268,8 @@ class Servicio {
         }
 
         // 1. Completados en el período
-        $sql1 = "SELECT COUNT(id_servicio) as total FROM servicios WHERE estado = 'Completado'" . (empty($params) ? " AND MONTH(fechaFinalizacion) = MONTH(CURDATE()) AND YEAR(fechaFinalizacion) = YEAR(CURDATE())" : " AND fechaFinalizacion BETWEEN ? AND ?");
+        $sql1 = "SELECT COUNT(id_servicio) as total FROM servicios WHERE estado = 'Completado'" .
+        (empty($params) ? " AND MONTH(fechaFinalizacion) = MONTH(CURDATE()) AND YEAR(fechaFinalizacion) = YEAR(CURDATE())" : " AND fechaFinalizacion BETWEEN ? AND ?");
         $stmt1 = $conn->prepare($sql1);
         if($stmt1){
             if(!empty($params)) $stmt1->bind_param($types, ...$params);
@@ -272,7 +280,8 @@ class Servicio {
         }
 
         // 2. Promedio resolución
-        $sql2 = "SELECT AVG(DATEDIFF(fechaFinalizacion, fechaSolicitud)) as promedio FROM servicios WHERE estado = 'Completado' AND fechaFinalizacion IS NOT NULL AND fechaSolicitud IS NOT NULL" . (empty($params) ? "" : " AND fechaSolicitud BETWEEN ? AND ?");
+        $sql2 = "SELECT AVG(DATEDIFF(fechaFinalizacion, fechaSolicitud)) as promedio FROM servicios WHERE estado = 'Completado' AND fechaFinalizacion IS NOT NULL AND fechaSolicitud IS NOT NULL" .
+        (empty($params) ? "" : " AND fechaSolicitud BETWEEN ? AND ?");
         $stmt2 = $conn->prepare($sql2);
         if($stmt2){
             if(!empty($params)) $stmt2->bind_param($types, ...$params);
@@ -283,7 +292,8 @@ class Servicio {
         }
 
         // 3. Distribución de estados (de los servicios creados en el período)
-        $sql3 = "SELECT estado, COUNT(id_servicio) as total FROM servicios " . $where_clause . " GROUP BY estado ORDER BY estado";
+        $sql3 = "SELECT estado, COUNT(id_servicio) as total FROM servicios " .
+        $where_clause . " GROUP BY estado ORDER BY estado";
         $stmt3 = $conn->prepare($sql3);
         if($stmt3){
             if(!empty($params)) $stmt3->bind_param($types, ...$params);
@@ -296,9 +306,10 @@ class Servicio {
         }
 
         // 4. Pendientes Docs/Pago (de los servicios creados en el período)
-        $sql4 = "SELECT COUNT(id_servicio) as total FROM servicios WHERE estado = 'Pendiente Docs/Pago'" . (empty($params) ? "" : " AND fechaSolicitud BETWEEN ? AND ?");
+        $sql4 = "SELECT COUNT(id_servicio) as total FROM servicios WHERE estado = 'Pendiente Docs/Pago'" .
+        (empty($params) ? "" : " AND fechaSolicitud BETWEEN ? AND ?");
         $stmt4 = $conn->prepare($sql4);
-         if($stmt4){
+        if($stmt4){
             if(!empty($params)) $stmt4->bind_param($types, ...$params);
             $stmt4->execute();
             $result = $stmt4->get_result();
@@ -307,7 +318,8 @@ class Servicio {
         }
 
         // 5. Nuevas solicitudes en el período
-        $sql5 = "SELECT COUNT(id_servicio) as total FROM servicios" . $where_clause;
+        $sql5 = "SELECT COUNT(id_servicio) as total FROM servicios" .
+        $where_clause;
         $stmt5 = $conn->prepare($sql5);
         if($stmt5){
             if(!empty($params)) $stmt5->bind_param($types, ...$params);
@@ -320,7 +332,6 @@ class Servicio {
         $conn->close();
         return $stats;
     }
-    // --- FIN DE CÓDIGO MODIFICADO ---
 
     public static function getRecientes($limit = 5) {
         $conn = dbConnect();
@@ -497,7 +508,8 @@ class Servicio {
             }
             $stmt_update->close();
 
-            $comentarios = ($nuevoEstado === 'Rechazado') ? "Motivo: " . $motivoRechazo : null;
+            $comentarios = ($nuevoEstado === 'Rechazado') ?
+            "Motivo: " . $motivoRechazo : null;
             $stmt_historial = $conn->prepare("INSERT INTO servicios_historial (servicio_id, usuario_id, estado_anterior, estado_nuevo, comentarios) VALUES (?, ?, ?, ?, ?)");
             if (!$stmt_historial) throw new Exception("Error al preparar el registro del historial.");
             
@@ -519,22 +531,60 @@ class Servicio {
         }
     }
 
+    // --- INICIO DE MODIFICACIÓN: LÓGICA DE ESTADOS SECUENCIAL ---
     public static function getSiguientesEstadosPosibles($estadoActual, $flujoTrabajo) {
-        $estadosAdministrativos = [
-            'Pendiente Docs/Pago', 'Recibido Completo', 'Enviado a LG', 
-            'Pendiente Respuesta LG', 'Completado', 'Rechazado', 'Cancelado'
+        $estadosFinales = ['Completado', 'Rechazado', 'Cancelado'];
+        // Si el estado actual ya es final, solo puede ser él mismo.
+        if (in_array($estadoActual, $estadosFinales)) {
+            return [$estadoActual];
+        }
+
+        $flujoCompleto = [];
+        $estadosTerminales = ['Rechazado', 'Cancelado']; // Estados a los que se puede llegar desde cualquier punto
+
+        $flujoAdministrativo = [
+            'Pendiente Docs/Pago', 
+            'Recibido Completo', 
+            'Enviado a LG', 
+            'Pendiente Respuesta LG', 
+            'Completado'
         ];
-        $estadosZootecnicos = [
-            'Pendiente Docs/Pago', 'Recibido Completo', 'Pendiente Visita Medico', 
-            'Pendiente Resultado Lab', 'Enviado a LG', 'Pendiente Respuesta LG', 
-            'Completado', 'Rechazado', 'Cancelado'
+        $flujoZootecnico = [
+            'Pendiente Docs/Pago', 
+            'Recibido Completo', 
+            'Pendiente Visita Medico', 
+            'Pendiente Resultado Lab', 
+            'Enviado a LG', 
+            'Pendiente Respuesta LG', 
+            'Completado'
         ];
+        
         if ($flujoTrabajo === 'ZOOTECNICO') {
-            return $estadosZootecnicos;
+            $flujoCompleto = $flujoZootecnico;
+        } else {
+            $flujoCompleto = $flujoAdministrativo;
+        }
+
+        $posicionActual = array_search($estadoActual, $flujoCompleto);
+
+        if ($posicionActual === false) {
+            // Si por alguna razón el estado actual no está en el flujo, devolver todos los posibles para evitar un bloqueo.
+            return array_unique(array_merge($flujoCompleto, $estadosTerminales));
+        }
+
+        // Obtener todos los estados desde la posición actual hasta el final
+        $siguientesEstados = array_slice($flujoCompleto, $posicionActual);
+        
+        // Añadir los estados terminales (Rechazado, Cancelado) si aún no están en la lista de siguientes
+        foreach ($estadosTerminales as $terminal) {
+            if (!in_array($terminal, $siguientesEstados)) {
+                $siguientesEstados[] = $terminal;
+            }
         }
         
-        return $estadosAdministrativos;
+        return $siguientesEstados;
     }
+    // --- FIN DE MODIFICACIÓN ---
 
     private static function getServicioHealthStatus($estado, $fechaModificacion) {
         $estadosFinales = ['Completado', 'Rechazado', 'Cancelado'];
@@ -588,7 +638,8 @@ class Servicio {
             $params[] = $filtros['socio_id'];
             $types .= "i";
         }
-        return !empty($whereClauses) ? " WHERE " . implode(" AND ", $whereClauses) : "";
+        return !empty($whereClauses) ?
+        " WHERE " . implode(" AND ", $whereClauses) : "";
     }
 
     public static function countServiciosParaReporte($filtros) {
@@ -598,7 +649,6 @@ class Servicio {
         $params = [];
         $types = "";
         $whereSql = self::buildReportWhereClause($filtros, $params, $types);
-        
         $sql = "SELECT COUNT(s.id_servicio) as total FROM servicios s" . $whereSql;
         
         $total = 0;
@@ -632,11 +682,11 @@ class Servicio {
                 LEFT JOIN tipos_servicios ts ON s.tipo_servicio_id = ts.id_tipo_servicio
                 LEFT JOIN socios so ON s.socio_id = so.id_socio
                 LEFT JOIN ejemplares e ON s.ejemplar_id = e.id_ejemplar";
-        
         $params = [];
         $types = "";
         $whereSql = self::buildReportWhereClause($filtros, $params, $types);
-        $sql = $sql_select . $whereSql . " ORDER BY s.fechaSolicitud DESC";
+        $sql = $sql_select . $whereSql .
+        " ORDER BY s.fechaSolicitud DESC";
 
         if ($limit != -1) {
             $sql .= " LIMIT ? OFFSET ?";
@@ -664,3 +714,10 @@ class Servicio {
         return $servicios;
     }
 }
+
+
+
+
+
+
+

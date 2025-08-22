@@ -15,7 +15,6 @@ class Router {
 
         // --- Rutas del Dashboard ---
         $this->addRoute('dashboard', 'DashboardController@index');
-        
         // --- Rutas de Empleados ---
         $this->addRoute('empleados_index', 'EmpleadosController@index');
         $this->addRoute('empleados/create', 'EmpleadosController@create');
@@ -33,7 +32,6 @@ class Router {
         $this->addRoute('usuarios_update', 'UsuariosController@update');
         $this->addRoute('usuarios_delete', 'UsuariosController@delete');
         $this->addRoute('usuarios_export_excel', 'UsuariosController@exportToExcel');
-        
         // --- Rutas de Socios ---
         $this->addRoute('socios_index', 'SociosController@index');
         $this->addRoute('socios/create', 'SociosController@create');
@@ -51,7 +49,6 @@ class Router {
         $this->addRoute('ejemplares_update', 'EjemplaresController@update');
         $this->addRoute('ejemplares_delete', 'EjemplaresController@delete');
         $this->addRoute('ejemplares_export_excel', 'EjemplaresController@exportToExcel');
-        
         // --- Rutas de Médicos ---
         $this->addRoute('medicos_index', 'MedicosController@index');
         $this->addRoute('medicos/create', 'MedicosController@create');
@@ -69,7 +66,6 @@ class Router {
          $this->addRoute('tipos_servicios_update', 'TiposServiciosController@update');
          $this->addRoute('tipos_servicios_delete', 'TiposServiciosController@delete');
          $this->addRoute('tipos_servicios_export_excel', 'TiposServiciosController@exportToExcel');
-         
          // --- Rutas de Servicios (Trámites) ---
          $this->addRoute('servicios_index', 'ServiciosController@index');
          $this->addRoute('servicios/create', 'ServiciosController@create');
@@ -80,11 +76,13 @@ class Router {
          $this->addRoute('servicios_export_excel', 'ServiciosController@exportToExcel');
          $this->addRoute('servicios_update_status', 'ServiciosController@updateStatus');
          $this->addRoute('servicios_get_valid_states', 'ServiciosController@getValidNextStates');
-         
-         // --- INICIO DE SECCIÓN MODIFICADA: Rutas de Reportes ---
+         // --- Rutas de Reportes ---
          $this->addRoute('reportes', 'ReportesController@index');
-         $this->addRoute('reportes_export', 'ReportesController@export'); // <-- NUEVA RUTA
-         // --- FIN DE SECCIÓN MODIFICADA ---
+         $this->addRoute('reportes_export', 'ReportesController@export');
+
+         // --- NUEVAS RUTAS DE AUDITORÍA ---
+         $this->addRoute('auditoria_index', 'AuditoriaController@index');
+         $this->addRoute('auditoria_export_excel', 'AuditoriaController@exportToExcel');
 
          // --- Rutas de Documentos ---
          $this->addRoute('documento_download', 'DocumentosController@download');

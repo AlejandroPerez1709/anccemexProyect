@@ -1,67 +1,55 @@
 <?php
 // app/controllers/EmpleadosController.php
 
-// AÑADIR ESTAS DOS LÍNEAS AL INICIO
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 require_once __DIR__ . '/../models/Empleado.php';
+require_once __DIR__ . '/../models/Auditoria.php'; 
 require_once __DIR__ . '/../../config/config.php';
-
 class EmpleadosController {
 
     public function index() {
         check_permission();
-        // --- LÓGICA DE PAGINACIÓN Y BÚSQUEDA ---
         $searchTerm = $_GET['search'] ?? '';
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $records_per_page = 15;
         $offset = ($page - 1) * $records_per_page;
-        
-        // Contar el total de registros (con filtro de búsqueda si existe)
         $total_records = Empleado::countAll($searchTerm);
         $total_pages = ceil($total_records / $records_per_page);
 
-        // Obtener los registros para la página actual
         $empleados = Empleado::getAll($searchTerm, $records_per_page, $offset);
-        // --- FIN DE LA LÓGICA ---
 
         $pageTitle = 'Listado de Empleados';
         $currentRoute = 'empleados_index';
         $contentView = __DIR__ . '/../views/empleados/index.php';
-        // Las variables $empleados, $page, $total_pages y $searchTerm estarán disponibles en la vista
         require_once __DIR__ . '/../views/layouts/master.php';
     }
 
-    // AÑADIR ESTE NUEVO MÉTODO COMPLETO
     public function exportToExcel() {
         check_permission();
-
         $searchTerm = $_GET['search'] ?? '';
-        $empleados = Empleado::getAll($searchTerm, -1); // -1 para obtener todos los registros
+        $empleados = Empleado::getAll($searchTerm, -1);
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        // Encabezados
         $sheet->setCellValue('A1', 'ID')->setCellValue('B1', 'Nombre')->setCellValue('C1', 'Apellido Paterno')->setCellValue('D1', 'Apellido Materno')->setCellValue('E1', 'Email')->setCellValue('F1', 'Dirección')->setCellValue('G1', 'Teléfono')->setCellValue('H1', 'Puesto')->setCellValue('I1', 'Fecha Ingreso')->setCellValue('J1', 'Estado');
-        
         $row = 2;
         foreach ($empleados as $empleado) {
             $sheet->setCellValue('A' . $row, $empleado['id_empleado'])
                   ->setCellValue('B' . $row, $empleado['nombre'])
                   ->setCellValue('C' . $row, $empleado['apellido_paterno'])
                   ->setCellValue('D' . $row, $empleado['apellido_materno'])
-                  ->setCellValue('E' . $row, $empleado['email'])
+                   ->setCellValue('E' . $row, $empleado['email'])
                   ->setCellValue('F' . $row, $empleado['direccion'])
                   ->setCellValue('G' . $row, $empleado['telefono'])
                   ->setCellValue('H' . $row, $empleado['puesto'])
                   ->setCellValue('I' . $row, !empty($empleado['fecha_ingreso']) ? date('d/m/Y', strtotime($empleado['fecha_ingreso'])) : '-')
-                  ->setCellValue('J' . $row, ucfirst($empleado['estado']));
+                   ->setCellValue('J' . $row, ucfirst($empleado['estado']));
             $row++;
         }
 
-        // Cabeceras para descarga
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="Reporte_Empleados.xlsx"');
         header('Cache-Control: max-age=0');
@@ -91,14 +79,20 @@ class EmpleadosController {
                 'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''),
                 'apellido_materno' => trim($_POST['apellido_materno'] ?? ''),
                 'email' => trim($_POST['email'] ?? ''),
-                'direccion' => trim($_POST['direccion'] ?? ''),
+                 'direccion' => trim($_POST['direccion'] ?? ''),
                 'telefono' => trim($_POST['telefono'] ?? ''),
                 'puesto' => trim($_POST['puesto'] ?? ''),
                 'estado' => trim($_POST['estado'] ?? 'activo'), 
                 'fecha_ingreso' => trim($_POST['fecha_ingreso'] ?? '')
-            ];
+             ];
             
-            if(Empleado::store($data)) {
+            // --- INICIO DE MODIFICACIÓN: Usar el ID devuelto por el método store ---
+            $newId = Empleado::store($data);
+            if($newId) {
+                $descripcion = "Se creó el empleado: " . $data['nombre'] . " " . $data['apellido_paterno'];
+                Auditoria::registrar('CREACIÓN DE EMPLEADO', $newId, 'Empleado', $descripcion);
+            // --- FIN DE MODIFICACIÓN ---
+
                 $_SESSION['message'] = "Empleado creado exitosamente.";
                 unset($_SESSION['form_data']);
                 header("Location: index.php?route=empleados_index");
@@ -149,14 +143,16 @@ class EmpleadosController {
                 'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''), 
                 'apellido_materno' => trim($_POST['apellido_materno'] ?? ''),
                 'email' => trim($_POST['email'] ?? ''), 
-                'direccion' => trim($_POST['direccion'] ?? ''), 
+                 'direccion' => trim($_POST['direccion'] ?? ''), 
                 'telefono' => trim($_POST['telefono'] ?? ''),
                 'puesto' => trim($_POST['puesto'] ?? ''), 
                 'estado' => trim($_POST['estado'] ?? 'activo'),
                 'fecha_ingreso' => trim($_POST['fecha_ingreso'] ?? '')
             ];
-            
             if(Empleado::update($id, $data)) {
+                $descripcion = "Se modificaron los datos del empleado: " . $data['nombre'] . " " . $data['apellido_paterno'];
+                Auditoria::registrar('MODIFICACIÓN DE EMPLEADO', $id, 'Empleado', $descripcion);
+
                 $_SESSION['message'] = "Empleado actualizado exitosamente.";
                 unset($_SESSION['form_data']);
                 header("Location: index.php?route=empleados_index"); 
@@ -181,7 +177,12 @@ class EmpleadosController {
         }
 
         if($empleadoId) {
-            if(Empleado::delete($empleadoId, $razon)) { 
+            $empleado = Empleado::getById($empleadoId); // Se obtiene el empleado ANTES de desactivarlo
+            if(Empleado::delete($empleadoId, $razon)) {
+                $nombreEmpleado = $empleado ? $empleado['nombre'] . ' ' . $empleado['apellido_paterno'] : 'ID ' . $empleadoId;
+                $descripcion = "Se desactivó al empleado: " . $nombreEmpleado . ". Razón: " . $razon;
+                Auditoria::registrar('DESACTIVACIÓN DE EMPLEADO', $empleadoId, 'Empleado', $descripcion);
+
                 $_SESSION['message'] = "Empleado desactivado.";
             } else { 
                 $_SESSION['error'] = "Error al desactivar. " . ($_SESSION['error_details'] ?? 'Puede tener registros asociados.'); 

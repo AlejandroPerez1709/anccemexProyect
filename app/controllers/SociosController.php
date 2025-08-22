@@ -5,6 +5,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 require_once __DIR__ . '/../models/Socio.php';
 require_once __DIR__ . '/../models/Documento.php';
+require_once __DIR__ . '/../models/Auditoria.php'; // <-- 1. INCLUIMOS EL NUEVO MODELO
 require_once __DIR__ . '/../../config/config.php';
 
 class SociosController {
@@ -47,12 +48,10 @@ class SociosController {
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $records_per_page = 15;
         $offset = ($page - 1) * $records_per_page;
-        
         $total_records = Socio::countAll($searchTerm);
         $total_pages = ceil($total_records / $records_per_page);
 
         $socios = Socio::getAll($searchTerm, $records_per_page, $offset);
-
         // INICIO DE LA MODIFICACIÓN: Obtener el estado de los documentos para cada socio
         foreach ($socios as $key => $socio) {
             $socios[$key]['document_status'] = Documento::getDocumentStatusForSocio($socio['id_socio']);
@@ -75,7 +74,6 @@ class SociosController {
         $sheet = $spreadsheet->getActiveSheet();
 
         $sheet->setCellValue('A1', 'ID')->setCellValue('B1', 'Nombre')->setCellValue('C1', 'Apellido Paterno')->setCellValue('D1', 'Apellido Materno')->setCellValue('E1', 'Nombre Ganadería')->setCellValue('F1', 'Dirección')->setCellValue('G1', 'Código Ganadero')->setCellValue('H1', 'Teléfono')->setCellValue('I1', 'Email')->setCellValue('J1', 'Fecha Registro')->setCellValue('K1', 'Estado')->setCellValue('L1', 'RFC');
-        
         $row = 2;
         foreach ($socios as $socio) {
             $sheet->setCellValue('A' . $row, $socio['id_socio'])->setCellValue('B' . $row, $socio['nombre'])->setCellValue('C' . $row, $socio['apellido_paterno'])->setCellValue('D' . $row, $socio['apellido_materno'])->setCellValue('E' . $row, $socio['nombre_ganaderia'])->setCellValue('F' . $row, $socio['direccion'])->setCellValue('G' . $row, $socio['codigoGanadero'])->setCellValue('H' . $row, $socio['telefono'])->setCellValue('I' . $row, $socio['email'])->setCellValue('J' . $row, $socio['fechaRegistro'])->setCellValue('K' . $row, ucfirst($socio['estado']))->setCellValue('L' . $row, $socio['identificacion_fiscal_titular']);
@@ -109,6 +107,10 @@ class SociosController {
             $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''), 'apellido_materno' => trim($_POST['apellido_materno'] ?? ''), 'nombre_ganaderia' => trim($_POST['nombre_ganaderia'] ?? ''), 'direccion' => trim($_POST['direccion'] ?? ''), 'codigoGanadero' => trim($_POST['codigoGanadero'] ?? ''), 'telefono' => trim($_POST['telefono'] ?? ''), 'email' => trim($_POST['email'] ?? ''), 'fechaRegistro' => trim($_POST['fechaRegistro'] ?? date('Y-m-d')), 'estado' => trim($_POST['estado'] ?? 'activo'), 'id_usuario' => $_SESSION['user']['id_usuario'], 'identificacion_fiscal_titular' => trim($_POST['identificacion_fiscal_titular'] ?? '') ];
             $socioId = Socio::store($data);
             if($socioId !== false) {
+                // --- 2. REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
+                $descripcion = "Se creó el socio: " . $data['nombre'] . " " . $data['apellido_paterno'] . " con Cód. Ganadero: " . $data['codigoGanadero'];
+                Auditoria::registrar('CREACIÓN DE SOCIO', $socioId, 'Socio', $descripcion);
+
                 $_SESSION['message'] = "Socio registrado exitosamente con ID: " . $socioId . ".";
                 unset($_SESSION['form_data']);
                 $this->handleSocioDocumentUpload('id_oficial_file', $socioId, 'ID_OFICIAL_TITULAR', $data['id_usuario']);
@@ -160,6 +162,10 @@ class SociosController {
         if(isset($_POST)) {
             $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''), 'apellido_materno' => trim($_POST['apellido_materno'] ?? ''), 'nombre_ganaderia' => trim($_POST['nombre_ganaderia'] ?? ''), 'direccion' => trim($_POST['direccion'] ?? ''), 'codigoGanadero' => trim($_POST['codigoGanadero'] ?? ''), 'telefono' => trim($_POST['telefono'] ?? ''), 'email' => trim($_POST['email'] ?? ''), 'fechaRegistro' => trim($_POST['fechaRegistro'] ?? ''), 'estado' => trim($_POST['estado'] ?? 'activo'), 'id_usuario' => $_SESSION['user']['id_usuario'], 'identificacion_fiscal_titular' => trim($_POST['identificacion_fiscal_titular'] ?? '') ];
             if(Socio::update($id, $data)) {
+                // --- 3. REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
+                $descripcion = "Se modificaron los datos del socio: " . $data['nombre'] . " " . $data['apellido_paterno'];
+                Auditoria::registrar('MODIFICACIÓN DE SOCIO', $id, 'Socio', $descripcion);
+
                 $_SESSION['message'] = "Socio actualizado exitosamente.";
                 unset($_SESSION['form_data']);
                 $this->handleSocioDocumentUpload('id_oficial_file', $id, 'ID_OFICIAL_TITULAR', $data['id_usuario']);
@@ -188,7 +194,13 @@ class SociosController {
         }
 
         if($socioId) {
-            if(Socio::delete($socioId, $razon)) { 
+            if(Socio::delete($socioId, $razon)) {
+                // --- 4. REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
+                $socio = Socio::getById($socioId); // Obtenemos datos para la descripción
+                $nombreSocio = $socio ? $socio['nombre'] . ' ' . $socio['apellido_paterno'] : 'ID ' . $socioId;
+                $descripcion = "Se desactivó al socio: " . $nombreSocio . ". Razón: " . $razon;
+                Auditoria::registrar('DESACTIVACIÓN DE SOCIO', $socioId, 'Socio', $descripcion);
+
                 $_SESSION['message'] = "Socio desactivado exitosamente.";
             } else { 
                 $_SESSION['error'] = "Error al desactivar socio. " . ($_SESSION['error_details'] ?? ''); 

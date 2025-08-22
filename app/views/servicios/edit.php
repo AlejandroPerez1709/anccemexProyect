@@ -6,10 +6,12 @@ $tiposServicioList = $tiposServicioList ?? [];
 $sociosList = $sociosList ?? [];
 $ejemplares = $ejemplares ?? [];
 $medicosList = $medicosList ?? [];
-$posiblesEstados = $posiblesEstados ?? []; // Viene del controlador, ya filtrado
+$posiblesEstados = $posiblesEstados ?? [];
+// Viene del controlador, ya filtrado
 $documentosServicio = $documentosServicio ?? [];
 $historialServicio = $historialServicio ?? [];
-$formData = $formData ?? $servicio; // Repoblar con datos del servicio o de la sesión si hubo error
+$formData = $formData ?? $servicio;
+// Repoblar con datos del servicio o de la sesión si hubo error
 ?>
 
 <div class="form-container form-wide"> <h2>Detalle / Edición Servicio #<?php echo htmlspecialchars($servicio['id_servicio'] ?? 'N/A'); ?></h2>
@@ -21,7 +23,7 @@ $formData = $formData ?? $servicio; // Repoblar con datos del servicio o de la s
          <div class="form-main-columns"> 
              <div class="form-main-col left-col">
                 <fieldset>
-                    <legend>Información General</legend>
+                     <legend>Información General</legend>
                     <div class="form-group-full">
                         <h5>Tipo de Servicio:</h5>
                          <input type="text" value="<?php echo htmlspecialchars($servicio['tipo_servicio_nombre'] ?? 'N/A'); ?> (<?php echo htmlspecialchars($servicio['codigo_servicio'] ?: 'S/C'); ?>)" disabled>
@@ -41,17 +43,24 @@ $formData = $formData ?? $servicio; // Repoblar con datos del servicio o de la s
                 
                  <fieldset>
                     <legend>Estado y Seguimiento</legend>
-                    <div class="form-group-full">
-                        <select name="estado" id="estado" required>
+                     <div class="form-group-full">
+                        <?php
+                        $estadosFinales = ['Completado', 'Rechazado', 'Cancelado'];
+                        $isFinalizado = in_array($formData['estado'], $estadosFinales);
+                        ?>
+                        <select name="estado" id="estado" required <?php echo $isFinalizado ? 'disabled' : ''; ?>>
                              <?php foreach($posiblesEstados as $est): ?>
-                                <option value="<?php echo htmlspecialchars($est); ?>" <?php echo (isset($formData['estado']) && $formData['estado'] === $est) ? 'selected' : ''; ?>>
+                                 <option value="<?php echo htmlspecialchars($est); ?>" <?php echo (isset($formData['estado']) && $formData['estado'] === $est) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($est); ?>
                                 </option>
                              <?php endforeach; ?>
                         </select>
                         <label for="estado">Estado Actual:<span class="text-danger">*</span></label>
+                        <?php if ($isFinalizado): ?>
+                            <small>Este servicio se encuentra en un estado final y no puede ser modificado.</small>
+                        <?php endif; ?>
                     </div>
-                     <div class="form-group-full">
+                    <div class="form-group-full">
                         <input type="date" name="fechaRecepcionDocs" id="fechaRecepcionDocs" value="<?php echo htmlspecialchars($formData['fechaRecepcionDocs'] ?? ''); ?>" placeholder=" ">
                         <label for="fechaRecepcionDocs">Fecha Recepción Docs Completos:</label>
                     </div>
@@ -68,25 +77,25 @@ $formData = $formData ?? $servicio; // Repoblar con datos del servicio o de la s
                     <div class="form-group-full" id="grupo_medico_edit" <?php echo $requiereMedicoActual ? '' : 'style="display: none;"'; ?>>
                         <select name="medico_id" id="medico_id">
                             <option value="">-- Sin Asignar --</option>
-                             <?php foreach ($medicosList as $id_med => $display_med): ?>
+                            <?php foreach ($medicosList as $id_med => $display_med): ?>
                                 <option value="<?php echo htmlspecialchars($id_med); ?>" <?php echo (isset($formData['medico_id']) && $formData['medico_id'] == $id_med) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($display_med); ?>
                                 </option>
-                             <?php endforeach; ?>
+                            <?php endforeach; ?>
                             <?php if (!empty($servicio['medico_id']) && !isset($medicosList[$servicio['medico_id']])): ?>
                                  <option value="<?php echo htmlspecialchars($servicio['medico_id']); ?>" selected>
                                     <?php echo htmlspecialchars(($servicio['medico_nombre'] ?? 'ID:'.$servicio['medico_id']) . ' ' . ($servicio['medico_apPaterno'] ?? '')) ?> [Actual, Inactivo?]
                                 </option>
-                             <?php endif; ?>
+                            <?php endif; ?>
                         </select>
                         <label for="medico_id">Médico Asignado:</label>
                     </div>
-                     <div class="form-group-full" id="grupo_fechaAsignacionMedico" <?php echo $requiereMedicoActual ? '' : 'style="display: none;"'; ?>>
+                    <div class="form-group-full" id="grupo_fechaAsignacionMedico" <?php echo $requiereMedicoActual ? '' : 'style="display: none;"'; ?>>
                         <input type="date" name="fechaAsignacionMedico" id="fechaAsignacionMedico" value="<?php echo htmlspecialchars($formData['fechaAsignacionMedico'] ?? ''); ?>" placeholder=" ">
                         <label for="fechaAsignacionMedico">Fecha Asignación Médico:</label>
                     </div>
                      <div class="form-group-full" id="grupo_fechaVisitaMedico" <?php echo $requiereMedicoActual ? '' : 'style="display: none;"'; ?>>
-                        <input type="date" name="fechaVisitaMedico" id="fechaVisitaMedico" value="<?php echo htmlspecialchars($formData['fechaVisitaMedico'] ?? ''); ?>" placeholder=" ">
+                         <input type="date" name="fechaVisitaMedico" id="fechaVisitaMedico" value="<?php echo htmlspecialchars($formData['fechaVisitaMedico'] ?? ''); ?>" placeholder=" ">
                         <label for="fechaVisitaMedico">Fecha Visita/Muestras Médico:</label>
                     </div>
 
@@ -95,7 +104,7 @@ $formData = $formData ?? $servicio; // Repoblar con datos del servicio o de la s
                         <label for="fechaEnvioLG">Fecha Envío a LG (España):</label>
                     </div>
                      <div class="form-group-full">
-                        <input type="date" name="fechaRecepcionLG" id="fechaRecepcionLG" value="<?php echo htmlspecialchars($formData['fechaRecepcionLG'] ?? ''); ?>" placeholder=" ">
+                         <input type="date" name="fechaRecepcionLG" id="fechaRecepcionLG" value="<?php echo htmlspecialchars($formData['fechaRecepcionLG'] ?? ''); ?>" placeholder=" ">
                         <label for="fechaRecepcionLG">Fecha Recepción de LG (España):</label>
                     </div>
 
@@ -104,26 +113,26 @@ $formData = $formData ?? $servicio; // Repoblar con datos del servicio o de la s
                         <label for="fechaFinalizacion">Fecha Finalización (Completado/Rech./Canc.):</label>
                         <small>Se actualizará automáticamente al marcar un estado final si se deja vacío.</small>
                      </div>
-                    <div class="form-group-full">
+                     <div class="form-group-full">
                         <textarea name="descripcion" id="descripcion" rows="4" placeholder=" "><?php echo htmlspecialchars($formData['descripcion'] ?? ''); ?></textarea>
                         <label for="descripcion">Observaciones / Notas Internas:</label>
                      </div>
-                    <div class="form-group-full" id="grupo_motivo_rechazo" <?php echo (isset($formData['estado']) && $formData['estado'] !== 'Rechazado') ? 'style="display: none;"' : ''; ?>>
+                     <div class="form-group-full" id="grupo_motivo_rechazo" <?php echo (isset($formData['estado']) && $formData['estado'] !== 'Rechazado') ? 'style="display: none;"' : ''; ?>>
                         <textarea name="motivo_rechazo" id="motivo_rechazo" rows="3" placeholder=" " <?php echo (isset($formData['estado']) && $formData['estado'] === 'Rechazado') ? 'required' : ''; ?>><?php echo htmlspecialchars($formData['motivo_rechazo'] ?? ''); ?></textarea>
                         <label for="motivo_rechazo">Motivo del Rechazo:<span class="text-danger">*</span></label>
                     </div>
                 </fieldset>
             </div>
             
-             <div class="form-main-col right-col">
+              <div class="form-main-col right-col">
                 <fieldset>
                     <legend>Documentos Asociados a este Servicio</legend>
                     <h4>Documentos Actuales del Servicio:</h4>
                     <?php if (!empty($documentosServicio)): ?>
-                         <ul class="document-list">
+                        <ul class="document-list">
                             <?php foreach ($documentosServicio as $doc): ?>
-                                <li class="document-list-item">
-                                     <div class="document-list-item-content">
+                                <li class="document-list-item" id="doc-item-<?php echo $doc['id_documento']; ?>">
+                                    <div class="document-list-item-content">
                                         <strong><?php echo htmlspecialchars($doc['tipoDocumento'] ?? 'Desconocido'); ?>:</strong>
                                         <a href="index.php?route=documento_download&id=<?php echo htmlspecialchars($doc['id_documento']); ?>" target="_blank" title="Descargar <?php echo htmlspecialchars($doc['nombreArchivoOriginal']); ?>">
                                             <?php echo htmlspecialchars($doc['nombreArchivoOriginal'] ?? 'Archivo'); ?>
@@ -134,11 +143,12 @@ $formData = $formData ?? $servicio; // Repoblar con datos del servicio o de la s
                                         <?php endif; ?>
                                     </div>
                                     <div class="document-list-item-actions">
-                                         <?php if (isset($_SESSION['user']) && $_SESSION['user']['rol'] === 'superusuario'): ?>
+                                        <?php if (isset($_SESSION['user']) && $_SESSION['user']['rol'] === 'superusuario'): ?>
                                             <a href="index.php?route=documento_delete&id=<?php echo htmlspecialchars($doc['id_documento']); ?>&servicio_id=<?php echo htmlspecialchars($servicio['id_servicio']); ?>" 
-                                                class="btn btn-sm btn-danger" 
-                                               onclick="return confirm('¿Seguro que quieres eliminar el documento \'<?php echo htmlspecialchars(addslashes($doc['nombreArchivoOriginal'])); ?>\'?\n¡Esta acción borrará el archivo permanentemente!')">Eliminar</a>
-                                         <?php endif; ?>
+                                               class="btn btn-sm btn-danger btn-delete-ajax"
+                                               data-doc-id="<?php echo $doc['id_documento']; ?>"
+                                               data-doc-name="<?php echo htmlspecialchars(addslashes($doc['nombreArchivoOriginal'])); ?>">Eliminar</a>
+                                        <?php endif; ?>
                                     </div>
                                 </li>
                             <?php endforeach; ?>
@@ -151,16 +161,16 @@ $formData = $formData ?? $servicio; // Repoblar con datos del servicio o de la s
                     <h4>Subir/Actualizar Documentos del Servicio:</h4>
                     <div class="form-group-full">
                         <label for="solicitud_file">Cambiar Solicitud de Servicio (Firmada):</label>
-                         <input type="file" name="solicitud_file" id="solicitud_file"  accept=".pdf,.jpg,.jpeg,.png,.gif">
+                        <input type="file" name="solicitud_file" id="solicitud_file"  accept=".pdf,.jpg,.jpeg,.png,.gif">
                     </div>
                     <div class="form-group-full">
                         <label for="pago_file">Cambiar Comprobante de Pago:</label>
-                         <input type="file" name="pago_file" id="pago_file"  accept=".pdf,.jpg,.jpeg,.png,.gif">
+                        <input type="file" name="pago_file" id="pago_file"  accept=".pdf,.jpg,.jpeg,.png,.gif">
                     </div>
                 </fieldset>
                 
                 <fieldset>
-                     <legend>Auditoría</legend>
+                    <legend>Auditoría</legend>
                     <div class="form-group-full">
                         <h5>Registrado por:</h5>
                         <input type="text" value="<?php echo htmlspecialchars($servicio['registrador_username'] ?? 'N/A'); ?> el <?php echo isset($servicio['fecha_registro']) ? date('d/m/Y H:i', strtotime($servicio['fecha_registro'])) : 'N/A'; ?>" disabled>
@@ -176,7 +186,7 @@ $formData = $formData ?? $servicio; // Repoblar con datos del servicio o de la s
         <fieldset>
             <legend>Historial del Trámite (Bitácora)</legend>
             <div class="table-container history-table">
-                <table>
+                 <table>
                     <thead>
                         <tr>
                             <th>Fecha</th>
@@ -184,16 +194,16 @@ $formData = $formData ?? $servicio; // Repoblar con datos del servicio o de la s
                             <th>Cambio Realizado</th>
                             <th>Comentarios</th>
                         </tr>
-                    </thead>
+                     </thead>
                     <tbody>
                         <?php if (!empty($historialServicio)): ?>
                             <?php foreach ($historialServicio as $registro): ?>
-                                <tr>
+                                 <tr>
                                     <td><?php echo date('d/m/Y H:i', strtotime($registro['fecha_cambio'])); ?></td>
                                     <td><?php echo htmlspecialchars($registro['usuario_nombre'] ?? 'Sistema'); ?></td>
                                     <td>
                                         <?php if ($registro['estado_anterior']): ?>
-                                            Estado cambió de <strong><?php echo htmlspecialchars($registro['estado_anterior']); ?></strong> a <strong><?php echo htmlspecialchars($registro['estado_nuevo']); ?></strong>
+                                             Estado cambió de <strong><?php echo htmlspecialchars($registro['estado_anterior']); ?></strong> a <strong><?php echo htmlspecialchars($registro['estado_nuevo']); ?></strong>
                                         <?php else: ?>
                                             Servicio creado con estado <strong><?php echo htmlspecialchars($registro['estado_nuevo']); ?></strong>
                                         <?php endif; ?>
@@ -204,7 +214,7 @@ $formData = $formData ?? $servicio; // Repoblar con datos del servicio o de la s
                         <?php else: ?>
                             <tr>
                                 <td colspan="4" class="text-center">No hay historial de cambios para este servicio.</td>
-                            </tr>
+                             </tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -214,7 +224,7 @@ $formData = $formData ?? $servicio; // Repoblar con datos del servicio o de la s
         <p><small><span class="text-danger">*</span> Campos obligatorios</small></p>
         <div class="form-actions-bottom">
             <button type="submit" class="btn btn-primary">Guardar Cambios Servicio</button>
-             <a href="index.php?route=servicios_index" class="btn btn-secondary">Volver al Listado</a>
+              <a href="index.php?route=servicios_index" class="btn btn-secondary">Volver al Listado</a>
             <?php if (isset($servicio['estado']) && !in_array($servicio['estado'], ['Cancelado', 'Completado', 'Rechazado'])): ?>
                 <a href="index.php?route=servicios_cancel&id=<?php echo htmlspecialchars($servicio['id_servicio']); ?>" 
                    class="btn btn-danger" 
@@ -252,12 +262,68 @@ $formData = $formData ?? $servicio; // Repoblar con datos del servicio o de la s
      }
 
      const today = new Date().toISOString().split('T')[0];
-     const dateInputs = ['fechaRecepcionDocs', 'fechaPago', 'fechaAsignacionMedico', 'fechaVisitaMedico', 'fechaEnvioLG', 'fechaRecepcionLG', 'fechaFinalizacion'];
+      const dateInputs = ['fechaRecepcionDocs', 'fechaPago', 'fechaAsignacionMedico', 'fechaVisitaMedico', 'fechaEnvioLG', 'fechaRecepcionLG', 'fechaFinalizacion'];
      dateInputs.forEach(id => {
           const input = document.getElementById(id);
           if(input) {
               input.setAttribute('max', today);
           }
      });
+
+    // --- INICIO DE CÓDIGO AJAX PARA BORRAR DOCUMENTOS ---
+    const deleteButtons = document.querySelectorAll('.btn-delete-ajax');
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+
+            const docId = this.dataset.docId;
+            const docName = this.dataset.docName;
+            const url = this.href;
+            
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: `Se eliminará el documento "${docName}" permanentemente.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(url, {
+                        method: 'GET',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            const docElement = document.getElementById('doc-item-' + docId);
+                            if(docElement) {
+                                docElement.style.transition = 'opacity 0.5s ease';
+                                docElement.style.opacity = '0';
+                                setTimeout(() => { docElement.remove(); }, 500);
+                            }
+                            Swal.fire({
+                                position: 'center',
+                                icon: 'success',
+                                title: 'Documento Eliminado',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                        } else {
+                            Swal.fire('Error', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire('Error', 'Ocurrió un problema de comunicación con el servidor.', 'error');
+                    });
+                }
+            });
+        });
+    });
+    // --- FIN DE CÓDIGO AJAX ---
  });
 </script>

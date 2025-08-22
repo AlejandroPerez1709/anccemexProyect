@@ -7,6 +7,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 require_once __DIR__ . '/../models/Ejemplar.php';
 require_once __DIR__ . '/../models/Socio.php';
 require_once __DIR__ . '/../models/Documento.php';
+require_once __DIR__ . '/../models/Auditoria.php'; // <-- INCLUIMOS EL MODELO DE AUDITORÍA
 require_once __DIR__ . '/../../config/config.php';
 
 class EjemplaresController {
@@ -64,14 +65,11 @@ class EjemplaresController {
          $total_pages = ceil($total_records / $records_per_page);
 
          $ejemplares = Ejemplar::getAll($searchTerm, $records_per_page, $offset);
-
-        // INICIO DE LA MODIFICACIÓN
         foreach ($ejemplares as $key => $ejemplar) {
             $ejemplares[$key]['document_status'] = Documento::getDocumentStatusForEjemplar($ejemplar['id_ejemplar']);
         }
-        // FIN DE LA MODIFICACIÓN
 
-         $pageTitle = 'Listado de Ejemplares'; 
+         $pageTitle = 'Listado de Ejemplares';
          $currentRoute = 'ejemplares_index'; 
          $contentView = __DIR__ . '/../views/ejemplares/index.php'; 
          require_once __DIR__ . '/../views/layouts/master.php';
@@ -88,19 +86,18 @@ class EjemplaresController {
 
         // Encabezados
         $sheet->setCellValue('A1', 'ID')->setCellValue('B1', 'Nombre')->setCellValue('C1', 'Código Ejemplar')->setCellValue('D1', 'Socio Propietario')->setCellValue('E1', 'Cód. Ganadero')->setCellValue('F1', 'Sexo')->setCellValue('G1', 'Fecha Nacimiento')->setCellValue('H1', 'Raza')->setCellValue('I1', 'Capa')->setCellValue('J1', 'N° Microchip')->setCellValue('K1', 'Estado');
-        
         $row = 2;
         foreach ($ejemplares as $ejemplar) {
             $sheet->setCellValue('A' . $row, $ejemplar['id_ejemplar'])
                   ->setCellValue('B' . $row, $ejemplar['nombre'])
                   ->setCellValue('C' . $row, $ejemplar['codigo_ejemplar'])
                   ->setCellValue('D' . $row, $ejemplar['nombre_socio'])
-                  ->setCellValue('E' . $row, $ejemplar['socio_codigo_ganadero'])
+                   ->setCellValue('E' . $row, $ejemplar['socio_codigo_ganadero'])
                   ->setCellValue('F' . $row, $ejemplar['sexo'])
                   ->setCellValue('G' . $row, !empty($ejemplar['fechaNacimiento']) ? date('d/m/Y', strtotime($ejemplar['fechaNacimiento'])) : '-')
                   ->setCellValue('H' . $row, $ejemplar['raza'])
                   ->setCellValue('I' . $row, $ejemplar['capa'])
-                  ->setCellValue('J' . $row, $ejemplar['numero_microchip'])
+                   ->setCellValue('J' . $row, $ejemplar['numero_microchip'])
                   ->setCellValue('K' . $row, ucfirst($ejemplar['estado']));
             $row++;
         }
@@ -140,6 +137,10 @@ class EjemplaresController {
             $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'raza' => trim($_POST['raza'] ?? '') ?: null, 'fechaNacimiento' => trim($_POST['fechaNacimiento'] ?? '') ?: null, 'socio_id' => filter_input(INPUT_POST, 'socio_id', FILTER_VALIDATE_INT), 'sexo' => trim($_POST['sexo'] ?? ''), 'codigo_ejemplar' => trim($_POST['codigo_ejemplar'] ?? '') ?: null, 'capa' => trim($_POST['capa'] ?? '') ?: null, 'numero_microchip' => trim($_POST['numero_microchip'] ?? '') ?: null, 'numero_certificado' => trim($_POST['numero_certificado'] ?? '') ?: null, 'estado' => trim($_POST['estado'] ?? 'activo'), 'id_usuario' => $userId ];
             $ejemplarId = Ejemplar::store($data);
             if($ejemplarId) {
+                // --- REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
+                $descripcion = "Se creó el ejemplar: " . $data['nombre'] . " (Cód: " . $data['codigo_ejemplar'] . ")";
+                Auditoria::registrar('CREACIÓN DE EJEMPLAR', $ejemplarId, 'Ejemplar', $descripcion);
+
                 $_SESSION['message'] = "Ejemplar registrado con ID: " . $ejemplarId . "."; 
                 unset($_SESSION['form_data']);
 
@@ -195,6 +196,10 @@ class EjemplaresController {
         if(isset($_POST)) {
             $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'raza' => trim($_POST['raza'] ?? '') ?: null, 'fechaNacimiento' => trim($_POST['fechaNacimiento'] ?? '') ?: null, 'socio_id' => filter_input(INPUT_POST, 'socio_id', FILTER_VALIDATE_INT), 'sexo' => trim($_POST['sexo'] ?? ''), 'codigo_ejemplar' => trim($_POST['codigo_ejemplar'] ?? '') ?: null, 'capa' => trim($_POST['capa'] ?? '') ?: null, 'numero_microchip' => trim($_POST['numero_microchip'] ?? '') ?: null, 'numero_certificado' => trim($_POST['numero_certificado'] ?? '') ?: null, 'estado' => trim($_POST['estado'] ?? ''), 'id_usuario' => $userId ];
             if(Ejemplar::update($id, $data)) {
+                // --- REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
+                $descripcion = "Se modificaron los datos del ejemplar: " . $data['nombre'];
+                Auditoria::registrar('MODIFICACIÓN DE EJEMPLAR', $id, 'Ejemplar', $descripcion);
+
                 $_SESSION['message'] = "Ejemplar actualizado.";
                 unset($_SESSION['form_data']);
 
@@ -225,7 +230,13 @@ class EjemplaresController {
          }
 
          if ($ejemplarId) { 
-             if (Ejemplar::delete($ejemplarId, $razon)) { 
+            $ejemplar = Ejemplar::getById($ejemplarId); // Obtenemos datos ANTES de la acción
+             if (Ejemplar::delete($ejemplarId, $razon)) {
+                // --- REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
+                $nombreEjemplar = $ejemplar ? $ejemplar['nombre'] : 'ID ' . $ejemplarId;
+                $descripcion = "Se desactivó al ejemplar: " . $nombreEjemplar . ". Razón: " . $razon;
+                Auditoria::registrar('DESACTIVACIÓN DE EJEMPLAR', $ejemplarId, 'Ejemplar', $descripcion);
+
                  $_SESSION['message'] = "Ejemplar desactivado.";
              } else { 
                  $_SESSION['error'] = "Error al desactivar. " . ($_SESSION['error_details'] ?? 'Puede que tenga registros asociados.'); 

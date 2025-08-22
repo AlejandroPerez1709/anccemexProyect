@@ -3,7 +3,6 @@
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-
 require_once __DIR__ . '/../models/Servicio.php';
 require_once __DIR__ . '/../models/TipoServicio.php';
 require_once __DIR__ . '/../models/Socio.php';
@@ -11,6 +10,7 @@ require_once __DIR__ . '/../models/Ejemplar.php';
 require_once __DIR__ . '/../models/Medico.php';
 require_once __DIR__ . '/../models/Documento.php';
 require_once __DIR__ . '/../models/ServicioHistorial.php';
+require_once __DIR__ . '/../models/Auditoria.php'; // <-- INCLUIMOS EL MODELO DE AUDITORÍA
 require_once __DIR__ . '/../../config/config.php';
 
 class ServiciosController {
@@ -20,19 +20,20 @@ class ServiciosController {
         $maxFileSize = 10 * 1024 * 1024;
 
         if (isset($_FILES[$fileInputName]) && $_FILES[$fileInputName]['error'] === UPLOAD_ERR_OK) {
-            $subfolder = 'servicios' . DIRECTORY_SEPARATOR . date('Y') . DIRECTORY_SEPARATOR . date('m');
+            $subfolder = 'servicios' .
+            DIRECTORY_SEPARATOR . date('Y') . DIRECTORY_SEPARATOR . date('m');
             $uploadResult = Documento::handleUpload($fileInputName, $allowedTypes, $maxFileSize, $subfolder);
             if ($uploadResult['status'] === 'success') {
                 $docData = [
                     'tipoDocumento' => $tipoDocumento,
                     'nombreArchivoOriginal' => $uploadResult['data']['originalName'],
                     'rutaArchivo' => $uploadResult['data']['savedPath'], 
-                    'mimeType' => $uploadResult['data']['mimeType'],
+                     'mimeType' => $uploadResult['data']['mimeType'],
                     'sizeBytes' => $uploadResult['data']['size'],
                     'socio_id' => null,
                     'ejemplar_id' => null,
                     'servicio_id' => $servicioId,
-                    'id_usuario' => $userId,
+                     'id_usuario' => $userId,
                     'comentarios' => 'Documento de servicio.'
                 ];
                 if (!Documento::store($docData)) {
@@ -51,18 +52,13 @@ class ServiciosController {
         check_permission();
         
         $filters = [];
-        
-        // --- INICIO DE LÓGICA CORREGIDA ---
-        // Se aplica el filtro por defecto solo si el parámetro NO se envió en la URL.
-        if (!isset($_GET['filtro_estado'])) {
+        $estadoSeleccionado = $_GET['filtro_estado'] ?? 'en_proceso'; 
+
+        if ($estadoSeleccionado === 'en_proceso') {
             $filters['estado_not_in'] = ['Completado', 'Rechazado', 'Cancelado'];
-        } else {
-            // Si el parámetro SÍ se envió pero está vacío (opción "-- Todos --"), no se aplica filtro de estado.
-            if (!empty($_GET['filtro_estado'])) {
-                $filters['estado'] = $_GET['filtro_estado'];
-            }
+        } elseif (!empty($estadoSeleccionado)) {
+            $filters['estado'] = $estadoSeleccionado;
         }
-        // --- FIN DE LÓGICA CORREGIDA ---
         
         if (!empty($_GET['filtro_socio_id'])) $filters['socio_id'] = filter_input(INPUT_GET, 'filtro_socio_id', FILTER_VALIDATE_INT);
         if (!empty($_GET['filtro_tipo_id'])) $filters['tipo_servicio_id'] = filter_input(INPUT_GET, 'filtro_tipo_id', FILTER_VALIDATE_INT);
@@ -80,9 +76,7 @@ class ServiciosController {
 
         $sociosList = Socio::getActiveSociosForSelect();
         $tiposServicioList = TipoServicio::getActiveForSelect();
-        
         $posiblesEstados = ['Pendiente Docs/Pago', 'Recibido Completo', 'Pendiente Visita Medico', 'Pendiente Resultado Lab', 'Enviado a LG', 'Pendiente Respuesta LG', 'Completado', 'Rechazado', 'Cancelado'];
-        
         $pageTitle = 'Listado de Servicios';
         $currentRoute = 'servicios_index';
         $contentView = __DIR__ . '/../views/servicios/index.php';
@@ -93,14 +87,14 @@ class ServiciosController {
         check_permission();
 
         $filters = [];
-        // Lógica corregida también para la exportación
-        if (!isset($_GET['filtro_estado'])) {
+        $estadoSeleccionado = $_GET['filtro_estado'] ?? 'en_proceso';
+
+        if ($estadoSeleccionado === 'en_proceso') {
             $filters['estado_not_in'] = ['Completado', 'Rechazado', 'Cancelado'];
-        } else {
-            if (!empty($_GET['filtro_estado'])) {
-                $filters['estado'] = $_GET['filtro_estado'];
-            }
+        } elseif (!empty($estadoSeleccionado)) {
+            $filters['estado'] = $estadoSeleccionado;
         }
+
         if (!empty($_GET['filtro_socio_id'])) $filters['socio_id'] = filter_input(INPUT_GET, 'filtro_socio_id', FILTER_VALIDATE_INT);
         if (!empty($_GET['filtro_tipo_id'])) $filters['tipo_servicio_id'] = filter_input(INPUT_GET, 'filtro_tipo_id', FILTER_VALIDATE_INT);
         
@@ -108,7 +102,6 @@ class ServiciosController {
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-
         $sheet->setCellValue('A1', 'ID Servicio')->setCellValue('B1', 'Tipo Servicio')->setCellValue('C1', 'Código Servicio')->setCellValue('D1', 'Socio')->setCellValue('E1', 'Cód. Ganadero')->setCellValue('F1', 'Ejemplar')->setCellValue('G1', 'Estado')->setCellValue('H1', 'Fecha Solicitud')->setCellValue('I1', 'Fecha Finalización')->setCellValue('J1', 'Referencia Pago')->setCellValue('K1', 'Última Modificación por');
         $row = 2;
         foreach ($servicios as $servicio) {
@@ -129,7 +122,6 @@ class ServiciosController {
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="Reporte_Servicios.xlsx"');
         header('Cache-Control: max-age=0');
-
         $writer = new Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;
@@ -144,7 +136,6 @@ class ServiciosController {
         $sociosList = Socio::getActiveSociosForSelect();
         $ejemplares = Ejemplar::getAll('', -1);
         $medicosList = Medico::getActiveMedicosForSelect();
-        
         $tiposServicioDataJS = [];
         if (!empty($tiposServicioList)) {
             $allTiposData = TipoServicio::getAll();
@@ -184,22 +175,31 @@ class ServiciosController {
             if (!Socio::getById($socio_id)) $errors[] = "El socio no es válido.";
             
             $tipoServicio = TipoServicio::getById($tipo_servicio_id);
-            if (!$tipoServicio) { $errors[] = "El tipo de servicio no es válido."; }
-            else { if (!empty($tipoServicio['requiere_medico']) && empty($medico_id)) { $errors[] = "Este servicio requiere un médico."; } }
+            if (!$tipoServicio) { $errors[] = "El tipo de servicio no es válido.";
+            }
+            else { if (!empty($tipoServicio['requiere_medico']) && empty($medico_id)) { $errors[] = "Este servicio requiere un médico.";
+            } }
             
             $ejemplar = Ejemplar::getById($ejemplar_id);
-            if (!$ejemplar) { $errors[] = "El ejemplar no es válido."; }
-            elseif ($ejemplar['socio_id'] != $socio_id) { $errors[] = "El ejemplar no pertenece al socio."; }
+            if (!$ejemplar) { $errors[] = "El ejemplar no es válido.";
+            }
+            elseif ($ejemplar['socio_id'] != $socio_id) { $errors[] = "El ejemplar no pertenece al socio.";
+            }
             
             if (!empty($medico_id) && !Medico::getById($medico_id)) $errors[] = "El médico no es válido.";
             if (!isset($_FILES['solicitud_file']) || $_FILES['solicitud_file']['error'] === UPLOAD_ERR_NO_FILE) $errors[] = "Debe adjuntar la Solicitud de Servicio.";
             if (!isset($_FILES['pago_file']) || $_FILES['pago_file']['error'] === UPLOAD_ERR_NO_FILE) $errors[] = "Debe adjuntar el Comprobante de Pago.";
-            if (!empty($errors)) { $_SESSION['error'] = implode("<br>", $errors); header("Location: index.php?route=servicios/create"); exit; }
+            if (!empty($errors)) { $_SESSION['error'] = implode("<br>", $errors); header("Location: index.php?route=servicios/create"); exit;
+            }
 
             $data = [ 'socio_id' => $socio_id, 'ejemplar_id' => $ejemplar_id, 'tipo_servicio_id' => $tipo_servicio_id, 'medico_id' => $medico_id ?: null, 'estado' => 'Recibido Completo', 'fechaSolicitud' => $fechaSolicitud, 'descripcion' => $descripcion ?: null, 'referencia_pago' => $referencia_pago ?: null, 'id_usuario_registro' => $userId, 'id_usuario_ultima_mod' => $userId, 'fechaRecepcionDocs' => date('Y-m-d'), 'fechaPago' => date('Y-m-d'), 'fechaAsignacionMedico' => ($medico_id ? date('Y-m-d') : null), ];
             $servicioId = Servicio::store($data);
             
             if ($servicioId) {
+                // --- REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
+                $desc_audit = "Se creó el servicio para el ejemplar ID: {$ejemplar_id}";
+                Auditoria::registrar('CREACIÓN DE SERVICIO', $servicioId, 'Servicio', $desc_audit);
+
                 $_SESSION['message'] = "Servicio registrado con ID: " . $servicioId . ".";
                 unset($_SESSION['form_data']);
                 $this->handleServicioDocumentUpload('solicitud_file', $servicioId, 'SOLICITUD_SERVICIO', $userId);
@@ -218,10 +218,12 @@ class ServiciosController {
     public function edit($id = null) {
         check_permission();
         $servicioId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
-        if (!$servicioId) { $_SESSION['error'] = "ID inválido."; header("Location: index.php?route=servicios_index"); exit; }
+        if (!$servicioId) { $_SESSION['error'] = "ID inválido."; header("Location: index.php?route=servicios_index"); exit;
+        }
         
         $servicio = Servicio::getById($servicioId);
-        if (!$servicio) { $_SESSION['error'] = "Servicio no encontrado."; header("Location: index.php?route=servicios_index"); exit; }
+        if (!$servicio) { $_SESSION['error'] = "Servicio no encontrado."; header("Location: index.php?route=servicios_index"); exit;
+        }
         
         $formData = $_SESSION['form_data'] ?? $servicio;
         unset($_SESSION['form_data']);
@@ -232,7 +234,6 @@ class ServiciosController {
         $medicosList = Medico::getActiveMedicosForSelect();
         
         $posiblesEstados = Servicio::getSiguientesEstadosPosibles($servicio['estado'], $servicio['flujo_trabajo']);
-
         $documentosServicio = Documento::getByEntityId('servicio', $servicioId);
         $historialServicio = ServicioHistorial::getByServicioId($servicioId);
         
@@ -246,8 +247,11 @@ class ServiciosController {
         check_permission();
         $userId = $_SESSION['user']['id_usuario'];
         $id = filter_input(INPUT_POST, 'id_servicio', FILTER_VALIDATE_INT);
-        if (!$id) { $_SESSION['error'] = "ID de servicio inválido."; header("Location: index.php?route=servicios_index"); exit; }
+        if (!$id) { $_SESSION['error'] = "ID de servicio inválido."; header("Location: index.php?route=servicios_index"); exit;
+        }
         
+        $servicioAntes = Servicio::getById($id); // Obtenemos estado anterior para la auditoría
+
         $_SESSION['form_data'] = $_POST;
         if (isset($_POST)) {
             $data = [ 
@@ -259,7 +263,7 @@ class ServiciosController {
                 'fechaPago' => trim($_POST['fechaPago'] ?? '') ?: null, 
                 'fechaAsignacionMedico' => trim($_POST['fechaAsignacionMedico'] ?? '') ?: null, 
                 'fechaVisitaMedico' => trim($_POST['fechaVisitaMedico'] ?? '') ?: null, 
-                'fechaEnvioLG' => trim($_POST['fechaEnvioLG'] ?? '') ?: null, 
+                 'fechaEnvioLG' => trim($_POST['fechaEnvioLG'] ?? '') ?: null, 
                 'fechaRecepcionLG' => trim($_POST['fechaRecepcionLG'] ?? '') ?: null, 
                 'fechaFinalizacion' => trim($_POST['fechaFinalizacion'] ?? '') ?: null, 
                 'descripcion' => trim($_POST['descripcion'] ?? '') ?: null, 
@@ -267,8 +271,14 @@ class ServiciosController {
                 'referencia_pago' => trim($_POST['referencia_pago'] ?? '') ?: null, 
                 'id_usuario_ultima_mod' => $userId 
             ];
-            
             if (Servicio::update($id, $data)) {
+                // --- REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
+                $descripcion = "Se actualizaron los datos del servicio.";
+                if ($servicioAntes && $servicioAntes['estado'] !== $data['estado']) {
+                    $descripcion = "Cambio de estado de '{$servicioAntes['estado']}' a '{$data['estado']}'.";
+                }
+                Auditoria::registrar('MODIFICACIÓN DE SERVICIO', $id, 'Servicio', $descripcion);
+
                 $_SESSION['message'] = "Servicio #" . $id . " actualizado.";
                 unset($_SESSION['form_data']);
                 $this->handleServicioDocumentUpload('solicitud_file', $id, 'SOLICITUD_SERVICIO', $userId);
@@ -289,6 +299,9 @@ class ServiciosController {
          $servicioId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
          if ($servicioId) {
              if (Servicio::cancel($servicioId, $_SESSION['user']['id_usuario'])) {
+                // --- REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
+                Auditoria::registrar('CANCELACIÓN DE SERVICIO', $servicioId, 'Servicio', 'El servicio fue cancelado por el usuario desde el listado.');
+
                  $_SESSION['message'] = "Servicio #" . $servicioId . " cancelado exitosamente.";
              } else {
                   $_SESSION['error'] = "Error al cancelar el servicio: " . ($_SESSION['error_details'] ?? 'Error desconocido.');
@@ -304,7 +317,6 @@ class ServiciosController {
     public function updateStatus() {
         check_permission();
         header('Content-Type: application/json');
-
         $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
         $estado = trim($_POST['estado'] ?? '');
         $motivoRechazo = ($estado === 'Rechazado') ? trim($_POST['motivo'] ?? '') : null;
@@ -333,6 +345,11 @@ class ServiciosController {
         }
 
         if (Servicio::updateStatus($id, $estado, $motivoRechazo, $userId)) {
+            // --- REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
+            $descripcion = "Cambio de estado de '{$servicioActual['estado']}' a '{$estado}'.";
+            if ($motivoRechazo) { $descripcion .= " Motivo: " . $motivoRechazo; }
+            Auditoria::registrar('CAMBIO DE ESTADO ', $id, 'Servicio', $descripcion);
+
             echo json_encode(['status' => 'success', 'message' => 'Estado actualizado correctamente.']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'No se pudo actualizar el estado. ' . ($_SESSION['error_details'] ?? '')]);

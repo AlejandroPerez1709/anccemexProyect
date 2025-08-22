@@ -20,14 +20,19 @@ class Empleado {
             $data['nombre'], $data['apellido_paterno'], $data['apellido_materno'], $data['email'], 
             $data['direccion'], $data['telefono'], $data['puesto'], $data['estado'], $data['fecha_ingreso']
         );
-        $result = $stmt->execute();
-        if (!$result && $conn->errno == 1062) {
+        
+        // --- INICIO DE MODIFICACIÓN: Devolver ID en lugar de true/false ---
+        $newId = false;
+        if ($stmt->execute()) {
+            $newId = $conn->insert_id;
+        } else if ($conn->errno == 1062) {
             $_SESSION['error_details'] = 'El email proporcionado ya existe para otro empleado.';
         }
         
         $stmt->close();
         $conn->close();
-        return $result;
+        return $newId; // Devuelve el ID del nuevo registro o false si falla
+        // --- FIN DE MODIFICACIÓN ---
     }
     
     public static function countAll($searchTerm = '') {
@@ -61,7 +66,6 @@ class Empleado {
         return $total;
     }
     
-    // --- INICIO DE CÓDIGO MODIFICADO ---
     public static function countActive($filtros = []) {
         $conn = dbConnect();
         if (!$conn) return 0;
@@ -98,7 +102,6 @@ class Empleado {
         $conn->close();
         return $total;
     }
-    // --- FIN DE CÓDIGO MODIFICADO ---
 
     public static function getAll($searchTerm = '', $limit = 15, $offset = 0) {
         $conn = dbConnect();

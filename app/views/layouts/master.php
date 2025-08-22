@@ -12,7 +12,11 @@ $isSociosActive = (strpos($currentRoute, 'socios') === 0);
 $isEjemplaresActive = (strpos($currentRoute, 'ejemplares') === 0);
 $isMedicosActive = (strpos($currentRoute, 'medicos') === 0);
 $isEmpleadosActive = (strpos($currentRoute, 'empleados') === 0);
-$isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($currentRoute, 'tipos_servicios') !== false || strpos($currentRoute, 'reportes') !== false;
+// --- MODIFICACIÓN: Añadir la nueva ruta de auditoría a la lógica del menú de admin ---
+$isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || 
+                        strpos($currentRoute, 'tipos_servicios') !== false ||
+                        strpos($currentRoute, 'reportes') !== false ||
+                        strpos($currentRoute, 'auditoria') !== false;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -55,7 +59,7 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
                 <span></span>
             </button>
         </div>
-    </div>
+     </div>
 
      <div class="layout-container">
         <div class="sidebar" id="sidebar">
@@ -67,7 +71,7 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
                         <span>Dashboard</span>
                     </a>
                 </li>
-                <li>
+                 <li>
                     <a href="index.php?route=servicios_index" class="<?php echo $isServiciosActive ? 'active' : ''; ?>">
                         <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M14.1213 10.4792C13.7308 10.0886 13.0976 10.0886 12.7071 10.4792L12 11.1863C11.2189 11.9673 9.95259 11.9673 9.17154 11.1863C8.39049 10.4052 8.39049 9.13888 9.17154 8.35783L14.8022 2.72568C16.9061 2.24973 19.2008 2.83075 20.8388 4.46875C23.2582 6.88811 23.3716 10.7402 21.1792 13.2939L19.071 15.4289L14.1213 10.4792ZM3.16113 4.46875C5.33452 2.29536 8.66411 1.98283 11.17 3.53116L7.75732 6.94362C6.19523 8.50572 6.19523 11.0384 7.75732 12.6005C9.27209 14.1152 11.6995 14.1611 13.2695 12.7382L13.4142 12.6005L17.6568 16.8431L13.4142 21.0858C12.6331 21.8668 11.3668 21.8668 10.5858 21.0858L3.16113 13.6611C0.622722 11.1227 0.622722 7.00715 3.16113 4.46875Z"></path></svg>
                          <span>Servicios</span>
@@ -85,7 +89,7 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
                          <span>Ejemplares</span>
                     </a>
                 </li>
-                <li>
+                 <li>
                      <a href="index.php?route=medicos_index" class="<?php echo $isMedicosActive ? 'active' : ''; ?>">
                         <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3H15V5H9V3ZM19 5H17V3C17 1.89543 16.1046 1 15 1H9C7.89543 1 7 1.89543 7 3V5H5C3.89543 5 3 5.89543 3 7V21C3 22.1046 3.89543 23 5 23H19C20.1046 23 21 22.1046 21 21V7C21 5.89543 20.1046 5 19 5ZM11 15H8V13H11V10H13V13H16V15H13V18H11V15Z"></path></svg>
                         <span>Médicos</span>
@@ -117,15 +121,21 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
                             </a>
                         </li>
                         <li>
-                             <a href="index.php?route=reportes" class="<?php echo ($currentRoute === 'reportes') ? 'active' : ''; ?>">
+                              <a href="index.php?route=reportes" class="<?php echo ($currentRoute === 'reportes') ? 'active' : ''; ?>">
                                 <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20 22H4C3.44772 22 3 21.5523 3 21V3C3 2.44772 3.44772 2 4 2H16L21 7V21C21 21.5523 20.5523 22 20 22ZM19 8H15V4H5V20H19V8ZM7 10H17V12H7V10ZM7 14H17V16H7V14Z"></path></svg>
                                 <span>Reportes</span>
-                            </a>
+                             </a>
+                        </li>
+                        <li>
+                            <a href="index.php?route=auditoria_index" class="<?php echo ($currentRoute === 'auditoria_index') ? 'active' : ''; ?>">
+                                <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4ZM12.5 8V12.5L16 14.25L15.25 15.4L11 13V8H12.5Z"></path></svg>
+                                <span>Bitácora de Auditoría</span>
+                             </a>
                         </li>
                     </ul>
                 </li>
                  <?php endif; ?>
-            </ul>
+             </ul>
         </div>
 
         <div class="content">
@@ -133,11 +143,11 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
             if (isset($_SESSION['message'])) {
                 echo "<script>
                     Swal.fire({
-                        position: 'center',
+                         position: 'center',
                         icon: 'success',
                         title: '" . htmlspecialchars($_SESSION['message']) . "',
                         showConfirmButton: false,
-                        timer: 2000
+                         timer: 2000
                     });
                 </script>";
                 unset($_SESSION['message']);
@@ -146,7 +156,7 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
             if (isset($_SESSION['error'])) {
                 echo "<div class='alert alert-error'>" . htmlspecialchars($_SESSION['error']) . "</div>";
                 unset($_SESSION['error']);
-             }
+              }
 
             if (isset($_SESSION['warning'])) {
                 echo "<div class='alert alert-warning'>" . htmlspecialchars($_SESSION['warning']) . "</div>";
@@ -154,13 +164,13 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
             }
             
             if (isset($contentView) && file_exists($contentView)) {
-                if (isset($tiposServicios)) extract(['tiposServicios' => $tiposServicios]);
+                 if (isset($tiposServicios)) extract(['tiposServicios' => $tiposServicios]);
                 if (isset($tipoServicio)) extract(['tipoServicio' => $tipoServicio]);
                 if (isset($empleado)) extract(['empleado' => $empleado]);
                 if (isset($usuario)) extract(['usuario' => $usuario]);
                 if (isset($socio)) extract(['socio' => $socio]);
-                if (isset($sociosList)) extract(['sociosList' => $sociosList]);
-                if (isset($ejemplares)) extract(['ejemplares' => $ejemplares]);
+                 if (isset($sociosList)) extract(['sociosList' => $sociosList]);
+                 if (isset($ejemplares)) extract(['ejemplares' => $ejemplares]);
                 if (isset($ejemplar)) extract(['ejemplar' => $ejemplar]);
                 if (isset($medicosList)) extract(['medicosList' => $medicosList]);
                 if (isset($medico)) extract(['medico' => $medico]);
@@ -168,11 +178,8 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
                 if (isset($servicio)) extract(['servicio' => $servicio]);
                 if (isset($posiblesEstados)) extract(['posiblesEstados' => $posiblesEstados]);
                 if (isset($formData)) extract(['formData' => $formData]);
-
-                // --- INICIO DE NUEVO CÓDIGO ---
                 if (isset($resultados)) extract(['resultados' => $resultados]);
                 if (isset($filtros_aplicados)) extract(['filtros_aplicados' => $filtros_aplicados]);
-                // --- FIN DE NUEVO CÓDIGO ---
 
                 include $contentView;
             } else {
@@ -193,7 +200,7 @@ $isAdminSectionActive = strpos($currentRoute, 'usuarios') !== false || strpos($c
                     parentLi.classList.toggle('open');
                     const submenu = parentLi.querySelector('.sidebar-submenu');
                     submenu.classList.toggle('visible');
-                 });
+                     });
             });
 
             const menuToggle = document.getElementById('menu-toggle');
