@@ -77,6 +77,21 @@ function build_report_pagination_url($page) {
     $query_params['page'] = $page;
     return 'index.php?' . http_build_query($query_params);
 }
+
+// --- NUEVA LÓGICA PARA PREPARAR DATOS DEL GRÁFICO ---
+$chartConfig = ['type' => 'pie'];
+if (!empty($datos_grafica) && !empty($datos_grafica['data']) && array_sum($datos_grafica['data']) > 0) {
+    $chartConfig['labels'] = $datos_grafica['labels'];
+    $chartConfig['data'] = $datos_grafica['data'];
+}
+if ($tipo_reporte_generado === 'servicios_resumen_mensual' && !empty($datos_grafica)) {
+    $chartConfig['type'] = 'bar';
+    $chartConfig['data_creados'] = $datos_grafica['data_creados'] ?? [];
+    $chartConfig['data_completados'] = $datos_grafica['data_completados'] ?? [];
+    unset($chartConfig['data']); // No necesitamos el data genérico
+}
+$chartConfigJSON = json_encode($chartConfig);
+// --- FIN DE NUEVA LÓGICA ---
 ?>
 
 <div class="page-title-container">
@@ -135,7 +150,7 @@ function build_report_pagination_url($page) {
         <div class="form-actions-bottom">
             <button type="submit" class="btn btn-primary">Generar Reporte</button>
             <a href="index.php?route=reportes" class="btn btn-secondary">Limpiar Filtros</a>
-        </div>
+       </div>
     </form>
 </div>
 
@@ -166,8 +181,8 @@ function build_report_pagination_url($page) {
                     </tr></tbody>
                 </table>
                 <div class="summary-chart">
-                    <?php if(!empty($datos_grafica) && !empty($datos_grafica['data']) && array_sum($datos_grafica['data']) > 0): ?>
-                        <canvas id="reportChart"></canvas>
+                    <?php if(!empty($datos_grafica)): ?>
+                         <canvas id="reportChart" data-chart-config='<?php echo $chartConfigJSON; ?>'></canvas>
                     <?php else: ?>
                         <p class="text-center" style="padding-top: 50px;">Este socio no tiene servicios para generar una gráfica.</p>
                     <?php endif; ?>
@@ -180,8 +195,8 @@ function build_report_pagination_url($page) {
                 <div class="summary-kpi"><h4>Total de Páginas</h4><p><?php echo $total_pages; ?></p></div>
                 <?php endif; ?>
                 <div class="summary-chart">
-                    <?php if(!empty($datos_grafica) && !empty($datos_grafica['data']) && array_sum($datos_grafica['data']) > 0): ?>
-                        <canvas id="reportChart"></canvas>
+                    <?php if(!empty($datos_grafica)): ?>
+                        <canvas id="reportChart" data-chart-config='<?php echo $chartConfigJSON; ?>'></canvas>
                     <?php else: ?>
                         <p class="text-center" style="padding-top: 50px;">No hay datos para generar una gráfica.</p>
                     <?php endif; ?>
@@ -210,7 +225,7 @@ function build_report_pagination_url($page) {
                 <thead>
                     <?php 
                     if ($tipo_reporte_generado === 'socios' && $socio_seleccionado) {
-                        echo '<tr><th>N° Servicio</th><th>Tipo Servicio</th><th>Ejemplar</th><th>Estado</th><th>Fecha Solicitud</th><th>Fecha Finalización</th></tr>';
+                         echo '<tr><th>N° Servicio</th><th>Tipo Servicio</th><th>Ejemplar</th><th>Estado</th><th>Fecha Solicitud</th><th>Fecha Finalización</th></tr>';
                     } else {
                         switch($tipo_reporte_generado) {
                             case 'socios':
@@ -231,7 +246,7 @@ function build_report_pagination_url($page) {
                 </thead>
                 <tbody>
                     <?php if (!empty($resultados)):
-                        if ($tipo_reporte_generado === 'socios' && $socio_seleccionado) {
+                         if ($tipo_reporte_generado === 'socios' && $socio_seleccionado) {
                              foreach($resultados as $servicio) {
                                 echo '<tr>';
                                 echo '<td>' . $servicio['id_servicio'] . '</td>';
@@ -272,75 +287,4 @@ function build_report_pagination_url($page) {
 <?php endif; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tipoReporteSelect = document.getElementById('tipo_reporte');
-    const filterGroups = {
-        servicios: document.getElementById('filtros_servicios'),
-        socios: document.getElementById('filtros_socios'),
-        ejemplares: document.getElementById('filtros_ejemplares'),
-        servicios_resumen_mensual: document.getElementById('filtros_servicios_resumen_mensual')
-    };
-
-    function actualizarFiltrosVisibles() {
-        const seleccion = tipoReporteSelect.value;
-        for (const key in filterGroups) {
-            const group = filterGroups[key];
-            if (group) {
-                const isVisible = (key === seleccion);
-                group.style.display = isVisible ? 'block' : 'none';
-                group.querySelectorAll('input, select').forEach(input => {
-                    input.disabled = !isVisible;
-                });
-            }
-        }
-    }
-    tipoReporteSelect.addEventListener('change', actualizarFiltrosVisibles);
-    actualizarFiltrosVisibles();
-
-    <?php if(!empty($datos_grafica) && !empty($datos_grafica['data']) && array_sum($datos_grafica['data']) > 0): ?>
-    const ctx = document.getElementById('reportChart');
-    if (ctx) {
-        let chartType = 'pie';
-        let chartData = {
-            labels: <?php echo json_encode($datos_grafica['labels']); ?>,
-            datasets: [{
-                label: 'Distribución de Resultados',
-                data: <?php echo json_encode($datos_grafica['data'] ?? []); ?>,
-                backgroundColor: ['rgba(46, 125, 50, 0.7)','rgba(255, 159, 64, 0.7)','rgba(54, 162, 235, 0.7)','rgba(255, 99, 132, 0.7)','rgba(153, 102, 255, 0.7)','rgba(255, 206, 86, 0.7)','rgba(75, 192, 192, 0.7)','rgba(201, 203, 207, 0.7)'],
-                borderColor: '#fff',
-                borderWidth: 1
-            }]
-        };
-        let chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } };
-
-        <?php if ($tipo_reporte_generado === 'servicios_resumen_mensual'): ?>
-            chartType = 'bar';
-            chartData.datasets = [
-                {
-                    label: 'Servicios Creados',
-                    data: <?php echo json_encode($datos_grafica['data_creados']); ?>,
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Servicios Completados',
-                    data: <?php echo json_encode($datos_grafica['data_completados']); ?>,
-                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 1
-                }
-            ];
-            chartOptions.scales = { y: { beginAtZero: true, ticks: { stepSize: 1 } } };
-        <?php endif; ?>
-
-        new Chart(ctx, {
-            type: chartType,
-            data: chartData,
-            options: chartOptions
-        });
-    }
-    <?php endif; ?>
-});
-</script>
+<script src="<?php echo BASE_URL; ?>/assets/js/reportes.js"></script>

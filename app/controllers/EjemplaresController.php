@@ -65,19 +65,18 @@ class EjemplaresController {
          $total_pages = ceil($total_records / $records_per_page);
 
          $ejemplares = Ejemplar::getAll($searchTerm, $records_per_page, $offset);
-        foreach ($ejemplares as $key => $ejemplar) {
+         foreach ($ejemplares as $key => $ejemplar) {
             $ejemplares[$key]['document_status'] = Documento::getDocumentStatusForEjemplar($ejemplar['id_ejemplar']);
-        }
+         }
 
          $pageTitle = 'Listado de Ejemplares';
-         $currentRoute = 'ejemplares_index'; 
+         $currentRoute = 'ejemplares_index';
          $contentView = __DIR__ . '/../views/ejemplares/index.php'; 
          require_once __DIR__ . '/../views/layouts/master.php';
     }
 
     public function exportToExcel() {
         check_permission();
-
         $searchTerm = $_GET['search'] ?? '';
         $ejemplares = Ejemplar::getAll($searchTerm, -1); // -1 para obtener todos los registros
 
@@ -86,18 +85,19 @@ class EjemplaresController {
 
         // Encabezados
         $sheet->setCellValue('A1', 'ID')->setCellValue('B1', 'Nombre')->setCellValue('C1', 'Código Ejemplar')->setCellValue('D1', 'Socio Propietario')->setCellValue('E1', 'Cód. Ganadero')->setCellValue('F1', 'Sexo')->setCellValue('G1', 'Fecha Nacimiento')->setCellValue('H1', 'Raza')->setCellValue('I1', 'Capa')->setCellValue('J1', 'N° Microchip')->setCellValue('K1', 'Estado');
+
         $row = 2;
         foreach ($ejemplares as $ejemplar) {
             $sheet->setCellValue('A' . $row, $ejemplar['id_ejemplar'])
                   ->setCellValue('B' . $row, $ejemplar['nombre'])
                   ->setCellValue('C' . $row, $ejemplar['codigo_ejemplar'])
                   ->setCellValue('D' . $row, $ejemplar['nombre_socio'])
-                   ->setCellValue('E' . $row, $ejemplar['socio_codigo_ganadero'])
+                  ->setCellValue('E' . $row, $ejemplar['socio_codigo_ganadero'])
                   ->setCellValue('F' . $row, $ejemplar['sexo'])
                   ->setCellValue('G' . $row, !empty($ejemplar['fechaNacimiento']) ? date('d/m/Y', strtotime($ejemplar['fechaNacimiento'])) : '-')
                   ->setCellValue('H' . $row, $ejemplar['raza'])
                   ->setCellValue('I' . $row, $ejemplar['capa'])
-                   ->setCellValue('J' . $row, $ejemplar['numero_microchip'])
+                  ->setCellValue('J' . $row, $ejemplar['numero_microchip'])
                   ->setCellValue('K' . $row, ucfirst($ejemplar['estado']));
             $row++;
         }
@@ -135,12 +135,13 @@ class EjemplaresController {
 
         if(isset($_POST)) {
             $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'raza' => trim($_POST['raza'] ?? '') ?: null, 'fechaNacimiento' => trim($_POST['fechaNacimiento'] ?? '') ?: null, 'socio_id' => filter_input(INPUT_POST, 'socio_id', FILTER_VALIDATE_INT), 'sexo' => trim($_POST['sexo'] ?? ''), 'codigo_ejemplar' => trim($_POST['codigo_ejemplar'] ?? '') ?: null, 'capa' => trim($_POST['capa'] ?? '') ?: null, 'numero_microchip' => trim($_POST['numero_microchip'] ?? '') ?: null, 'numero_certificado' => trim($_POST['numero_certificado'] ?? '') ?: null, 'estado' => trim($_POST['estado'] ?? 'activo'), 'id_usuario' => $userId ];
+            
             $ejemplarId = Ejemplar::store($data);
             if($ejemplarId) {
                 // --- REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
                 $descripcion = "Se creó el ejemplar: " . $data['nombre'] . " (Cód: " . $data['codigo_ejemplar'] . ")";
                 Auditoria::registrar('CREACIÓN DE EJEMPLAR', $ejemplarId, 'Ejemplar', $descripcion);
-
+                
                 $_SESSION['message'] = "Ejemplar registrado con ID: " . $ejemplarId . "."; 
                 unset($_SESSION['form_data']);
 
@@ -148,6 +149,7 @@ class EjemplaresController {
                 $this->handleSingleEjemplarDocUpload('adn_file', $ejemplarId, 'RESULTADO_ADN', $userId);
                 $this->handleSingleEjemplarDocUpload('cert_lg_file', $ejemplarId, 'CERTIFICADO_INSCRIPCION_LG', $userId);
                 $this->handleMultipleEjemplarPhotos('fotos_file', $ejemplarId, $userId);
+
                 header("Location: index.php?route=ejemplares_index"); 
                 exit;
             } else { 
@@ -170,6 +172,7 @@ class EjemplaresController {
 
                 $sociosList = Socio::getActiveSociosForSelect();
                 $documentosEjemplar = Documento::getByEntityId('ejemplar', $ejemplarId, true); 
+                
                 $pageTitle = 'Editar Ejemplar'; 
                 $currentRoute = 'ejemplares/edit';
                 $contentView = __DIR__ . '/../views/ejemplares/edit.php';
@@ -195,6 +198,7 @@ class EjemplaresController {
         $_SESSION['form_data'] = $_POST;
         if(isset($_POST)) {
             $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'raza' => trim($_POST['raza'] ?? '') ?: null, 'fechaNacimiento' => trim($_POST['fechaNacimiento'] ?? '') ?: null, 'socio_id' => filter_input(INPUT_POST, 'socio_id', FILTER_VALIDATE_INT), 'sexo' => trim($_POST['sexo'] ?? ''), 'codigo_ejemplar' => trim($_POST['codigo_ejemplar'] ?? '') ?: null, 'capa' => trim($_POST['capa'] ?? '') ?: null, 'numero_microchip' => trim($_POST['numero_microchip'] ?? '') ?: null, 'numero_certificado' => trim($_POST['numero_certificado'] ?? '') ?: null, 'estado' => trim($_POST['estado'] ?? ''), 'id_usuario' => $userId ];
+            
             if(Ejemplar::update($id, $data)) {
                 // --- REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
                 $descripcion = "Se modificaron los datos del ejemplar: " . $data['nombre'];
@@ -247,5 +251,24 @@ class EjemplaresController {
          } 
          header("Location: index.php?route=ejemplares_index"); 
          exit;
+    }
+    
+    /**
+     * Endpoint para obtener ejemplares de un socio específico via AJAX.
+     * Devuelve los resultados en formato JSON.
+     */
+    public function getPorSocio() {
+        header('Content-Type: application/json');
+        
+        $socio_id = filter_input(INPUT_GET, 'socio_id', FILTER_VALIDATE_INT);
+
+        if (!$socio_id) {
+            echo json_encode([]);
+            exit;
+        }
+
+        $ejemplares = Ejemplar::getPorSocioId($socio_id);
+        echo json_encode($ejemplares);
+        exit;
     }
 }

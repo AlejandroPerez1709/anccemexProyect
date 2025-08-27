@@ -1,9 +1,10 @@
 <?php
 // app/controllers/UsuariosController.php
 
-// AÑADIR ESTAS DOS LÍNEAS AL INICIO
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
+require_once __DIR__ . '/../../core/Validator.php';
 
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../../config/config.php';
@@ -12,7 +13,6 @@ class UsuariosController {
 
     public function index() {
         check_permission('superusuario');
-        // --- LÓGICA DE PAGINACIÓN Y BÚSQUEDA ---
         $searchTerm = $_GET['search'] ?? '';
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $records_per_page = 15;
@@ -22,7 +22,6 @@ class UsuariosController {
         $total_pages = ceil($total_records / $records_per_page);
 
         $usuarios = User::getAll($searchTerm, $records_per_page, $offset);
-        // --- FIN DE LA LÓGICA ---
 
         $pageTitle = 'Listado de Usuarios';
         $currentRoute = 'usuarios_index';
@@ -30,17 +29,14 @@ class UsuariosController {
         require_once __DIR__ . '/../views/layouts/master.php';
     }
 
-    // AÑADIR ESTE NUEVO MÉTODO COMPLETO
     public function exportToExcel() {
         check_permission('superusuario');
-
         $searchTerm = $_GET['search'] ?? '';
-        $usuarios = User::getAll($searchTerm, -1); // -1 para obtener todos los registros
+        $usuarios = User::getAll($searchTerm, -1); 
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        // Encabezados
         $sheet->setCellValue('A1', 'ID')->setCellValue('B1', 'Nombre')->setCellValue('C1', 'Apellido Paterno')->setCellValue('D1', 'Apellido Materno')->setCellValue('E1', 'Email')->setCellValue('F1', 'Username')->setCellValue('G1', 'Rol')->setCellValue('H1', 'Estado')->setCellValue('I1', 'Fecha Creación')->setCellValue('J1', 'Último Login');
         
         $row = 2;
@@ -58,7 +54,6 @@ class UsuariosController {
             $row++;
         }
 
-        // Cabeceras para descarga
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="Reporte_Usuarios.xlsx"');
         header('Cache-Control: max-age=0');
@@ -70,8 +65,10 @@ class UsuariosController {
 
     public function create() {
         check_permission('superusuario'); 
+        $errors = $_SESSION['errors'] ?? [];
         $formData = $_SESSION['form_data'] ?? [];
-        unset($_SESSION['form_data']);
+        unset($_SESSION['errors'], $_SESSION['form_data']);
+
         $pageTitle = 'Registrar Nuevo Usuario';
         $currentRoute = 'usuarios/create';
         $contentView = __DIR__ . '/../views/usuarios/create.php';
@@ -80,21 +77,29 @@ class UsuariosController {
 
     public function store() {
         check_permission('superusuario');
-        $_SESSION['form_data'] = $_POST;
-        if(isset($_POST)) {
-            $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''), 'apellido_materno' => trim($_POST['apellido_materno'] ?? ''), 'email' => trim($_POST['email'] ?? ''), 'username' => trim($_POST['username'] ?? ''), 'password' => $_POST['password'] ?? '', 'rol' => trim($_POST['rol'] ?? ''), 'estado' => trim($_POST['estado'] ?? '') ];
-            
-            if(User::store($data)) {
-                $_SESSION['message'] = "Usuario creado exitosamente.";
-                unset($_SESSION['form_data']);
-                header("Location: index.php?route=usuarios_index");
-                exit;
-            } else {
-                $_SESSION['error'] = "Error al crear el usuario: " . ($_SESSION['error_details'] ?? 'Error desconocido.');
-                unset($_SESSION['error_details']);
-                header("Location: index.php?route=usuarios/create");
-                exit; 
-            }
+        $rules = require __DIR__ . '/../../config/validation_rules.php';
+
+        $errors = Validator::validate($_POST, $rules['crear_usuario']);
+
+        if (!empty($errors)) {
+            $_SESSION['errors'] = $errors;
+            $_SESSION['form_data'] = $_POST;
+            header("Location: index.php?route=usuarios/create");
+            exit;
+        }
+
+        $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''), 'apellido_materno' => trim($_POST['apellido_materno'] ?? ''), 'email' => trim($_POST['email'] ?? ''), 'username' => trim($_POST['username'] ?? ''), 'password' => $_POST['password'] ?? '', 'rol' => trim($_POST['rol'] ?? ''), 'estado' => trim($_POST['estado'] ?? '') ];
+        
+        if(User::store($data)) {
+            $_SESSION['message'] = "Usuario creado exitosamente.";
+            header("Location: index.php?route=usuarios_index");
+            exit;
+        } else {
+            $_SESSION['form_data'] = $_POST;
+            $_SESSION['error'] = "Error al crear el usuario: " . ($_SESSION['error_details'] ?? 'Error desconocido.');
+            unset($_SESSION['error_details']);
+            header("Location: index.php?route=usuarios/create");
+            exit; 
         }
     }
 
@@ -104,8 +109,10 @@ class UsuariosController {
         if($usuarioId) {
             $usuario = User::getById($usuarioId);
             if($usuario) {
+                $errors = $_SESSION['errors'] ?? [];
                 $formData = $_SESSION['form_data'] ?? $usuario;
-                unset($_SESSION['form_data']);
+                unset($_SESSION['errors'], $_SESSION['form_data']);
+
                 $pageTitle = 'Editar Usuario';
                 $currentRoute = 'usuarios/edit';
                 $contentView = __DIR__ . '/../views/usuarios/edit.php';
@@ -120,27 +127,40 @@ class UsuariosController {
 
     public function update() {
         check_permission('superusuario');
+        $rules = require __DIR__ . '/../../config/validation_rules.php';
+
         $id = filter_input(INPUT_POST, 'id_usuario', FILTER_VALIDATE_INT);
         if (!$id) { 
             $_SESSION['error'] = "ID de usuario inválido.";
             header("Location: index.php?route=usuarios_index"); 
             exit;
         }
-        $_SESSION['form_data'] = $_POST;
-        if(isset($_POST)) {
-            $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''), 'apellido_materno' => trim($_POST['apellido_materno'] ?? ''), 'email' => trim($_POST['email'] ?? ''), 'username' => trim($_POST['username'] ?? ''), 'password' => $_POST['password'] ?? '', 'rol' => trim($_POST['rol'] ?? ''), 'estado' => trim($_POST['estado'] ?? '') ];
-            
-            if(User::update($id, $data)) {
-                $_SESSION['message'] = "Usuario actualizado exitosamente.";
-                unset($_SESSION['form_data']);
-                header("Location: index.php?route=usuarios_index");
-                exit;
-            } else {
-                $_SESSION['error'] = "Error al actualizar el usuario: " . ($_SESSION['error_details'] ?? 'Error desconocido.');
-                unset($_SESSION['error_details']);
-                header("Location: index.php?route=usuarios/edit&id=" . $id);
-                exit;
-            }
+
+        $updateRules = $rules['actualizar_usuario'];
+        $updateRules['email'] .= "|unique:usuarios,email," . $id;
+        $updateRules['username'] .= "|unique:usuarios,username," . $id;
+
+        $errors = Validator::validate($_POST, $updateRules);
+
+        if (!empty($errors)) {
+            $_SESSION['errors'] = $errors;
+            $_SESSION['form_data'] = $_POST;
+            header("Location: index.php?route=usuarios/edit&id=" . $id);
+            exit;
+        }
+        
+        $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''), 'apellido_materno' => trim($_POST['apellido_materno'] ?? ''), 'email' => trim($_POST['email'] ?? ''), 'username' => trim($_POST['username'] ?? ''), 'password' => $_POST['password'] ?? '', 'rol' => trim($_POST['rol'] ?? ''), 'estado' => trim($_POST['estado'] ?? '') ];
+        
+        if(User::update($id, $data)) {
+            $_SESSION['message'] = "Usuario actualizado exitosamente.";
+            header("Location: index.php?route=usuarios_index");
+            exit;
+        } else {
+            $_SESSION['form_data'] = $_POST;
+            $_SESSION['error'] = "Error al actualizar el usuario: " . ($_SESSION['error_details'] ?? 'Error desconocido.');
+            unset($_SESSION['error_details']);
+            header("Location: index.php?route=usuarios/edit&id=" . $id);
+            exit;
         }
     }
 
@@ -159,6 +179,7 @@ class UsuariosController {
             header("Location: index.php?route=usuarios_index");
             exit;
         }
+
         if($usuarioId) {
             if(User::delete($usuarioId, $razon)) {
                 $_SESSION['message'] = "Usuario desactivado exitosamente.";

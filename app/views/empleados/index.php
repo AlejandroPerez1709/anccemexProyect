@@ -23,7 +23,7 @@ function build_pagination_url($page, $searchTerm) {
         <input type="text" name="search" class="form-control" placeholder="Buscar por nombre, puesto, email..." value="<?php echo htmlspecialchars($searchTerm ?? ''); ?>">
         <div class="search-buttons">
             <button type="submit" class="btn btn-secondary">Buscar</button>
-            <a href="index.php?route=empleados_index" class="btn btn-primary">Limpiar</a>
+             <a href="index.php?route=empleados_index" class="btn btn-primary">Limpiar</a>
         </div>
     </form>
 </div>
@@ -55,20 +55,20 @@ function build_pagination_url($page, $searchTerm) {
             <tr>
                 <th>N°</th>
                 <th>Nombre</th>
-                <th>Apellidos</th>
+                 <th>Apellidos</th>
                 <th>Email</th>
                 <th>Teléfono</th>
                 <th>Puesto</th>
                 <th>Estado</th>
                 <th>Fecha Ingreso</th>
-                <th>Acciones</th>
+                 <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
             <?php if(isset($empleados) && count($empleados) > 0): ?>
                 <?php foreach($empleados as $empleado): ?>
                     <tr class="clickable-row"
-                        data-nombre-completo="<?php echo htmlspecialchars($empleado['nombre'] . ' ' . $empleado['apellido_paterno'] . ' ' . $empleado['apellido_materno']); ?>"
+                         data-nombre-completo="<?php echo htmlspecialchars($empleado['nombre'] . ' ' . $empleado['apellido_paterno'] . ' ' . $empleado['apellido_materno']); ?>"
                         data-email="<?php echo htmlspecialchars($empleado['email'] ?? '-'); ?>"
                         data-telefono="<?php echo htmlspecialchars($empleado['telefono'] ?? '-'); ?>"
                         data-direccion="<?php echo htmlspecialchars($empleado['direccion'] ?? '-'); ?>"
@@ -78,34 +78,34 @@ function build_pagination_url($page, $searchTerm) {
                         <td><?php echo $empleado['id_empleado']; ?></td>
                         <td><?php echo htmlspecialchars($empleado['nombre']); ?></td>
                         <td><?php echo htmlspecialchars($empleado['apellido_paterno'] . ' ' . $empleado['apellido_materno']); ?></td>
-                        <td><?php echo htmlspecialchars($empleado['email']); ?></td>
+                         <td><?php echo htmlspecialchars($empleado['email']); ?></td>
                         <td><?php echo htmlspecialchars($empleado['telefono']); ?></td>
                         <td><?php echo htmlspecialchars($empleado['puesto']); ?></td>
                         <td>
-                            <span style="color: <?php echo ($empleado['estado'] == 'activo') ? 'green' : 'red'; ?>; font-weight: bold;">
+                             <span style="color: <?php echo ($empleado['estado'] == 'activo') ? 'green' : 'red'; ?>; font-weight: bold;">
                                 <?php echo htmlspecialchars(ucfirst($empleado['estado'])); ?>
                             </span>
                         </td>
                         <td><?php echo isset($empleado['fecha_ingreso']) ? date('d/m/Y', strtotime($empleado['fecha_ingreso'])) : ''; ?></td>
                         <td>
                             <div class="action-buttons">
-                                <a href="index.php?route=empleados/edit&id=<?php echo $empleado['id_empleado']; ?>" class="btn btn-warning">Editar</a>
+                                 <a href="index.php?route=empleados/edit&id=<?php echo $empleado['id_empleado']; ?>" class="btn btn-warning">Editar</a>
                                 <button class="btn btn-danger" onclick="confirmDeactivation(event, <?php echo $empleado['id_empleado']; ?>, '<?php echo htmlspecialchars(addslashes($empleado['nombre'] . ' ' . $empleado['apellido_paterno'])); ?>')">
                                     Desactivar
-                                </button>
+                                 </button>
                             </div>
                         </td>
                     </tr>
-                <?php endforeach; ?>
+                 <?php endforeach; ?>
             <?php else: ?>
                 <tr>
                     <td colspan="9" class="text-center">
                         <?php if (!empty($searchTerm)): ?>
-                            No se encontraron empleados que coincidan con "<?php echo htmlspecialchars($searchTerm); ?>".
+                             No se encontraron empleados que coincidan con "<?php echo htmlspecialchars($searchTerm); ?>".
                         <?php else: ?>
                             No hay empleados registrados.
                         <?php endif; ?>
-                    </td>
+                     </td>
                 </tr>
             <?php endif; ?>
         </tbody>
@@ -130,7 +130,6 @@ function build_pagination_url($page, $searchTerm) {
 </nav>
 <?php endif; ?>
 
-<!-- Estructura HTML de la Ventana Modal para Empleados -->
 <div id="infoModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -139,9 +138,9 @@ function build_pagination_url($page, $searchTerm) {
         </div>
         <div class="modal-body">
             <div class="modal-section">
-                <div class="modal-section-title">
+                 <div class="modal-section-title">
                     <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20 22H4C3.44772 22 3 21.5523 3 21V3C3 2.44772 3.44772 2 4 2H20C20.5523 2 21 2.44772 21 3V21C21 21.5523 20.5523 22 20 22ZM19 4H5V20H19V4ZM12 13C10.6193 13 9.5 11.8807 9.5 10.5C9.5 9.11929 10.6193 8 12 8C13.3807 8 14.5 9.11929 14.5 10.5C14.5 11.8807 13.3807 13 12 13ZM7.5 18C7.5 15.5147 9.51472 13.5 12 13.5C14.4853 13.5 16.5 15.5147 16.5 18H7.5Z"></path></svg>
-                    <h4>Información del Empleado</h4>
+                     <h4>Información del Empleado</h4>
                 </div>
                 <div class="modal-grid">
                     <div class="modal-field full-width"><span class="modal-label">Nombre Completo:</span><span class="modal-value" id="modalNombreCompleto"></span></div>
@@ -150,7 +149,7 @@ function build_pagination_url($page, $searchTerm) {
                     <div class="modal-field"><span class="modal-label">Teléfono:</span><span class="modal-value" id="modalTelefono"></span></div>
                     <div class="modal-field full-width"><span class="modal-label">Dirección:</span><span class="modal-value" id="modalDireccion"></span></div>
                 </div>
-            </div>
+             </div>
             <div class="modal-section">
                 <div class="modal-section-title">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7C4.79086 3 3 4.79086 3 7V17C3 19.2091 4.79086 21 7 21H17C19.2091 21 21 19.2091 21 17V7C21 4.79086 19.2091 3 17 3ZM19 17C19 18.1046 18.1046 19 17 19H7C5.89543 19 5 18.1046 5 17V7C5 5.89543 5.89543 5 7 5H17C18.1046 5 19 5.89543 19 7V17ZM15.2929 9.29289L11 13.5858L8.70711 11.2929L7.29289 12.7071L11 16.4142L16.7071 10.7071L15.2929 9.29289Z"></path></svg>
@@ -158,95 +157,11 @@ function build_pagination_url($page, $searchTerm) {
                 </div>
                 <div class="modal-grid">
                     <div class="modal-field"><span class="modal-label">Fecha de Ingreso:</span><span class="modal-value" id="modalFechaIngreso"></span></div>
-                    <div class="modal-field"><span class="modal-label">Estado:</span><span class="modal-value" id="modalEstado"></span></div>
+                     <div class="modal-field"><span class="modal-label">Estado:</span><span class="modal-value" id="modalEstado"></span></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Lógica para el modal de información
-    const modal = document.getElementById('infoModal');
-    const closeButton = modal.querySelector('.close-button');
-    const rows = document.querySelectorAll('.clickable-row');
-
-    // Referencias a los spans del modal
-    const modalNombreCompleto = document.getElementById('modalNombreCompleto');
-    const modalPuesto = document.getElementById('modalPuesto');
-    const modalEmail = document.getElementById('modalEmail');
-    const modalTelefono = document.getElementById('modalTelefono');
-    const modalDireccion = document.getElementById('modalDireccion');
-    const modalFechaIngreso = document.getElementById('modalFechaIngreso');
-    const modalEstado = document.getElementById('modalEstado');
-
-    rows.forEach(row => {
-        row.addEventListener('click', function(event) {
-            if (event.target.closest('.action-buttons')) {
-                return;
-            }
-
-            // Llenar datos generales del modal
-            modalNombreCompleto.textContent = this.dataset.nombreCompleto;
-            modalPuesto.textContent = this.dataset.puesto;
-            modalEmail.textContent = this.dataset.email;
-            modalTelefono.textContent = this.dataset.telefono;
-            modalDireccion.textContent = this.dataset.direccion;
-            modalFechaIngreso.textContent = this.dataset.fechaIngreso;
-            modalEstado.textContent = this.dataset.estado;
-            
-            modal.style.display = 'block';
-        });
-    });
-
-    closeButton.addEventListener('click', function() {
-        modal.style.display = 'none';
-    });
-
-    window.addEventListener('click', function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    });
-});
-
-function confirmDeactivation(event, empleadoId, empleadoName) {
-    // Detener la propagación para que no active el modal de la fila
-    event.stopPropagation();
-
-    Swal.fire({
-        title: '¿Estás seguro?',
-        text: `Se desactivará al empleado: ${empleadoName}`,
-        icon: 'warning',
-        input: 'textarea',
-        inputLabel: 'Razón de la desactivación',
-        inputPlaceholder: 'Escribe el motivo aquí...',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sí, desactivar',
-        cancelButtonText: 'Cancelar',
-        inputValidator: (value) => {
-            if (!value) {
-                return '¡Necesitas escribir una razón para la desactivación!'
-            }
-        }
-    }).then((result) => {
-        if (result.isConfirmed && result.value) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `index.php?route=empleados_delete&id=${empleadoId}`;
-            
-            const reasonInput = document.createElement('input');
-            reasonInput.type = 'hidden';
-            reasonInput.name = 'razon';
-            reasonInput.value = result.value;
-            form.appendChild(reasonInput);
-
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
-</script>
+<script src="<?php echo BASE_URL; ?>/assets/js/empleados-index.js"></script>

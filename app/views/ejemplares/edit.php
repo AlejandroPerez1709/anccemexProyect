@@ -1,34 +1,29 @@
 <?php
 //app/views/ejemplares/edit.php
-// Asegurar que las variables existan y sean del tipo esperado
-// $ejemplar contendrá los datos del ejemplar si se cargó correctamente.
-// $formData tendrá prioridad si hubo un error de validación en el POST.
 $ejemplar = $ejemplar ?? null;
 $sociosList = $sociosList ?? [];
 $documentosEjemplar = $documentosEjemplar ?? [];
 $formData = $formData ?? $ejemplar;
-// Repoblar con datos del ejemplar o de la sesión si hubo error
 ?>
 
 <div class="form-container form-wide"> <h2>Editar Ejemplar: <?php echo htmlspecialchars($ejemplar['nombre'] ?? 'Ejemplar no encontrado'); ?> (<?php echo htmlspecialchars($ejemplar['codigo_ejemplar'] ?? 'S/C'); ?>)</h2>
-    <?php if ($ejemplar): // Solo mostrar formulario si el ejemplar existe ?>
+    <?php if ($ejemplar): ?>
     <form action="index.php?route=ejemplares_update" method="POST" id="ejemplarEditForm" enctype="multipart/form-data">
         <input type="hidden" name="id_ejemplar" value="<?php echo htmlspecialchars($ejemplar['id_ejemplar'] ?? ''); ?>">
 
         <div class="form-main-columns"> <div class="form-main-col left-col">
                 <fieldset>
                     <legend>Datos del Ejemplar</legend>
-                     <div class="form-group-full">
+                    <div class="form-group-full">
                         <select name="socio_id" id="socio_id" required <?php echo empty($sociosList) ? 'disabled' : ''; ?>>
                             <option value="" disabled <?php echo empty($formData['socio_id']) ? 'selected' : ''; ?>>-- Seleccione Socio Propietario --</option>
                             <?php foreach ($sociosList as $id => $display): ?>
                                 <option value="<?php echo htmlspecialchars($id); ?>" <?php echo (isset($formData['socio_id']) && $formData['socio_id'] == $id) ? 'selected' : ''; ?>><?php echo htmlspecialchars($display); ?></option>
                             <?php endforeach; ?>
                             <?php 
-                            // Si el socio actual del ejemplar no está en la lista de socios activos, mostrarlo como opción seleccionada
                              if (!isset($sociosList[$ejemplar['socio_id']]) && !empty($ejemplar['socio_id'])): 
                             ?>
-                                <option value="<?php echo htmlspecialchars($ejemplar['socio_id']); ?>" selected>
+                                 <option value="<?php echo htmlspecialchars($ejemplar['socio_id']); ?>" selected>
                                      <?php echo htmlspecialchars($ejemplar['nombre_socio'] ?? 'ID:'.$ejemplar['socio_id']); ?> (<?php echo htmlspecialchars($ejemplar['socio_codigo_ganadero'] ?? 'N/A'); ?>) - [Actual, Posiblemente Inactivo]
                                 </option>
                             <?php endif; ?>
@@ -42,7 +37,7 @@ $formData = $formData ?? $ejemplar;
                                placeholder=" " required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\.\,\-]+$" title="Solo letras, números, espacios, puntos, comas y guiones">
                         <label for="nombre">Nombre Ejemplar:<span class="text-danger">*</span></label>
                     </div>
-                     <div class="form-row">
+                      <div class="form-row">
                         <div class="form-group">
                             <select name="sexo" id="sexo" required>
                                  <option value="" disabled <?php echo empty($formData['sexo']) ? 'selected' : ''; ?>>-- Seleccione --</option>
@@ -51,7 +46,7 @@ $formData = $formData ?? $ejemplar;
                             </select>
                             <label for="sexo">Sexo:<span class="text-danger">*</span></label>
                         </div>
-                         <div class="form-group">
+                          <div class="form-group">
                             <input type="date" name="fechaNacimiento" id="fechaNacimiento"
                                    value="<?php echo htmlspecialchars($formData['fechaNacimiento'] ?? ''); ?>"
                                    placeholder=" " max="<?php echo date('Y-m-d'); ?>">
@@ -64,17 +59,17 @@ $formData = $formData ?? $ejemplar;
                                    value="<?php echo htmlspecialchars($formData['raza'] ?? ''); ?>"
                                    placeholder=" " pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ0-9\s\-\.]+" title="Solo letras, números, espacios, guiones y puntos">
                             <label for="raza">Raza:</label>
-                         </div>
+                          </div>
                         <div class="form-group">
                             <input type="text" name="capa" id="capa"
                                    value="<?php echo htmlspecialchars($formData['capa'] ?? ''); ?>"
                                    placeholder=" " pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s\-\.]+" title="Solo letras, espacios, guiones y puntos">
                             <label for="capa">Capa (Color):</label>
-                         </div>
+                          </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <input type="text" name="codigo_ejemplar" id="codigo_ejemplar"
+                             <input type="text" name="codigo_ejemplar" id="codigo_ejemplar"
                                    value="<?php echo htmlspecialchars($formData['codigo_ejemplar'] ?? ''); ?>"
                                    placeholder=" " pattern="[A-Za-z0-9\-]+" title="Solo letras, números y guiones">
                             <label for="codigo_ejemplar">Código Ejemplar:</label>
@@ -85,28 +80,28 @@ $formData = $formData ?? $ejemplar;
                                    placeholder=" " pattern="[0-9]+" title="Solo números">
                             <label for="numero_microchip">Núm. Microchip:</label>
                         </div>
-                     </div>
+                      </div>
                     <div class="form-group-full">
                         <input type="text" name="numero_certificado" id="numero_certificado"
                                value="<?php echo htmlspecialchars($formData['numero_certificado'] ?? ''); ?>"
                                placeholder=" " pattern="[A-Za-z0-9\-]+" title="Solo letras, números y guiones">
                         <label for="numero_certificado">Núm. Certificado LG:</label>
                     </div>
-                     <div class="form-group-full">
+                      <div class="form-group-full">
                         <select name="estado" id="estado" required>
                             <option value="activo" <?php echo (isset($formData['estado']) && $formData['estado'] == 'activo') ? 'selected' : ''; ?>>Activo</option>
-                             <option value="inactivo" <?php echo (isset($formData['estado']) && $formData['estado'] == 'inactivo') ? 'selected' : ''; ?>>Inactivo</option>
+                              <option value="inactivo" <?php echo (isset($formData['estado']) && $formData['estado'] == 'inactivo') ? 'selected' : ''; ?>>Inactivo</option>
                         </select>
                         <label for="estado">Estado:<span class="text-danger">*</span></label>
                     </div>
-                 </fieldset>
+                  </fieldset>
             </div>
 
             <div class="form-main-col right-col">
                 <fieldset>
                     <legend>Documentos Maestros del Ejemplar</legend>
                     <small>Suba los documentos iniciales si los tiene.</small>
-                    
+                     
                     <h4>Documentos Actuales:</h4>
                     <?php if (!empty($documentosEjemplar)): ?>
                         <ul class="document-list">
@@ -114,48 +109,60 @@ $formData = $formData ?? $ejemplar;
                                 <li class="document-list-item" id="doc-item-<?php echo $doc['id_documento']; ?>">
                                     <div class="document-list-item-content">
                                         <strong><?php echo htmlspecialchars($doc['tipoDocumento']); ?>:</strong>
-                                        <a href="index.php?route=documento_download&id=<?php echo htmlspecialchars($doc['id_documento']); ?>" target="_blank" title="Descargar <?php echo htmlspecialchars($doc['nombreArchivoOriginal']); ?>">
+                                        
+                                        <?php
+                                        $isImage = in_array($doc['mimeType'], ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+                                        $linkClass = $isImage ? 'document-link' : '';
+                                        $dataAttribute = $isImage ? 'data-is-image="true"' : '';
+                                        $targetAttribute = $isImage ? '' : 'target="_blank"';
+                                        ?>
+                                         <a href="index.php?route=documento_download&id=<?php echo htmlspecialchars($doc['id_documento']); ?>" 
+                                           class="<?php echo $linkClass; ?>"
+                                           <?php echo $dataAttribute; ?>
+                                           <?php echo $targetAttribute; ?>
+                                           title="<?php echo htmlspecialchars($doc['nombreArchivoOriginal']); ?>">
                                             <?php echo htmlspecialchars($doc['nombreArchivoOriginal']); ?>
                                         </a>
-                                        <small>(Subido: <?php echo date('d/m/Y H:i', strtotime($doc['fechaSubida'])); ?> por <?php echo htmlspecialchars($doc['uploaded_by_username'] ?? 'N/A'); ?>)</small>
+
+                                         <small>(Subido: <?php echo date('d/m/Y H:i', strtotime($doc['fechaSubida'])); ?> por <?php echo htmlspecialchars($doc['uploaded_by_username'] ?? 'N/A'); ?>)</small>
                                          <?php if(!empty($doc['comentarios'])): ?>
-                                            <p class="document-comment"><i>Comentarios: <?php echo htmlspecialchars($doc['comentarios']); ?></i></p>
+                                             <p class="document-comment"><i>Comentarios: <?php echo htmlspecialchars($doc['comentarios']); ?></i></p>
                                         <?php endif; ?>
-                                    </div>
+                                     </div>
                                     <div class="document-list-item-actions">
                                          <?php if (isset($_SESSION['user']) && $_SESSION['user']['rol'] === 'superusuario'): ?>
-                                            <a href="index.php?route=documento_delete&id=<?php echo htmlspecialchars($doc['id_documento']); ?>&ejemplar_id=<?php echo htmlspecialchars($ejemplar['id_ejemplar']); ?>"
+                                             <a href="index.php?route=documento_delete&id=<?php echo htmlspecialchars($doc['id_documento']); ?>&ejemplar_id=<?php echo htmlspecialchars($ejemplar['id_ejemplar']); ?>"
                                                class="btn btn-sm btn-danger btn-delete-ajax"
                                                data-doc-id="<?php echo $doc['id_documento']; ?>"
                                                data-doc-name="<?php echo htmlspecialchars(addslashes($doc['nombreArchivoOriginal'])); ?>">Eliminar</a>
                                          <?php endif; ?>
                                     </div>
-                                </li>
+                                 </li>
                             <?php endforeach; ?>
                         </ul>
                     <?php else: ?>
-                        <p>No hay documentos maestros registrados para este ejemplar.</p>
+                         <p>No hay documentos maestros registrados para este ejemplar.</p>
                     <?php endif; ?>
                     <hr>
 
                     <h4>Subir/Actualizar Documentos:</h4>
-                    <small>Suba un archivo para añadirlo o actualizar uno existente del mismo tipo.</small>
+                     <small>Suba un archivo para añadirlo o actualizar uno existente del mismo tipo.</small>
                     <div class="form-group-full">
                          <label for="pasaporte_file">Pasaporte / DIE:</label>
                         <input type="file" name="pasaporte_file" id="pasaporte_file" accept=".pdf,.jpg,.jpeg,.png,.gif">
-                    </div>
+                     </div>
                     <div class="form-group-full">
                          <label for="adn_file">Resultado ADN (Filiación/Capas):</label>
                         <input type="file" name="adn_file" id="adn_file" accept=".pdf">
-                    </div>
+                     </div>
                     <div class="form-group-full">
                          <label for="cert_lg_file">Certificado Inscripción LG (si aplica):</label>
                         <input type="file" name="cert_lg_file" id="cert_lg_file" accept=".pdf,.jpg,.jpeg,.png,.gif">
-                    </div>
+                     </div>
                     <div class="form-group-full">
                          <label for="fotos_file">Fotos Identificativas (puede seleccionar varias):</label>
                         <input type="file" name="fotos_file[]" id="fotos_file" multiple accept="image/*">
-                    </div>
+                     </div>
                 </fieldset>
                 
                  <p><small><span class="text-danger">*</span> Campos obligatorios</small></p>
@@ -172,76 +179,4 @@ $formData = $formData ?? $ejemplar;
     <?php endif; ?>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Establecer la fecha máxima para Fecha de Nacimiento
-    var today = new Date().toISOString().split('T')[0];
-    var fechaNacInput = document.getElementById('fechaNacimiento');
-    if (fechaNacInput) { 
-        fechaNacInput.setAttribute('max', today); 
-    }
-    
-    // --- INICIO DE CÓDIGO AJAX PARA BORRAR DOCUMENTOS ---
-    const deleteButtons = document.querySelectorAll('.btn-delete-ajax');
-    
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', function(event) {
-            event.preventDefault(); // Evita la navegación normal del enlace
-
-            const docId = this.dataset.docId;
-            const docName = this.dataset.docName;
-            const url = this.href;
-            
-            Swal.fire({
-                title: '¿Estás seguro?',
-                text: `Se eliminará el documento "${docName}" permanentemente.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    
-                    fetch(url, {
-                        method: 'GET',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            const docElement = document.getElementById('doc-item-' + docId);
-                            if(docElement) {
-                                docElement.style.transition = 'opacity 0.5s ease';
-                                docElement.style.opacity = '0';
-                                setTimeout(() => {
-                                    docElement.remove();
-                                }, 500);
-                            }
-                            
-                            Swal.fire({
-                                position: 'center',
-                                icon: 'success',
-                                title: 'Documento Eliminado',
-                                showConfirmButton: false,
-                                timer: 1500
-                            });
-
-                        } else {
-                            Swal.fire('Error', data.message, 'error');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        Swal.fire('Error', 'Ocurrió un problema de comunicación con el servidor.', 'error');
-                    });
-                }
-            });
-        });
-    });
-    // --- FIN DE CÓDIGO AJAX ---
-});
-</script>
+<script src="<?php echo BASE_URL; ?>/assets/js/ejemplares-edit.js"></script>

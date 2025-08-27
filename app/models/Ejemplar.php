@@ -1,6 +1,7 @@
 <?php
 // app/models/Ejemplar.php
 require_once __DIR__ . '/../../config/config.php';
+
 class Ejemplar {
 
     public static function store($data) {
@@ -247,7 +248,6 @@ class Ejemplar {
         $params = [];
         $types = "";
         $whereSql = self::buildReportWhereClause($filtros, $params, $types);
-        
         $sql = "SELECT COUNT(e.id_ejemplar) as total FROM ejemplares e" . $whereSql;
         
         $total = 0;
@@ -276,7 +276,6 @@ class Ejemplar {
         $sql_select = "SELECT e.*, CONCAT(s.nombre, ' ', s.apellido_paterno) as nombre_socio, s.codigoGanadero as socio_codigo_ganadero 
                        FROM ejemplares e
                        LEFT JOIN socios s ON e.socio_id = s.id_socio";
-        
         $params = [];
         $types = "";
         $whereSql = self::buildReportWhereClause($filtros, $params, $types);
@@ -294,6 +293,36 @@ class Ejemplar {
             if (!empty($params)) {
                 $stmt->bind_param($types, ...$params);
             }
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                while ($row = $result->fetch_assoc()) {
+                    $ejemplares[] = $row;
+                }
+                $result->free();
+            }
+            $stmt->close();
+        }
+        
+        $conn->close();
+        return $ejemplares;
+    }
+    
+    /**
+     * Obtiene solo los ejemplares activos de un socio específico.
+     * @param int $socio_id El ID del socio.
+     * @return array Lista de ejemplares.
+     */
+    public static function getPorSocioId($socio_id) {
+        $conn = dbConnect();
+        $ejemplares = [];
+        if (!$conn) return $ejemplares;
+
+        $sql = "SELECT id_ejemplar, nombre, codigo_ejemplar, socio_id FROM ejemplares 
+                WHERE socio_id = ? AND estado = 'activo' ORDER BY nombre ASC";
+        
+        $stmt = $conn->prepare($sql);
+        if ($stmt) {
+            $stmt->bind_param("i", $socio_id);
             if ($stmt->execute()) {
                 $result = $stmt->get_result();
                 while ($row = $result->fetch_assoc()) {

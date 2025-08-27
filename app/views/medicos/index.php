@@ -61,7 +61,7 @@ function build_pagination_url($page, $searchTerm) {
                 <th>Cédula Prof.</th>
                 <th>Cert. ANCCE</th>
                 <th>Estado</th>
-                <th>Acciones</th>
+                 <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -93,20 +93,20 @@ function build_pagination_url($page, $searchTerm) {
                                 <a href="index.php?route=medicos/edit&id=<?php echo $medico['id_medico']; ?>" class="btn btn-warning">Editar</a>
                                 <button class="btn btn-danger" onclick="confirmDeactivation(event, <?php echo $medico['id_medico']; ?>, '<?php echo htmlspecialchars(addslashes($medico['nombre'] . ' ' . $medico['apellido_paterno'])); ?>')">
                                      Desactivar
-                                </button>
+                                 </button>
                             </div>
                         </td>
                     </tr>
-                <?php endforeach; ?>
+                 <?php endforeach; ?>
             <?php else: ?>
                 <tr>
                     <td colspan="9" class="text-center">
                         <?php if (!empty($searchTerm)): ?>
-                            No se encontraron médicos que coincidan con "<?php echo htmlspecialchars($searchTerm); ?>".
+                             No se encontraron médicos que coincidan con "<?php echo htmlspecialchars($searchTerm); ?>".
                         <?php else: ?>
                             No hay médicos registrados.
                         <?php endif; ?>
-                    </td>
+                     </td>
                 </tr>
             <?php endif; ?>
         </tbody>
@@ -131,7 +131,6 @@ function build_pagination_url($page, $searchTerm) {
 </nav>
 <?php endif; ?>
 
-<!-- Estructura HTML de la Ventana Modal para Médicos -->
 <div id="infoModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -140,10 +139,10 @@ function build_pagination_url($page, $searchTerm) {
         </div>
         <div class="modal-body">
             <div class="modal-section">
-                <div class="modal-section-title">
+                 <div class="modal-section-title">
                     <svg class="menu-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 3H15V5H9V3ZM19 5H17V3C17 1.89543 16.1046 1 15 1H9C7.89543 1 7 1.89543 7 3V5H5C3.89543 5 3 5.89543 3 7V21C3 22.1046 3.89543 23 5 23H19C20.1046 23 21 22.1046 21 21V7C21 5.89543 20.1046 5 19 5ZM11 15H8V13H11V10H13V13H16V15H13V18H11V15Z"></path></svg>
                     <h4>Información Personal</h4>
-                </div>
+                 </div>
                 <div class="modal-grid">
                     <div class="modal-field full-width"><span class="modal-label">Nombre Completo:</span><span class="modal-value" id="modalNombreCompleto"></span></div>
                     <div class="modal-field"><span class="modal-label">Email:</span><span class="modal-value" id="modalEmail"></span></div>
@@ -156,101 +155,15 @@ function build_pagination_url($page, $searchTerm) {
                     <h4>Datos Profesionales</h4>
                 </div>
                 <div class="modal-grid">
-                    <div class="modal-field"><span class="modal-label">Especialidad:</span><span class="modal-value" id="modalEspecialidad"></span></div>
+                     <div class="modal-field"><span class="modal-label">Especialidad:</span><span class="modal-value" id="modalEspecialidad"></span></div>
                     <div class="modal-field"><span class="modal-label">Cédula Profesional:</span><span class="modal-value" id="modalCedula"></span></div>
                     <div class="modal-field"><span class="modal-label">Certificación ANCCE:</span><span class="modal-value" id="modalCertificacion"></span></div>
                     <div class="modal-field"><span class="modal-label">Entidad de Residencia:</span><span class="modal-value" id="modalResidencia"></span></div>
-                    <div class="modal-field"><span class="modal-label">Estado:</span><span class="modal-value" id="modalEstado"></span></div>
+                     <div class="modal-field"><span class="modal-label">Estado:</span><span class="modal-value" id="modalEstado"></span></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Lógica para el modal de información
-    const modal = document.getElementById('infoModal');
-    const closeButton = modal.querySelector('.close-button');
-    const rows = document.querySelectorAll('.clickable-row');
-
-    // Referencias a los spans del modal
-    const modalNombreCompleto = document.getElementById('modalNombreCompleto');
-    const modalEspecialidad = document.getElementById('modalEspecialidad');
-    const modalEmail = document.getElementById('modalEmail');
-    const modalTelefono = document.getElementById('modalTelefono');
-    const modalCedula = document.getElementById('modalCedula');
-    const modalCertificacion = document.getElementById('modalCertificacion');
-    const modalResidencia = document.getElementById('modalResidencia');
-    const modalEstado = document.getElementById('modalEstado');
-
-    rows.forEach(row => {
-        row.addEventListener('click', function(event) {
-            if (event.target.closest('.action-buttons')) {
-                return;
-            }
-
-            // Llenar datos generales del modal
-            modalNombreCompleto.textContent = this.dataset.nombreCompleto;
-            modalEspecialidad.textContent = this.dataset.especialidad;
-            modalEmail.textContent = this.dataset.email;
-            modalTelefono.textContent = this.dataset.telefono;
-            modalCedula.textContent = this.dataset.cedula;
-            modalCertificacion.textContent = this.dataset.certificacion;
-            modalResidencia.textContent = this.dataset.residencia;
-            modalEstado.textContent = this.dataset.estado;
-            
-            modal.style.display = 'block';
-        });
-    });
-
-    closeButton.addEventListener('click', function() {
-        modal.style.display = 'none';
-    });
-
-    window.addEventListener('click', function(event) {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
-    });
-});
-
-function confirmDeactivation(event, medicoId, medicoName) {
-    // Detener la propagación para que no active el modal de la fila
-    event.stopPropagation();
-    
-    Swal.fire({
-        title: '¿Estás seguro?',
-        text: `Se desactivará al médico: ${medicoName}`,
-        icon: 'warning',
-        input: 'textarea',
-        inputLabel: 'Razón de la desactivación',
-        inputPlaceholder: 'Escribe el motivo aquí...',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sí, desactivar',
-        cancelButtonText: 'Cancelar',
-        inputValidator: (value) => {
-            if (!value) {
-                return '¡Necesitas escribir una razón para la desactivación!'
-            }
-        }
-    }).then((result) => {
-        if (result.isConfirmed && result.value) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `index.php?route=medicos_delete&id=${medicoId}`;
-
-            const reasonInput = document.createElement('input');
-            reasonInput.type = 'hidden';
-            reasonInput.name = 'razon';
-            reasonInput.value = result.value;
-            form.appendChild(reasonInput);
-
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
-</script>
+<script src="<?php echo BASE_URL; ?>/assets/js/medicos-index.js"></script>

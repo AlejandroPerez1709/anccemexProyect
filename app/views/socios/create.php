@@ -1,10 +1,10 @@
 <?php
 // app/views/socios/create.php
 
-// Recuperar datos del formulario si hubo error. Viene del controlador.
-$formData = $formData ?? []; // Asegurar que $formData exista
-
-// Mensajes de error y warning ya se gestionan en master.php.
+// Recuperar errores y datos del formulario si los hay
+$errors = $_SESSION['errors'] ?? [];
+$formData = $_SESSION['form_data'] ?? [];
+unset($_SESSION['errors'], $_SESSION['form_data']);
 ?>
 
 <div class="form-container form-wide"> <h2>Registrar Nuevo Socio</h2>
@@ -18,12 +18,18 @@ $formData = $formData ?? []; // Asegurar que $formData exista
                                    value="<?php echo htmlspecialchars($formData['nombre'] ?? ''); ?>"
                                    placeholder=" " required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
                             <label for="nombre">Nombre(s) Titular:<span class="text-danger">*</span></label>
+                            <?php if (isset($errors['nombre'])): ?>
+                                <div class="error-message"><?php echo htmlspecialchars($errors['nombre'][0]); ?></div>
+                            <?php endif; ?>
                         </div>
                         <div class="form-group">
                             <input type="text" name="apellido_paterno" id="apellido_paterno"
                                    value="<?php echo htmlspecialchars($formData['apellido_paterno'] ?? ''); ?>"
                                    placeholder=" " required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
                             <label for="apellido_paterno">Apellido Paterno:<span class="text-danger">*</span></label>
+                            <?php if (isset($errors['apellido_paterno'])): ?>
+                                <div class="error-message"><?php echo htmlspecialchars($errors['apellido_paterno'][0]); ?></div>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="form-row">
@@ -32,12 +38,18 @@ $formData = $formData ?? []; // Asegurar que $formData exista
                                    value="<?php echo htmlspecialchars($formData['apellido_materno'] ?? ''); ?>"
                                    placeholder=" " required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="Solo letras y espacios permitidos">
                             <label for="apellido_materno">Apellido Materno:<span class="text-danger">*</span></label>
+                            <?php if (isset($errors['apellido_materno'])): ?>
+                                <div class="error-message"><?php echo htmlspecialchars($errors['apellido_materno'][0]); ?></div>
+                            <?php endif; ?>
                         </div>
                         <div class="form-group">
                             <input type="tel" name="telefono" id="telefono"
                                    value="<?php echo htmlspecialchars($formData['telefono'] ?? ''); ?>"
                                    placeholder=" " required pattern="[0-9]{10}" title="Debe contener exactamente 10 dígitos numéricos">
                             <label for="telefono">Teléfono:<span class="text-danger">*</span></label>
+                            <?php if (isset($errors['telefono'])): ?>
+                                <div class="error-message"><?php echo htmlspecialchars($errors['telefono'][0]); ?></div>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="form-row">
@@ -46,12 +58,18 @@ $formData = $formData ?? []; // Asegurar que $formData exista
                                    value="<?php echo htmlspecialchars($formData['email'] ?? ''); ?>"
                                    placeholder=" " required pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Formato de email no válido">
                             <label for="email">Email:<span class="text-danger">*</span></label>
+                            <?php if (isset($errors['email'])): ?>
+                                <div class="error-message"><?php echo htmlspecialchars($errors['email'][0]); ?></div>
+                            <?php endif; ?>
                         </div>
                         <div class="form-group">
                             <input type="text" name="identificacion_fiscal_titular" id="identificacion_fiscal_titular"
                                    value="<?php echo htmlspecialchars($formData['identificacion_fiscal_titular'] ?? ''); ?>"
                                    placeholder=" " required pattern="[A-Za-z0-9\-]+" title="Letras, números y guiones permitidos">
                             <label for="identificacion_fiscal_titular">RFC:<span class="text-danger">*</span></label>
+                            <?php if (isset($errors['identificacion_fiscal_titular'])): ?>
+                                <div class="error-message"><?php echo htmlspecialchars($errors['identificacion_fiscal_titular'][0]); ?></div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </fieldset>
@@ -78,6 +96,9 @@ $formData = $formData ?? []; // Asegurar que $formData exista
                                    value="<?php echo htmlspecialchars($formData['codigoGanadero'] ?? ''); ?>"
                                    placeholder=" " required pattern="[A-Za-z0-9]+" title="Letras y números permitidos">
                             <label for="codigoGanadero">Código Ganadero:<span class="text-danger">*</span></label>
+                            <?php if (isset($errors['codigoGanadero'])): ?>
+                                <div class="error-message"><?php echo htmlspecialchars($errors['codigoGanadero'][0]); ?></div>
+                            <?php endif; ?>
                         </div>
                         <div class="form-group">
                             <input type="date" name="fechaRegistro" id="fechaRegistro"
@@ -94,7 +115,7 @@ $formData = $formData ?? []; // Asegurar que $formData exista
                         <label for="estado">Estado:<span class="text-danger">*</span></label>
                     </div>
                 </fieldset>
-            </div>
+             </div>
 
             <div class="form-main-col right-col">
                 <fieldset>
@@ -123,7 +144,7 @@ $formData = $formData ?? []; // Asegurar que $formData exista
                 <div class="form-actions-bottom">
                     <button type="submit" class="btn btn-primary">Registrar Socio</button>
                     <a href="index.php?route=socios_index" class="btn btn-secondary">Cancelar</a>
-                </div>
+                 </div>
             </div>
         </div>
     </form>
@@ -136,7 +157,5 @@ document.addEventListener('DOMContentLoaded', function() {
     if (fechaRegInput) {
         fechaRegInput.setAttribute('max', today);
     }
-    // NOTA: Para input[type="file"], el efecto flotante del label se desactiva por CSS.
-    // No necesitan placeholder=" ".
 });
 </script>

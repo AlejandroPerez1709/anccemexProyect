@@ -4,7 +4,6 @@ require_once __DIR__ . '/../../config/config.php';
 
 class User {
 
-    // ... (El método getByUsername, updateLastLogin y store se mantienen igual) ...
     public static function getByUsername($username) {
         $conn = dbConnect();
         if (!$conn) return null;
@@ -60,7 +59,6 @@ class User {
             $data['nombre'], $data['apellido_paterno'], $data['apellido_materno'], $data['email'],
             $data['username'], $hashed_password, $data['rol'], $data['estado']
         );
-        
         $result = $stmt->execute();
         if (!$result && $conn->errno == 1062) {
             $_SESSION['error_details'] = 'Ya existe un usuario con el mismo Email o Nombre de Usuario.';
@@ -71,11 +69,6 @@ class User {
         return $result;
     }
 
-    /**
-     * Cuenta el total de usuarios, opcionalmente filtrados por un término de búsqueda.
-     * @param string $searchTerm Término para buscar.
-     * @return int Total de usuarios.
-     */
     public static function countAll($searchTerm = '') {
         $conn = dbConnect();
         if (!$conn) return 0;
@@ -83,7 +76,6 @@ class User {
         $query = "SELECT COUNT(id_usuario) as total FROM usuarios";
         $params = [];
         $types = '';
-
         if (!empty($searchTerm)) {
             $query .= " WHERE nombre LIKE ? OR apellido_paterno LIKE ? OR apellido_materno LIKE ? OR email LIKE ? OR username LIKE ?";
             $searchTermWildcard = "%" . $searchTerm . "%";
@@ -108,13 +100,6 @@ class User {
         return $total;
     }
 
-    /**
-     * Obtiene una lista paginada de usuarios.
-     * @param string $searchTerm Término para buscar.
-     * @param int $limit Número de registros por página.
-     * @param int $offset Número de registros a saltar.
-     * @return array Lista de usuarios.
-     */
     public static function getAll($searchTerm = '', $limit = 15, $offset = 0) {
         $conn = dbConnect();
         $usuarios = [];
@@ -131,10 +116,14 @@ class User {
             $types = 'sssss';
         }
 
-        $query .= " ORDER BY id_usuario ASC LIMIT ? OFFSET ?";
-        $params[] = $limit;
-        $params[] = $offset;
-        $types .= 'ii';
+        if ($limit != -1) {
+            $query .= " ORDER BY id_usuario ASC LIMIT ? OFFSET ?";
+            $params[] = $limit;
+            $params[] = $offset;
+            $types .= 'ii';
+        } else {
+            $query .= " ORDER BY id_usuario ASC";
+        }
         
         $stmt = $conn->prepare($query);
         if ($stmt) {
@@ -160,7 +149,7 @@ class User {
         $conn = dbConnect();
         if (!$conn) return null;
 
-        $stmt = $conn->prepare("SELECT id_usuario, nombre, apellido_paterno, apellido_materno, email, username, rol, estado FROM usuarios WHERE id_usuario = ? LIMIT 1");
+        $stmt = $conn->prepare("SELECT id_usuario, nombre, apellido_paterno, apellido_materno, email, username, rol, estado, razon_desactivacion FROM usuarios WHERE id_usuario = ? LIMIT 1");
         if (!$stmt) {
             $conn->close();
             return null;
@@ -179,41 +168,55 @@ class User {
     public static function update($id, $data) {
         $conn = dbConnect();
         if (!$conn) return false;
-
-        $sql_parts = [];
-        $params = [];
-        $types = '';
-
-        $sql_parts = ["nombre = ?", "apellido_paterno = ?", "apellido_materno = ?", "email = ?", "username = ?", "rol = ?", "estado = ?"];
-        $params = [$data['nombre'], $data['apellido_paterno'], $data['apellido_materno'], $data['email'], $data['username'], $data['rol'], $data['estado']];
+    
+        // Iniciar la construcción de la consulta y los parámetros
+        $sql = "UPDATE usuarios SET nombre = ?, apellido_paterno = ?, apellido_materno = ?, email = ?, username = ?, rol = ?, estado = ?";
+        $params = [
+            $data['nombre'],
+            $data['apellido_paterno'],
+            $data['apellido_materno'],
+            $data['email'],
+            $data['username'],
+            $data['rol'],
+            $data['estado']
+        ];
         $types = 'sssssss';
-
+    
+        // Añadir la contraseña a la consulta SOLO si se proporcionó una nueva
         if (isset($data['password']) && !empty($data['password'])) {
-            $hashed_password = password_hash($data['password'], PASSWORD_DEFAULT);
-            $sql_parts[] = "password = ?";
-            $params[] = $hashed_password;
+            $sql .= ", password = ?";
+            $params[] = password_hash($data['password'], PASSWORD_DEFAULT);
             $types .= 's';
         }
-
+    
+        // Limpiar la razón de desactivación SOLO si el estado es 'activo'
         if (isset($data['estado']) && $data['estado'] == 'activo') {
-            $sql_parts[] = "razon_desactivacion = NULL";
+            $sql .= ", razon_desactivacion = NULL";
         }
-
+    
+        // Finalizar la consulta con la cláusula WHERE
+        $sql .= " WHERE id_usuario = ?";
         $params[] = $id;
         $types .= 'i';
-
-        $sql = "UPDATE usuarios SET " . implode(', ', $sql_parts) . " WHERE id_usuario = ?";
-        
+    
         $stmt = $conn->prepare($sql);
-        if (!$stmt) return false;
-
+        if (!$stmt) {
+            error_log("Error al preparar la actualización de usuario: " . $conn->error);
+            $conn->close();
+            return false;
+        }
+        
+        // Vincular los parámetros y ejecutar
         $stmt->bind_param($types, ...$params);
         $result = $stmt->execute();
-
-        if (!$result && $conn->errno == 1062) {
-            $_SESSION['error_details'] = 'Ya existe un usuario con el mismo Email o Nombre de Usuario.';
+        
+        if (!$result) {
+            error_log("Error al ejecutar la actualización de usuario: " . $stmt->error);
+            if ($conn->errno == 1062) {
+                 $_SESSION['error_details'] = 'Ya existe un usuario con el mismo Email o Nombre de Usuario.';
+            }
         }
-
+    
         $stmt->close();
         $conn->close();
         return $result;

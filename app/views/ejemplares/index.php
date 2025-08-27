@@ -23,7 +23,7 @@ function build_pagination_url($page, $searchTerm) {
         <input type="text" name="search" class="form-control" placeholder="Buscar por nombre, código, cód. ganadero..." value="<?php echo htmlspecialchars($searchTerm ?? ''); ?>">
         <div class="search-buttons">
             <button type="submit" class="btn btn-secondary">Buscar</button>
-            <a href="index.php?route=ejemplares_index" class="btn btn-primary">Limpiar</a>
+             <a href="index.php?route=ejemplares_index" class="btn btn-primary">Limpiar</a>
         </div>
     </form>
 </div>
@@ -55,13 +55,13 @@ function build_pagination_url($page, $searchTerm) {
             <tr>
                 <th>N°</th>
                 <th>Nombre</th>
-                <th>Código Ejemplar</th>
+                 <th>Código Ejemplar</th>
                 <th>Socio Propietario (Cód. Gan.)</th>
                 <th>Sexo</th>
                 <th>Fecha Nac.</th>
                 <th>Raza</th>
                 <th>Estado</th>
-                <th>Acciones</th>
+                 <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -146,19 +146,19 @@ function build_pagination_url($page, $searchTerm) {
                     <h4>Información General</h4>
                 </div>
                 <div class="modal-grid">
-                    <div class="modal-field"><span class="modal-label">Nombre:</span><span class="modal-value" id="modalNombre"></span></div>
+                     <div class="modal-field"><span class="modal-label">Nombre:</span><span class="modal-value" id="modalNombre"></span></div>
                     <div class="modal-field"><span class="modal-label">Código:</span><span class="modal-value" id="modalCodigo"></span></div>
                     <div class="modal-field full-width"><span class="modal-label">Socio Propietario:</span><span class="modal-value" id="modalSocio"></span></div>
                     <div class="modal-field"><span class="modal-label">Sexo:</span><span class="modal-value" id="modalSexo"></span></div>
-                    <div class="modal-field"><span class="modal-label">Fecha de Nacimiento:</span><span class="modal-value" id="modalFechaNacimiento"></span></div>
+                     <div class="modal-field"><span class="modal-label">Fecha de Nacimiento:</span><span class="modal-value" id="modalFechaNacimiento"></span></div>
                     <div class="modal-field"><span class="modal-label">Raza:</span><span class="modal-value" id="modalRaza"></span></div>
                     <div class="modal-field"><span class="modal-label">Capa:</span><span class="modal-value" id="modalCapa"></span></div>
                 </div>
             </div>
-            <div class="modal-section">
+             <div class="modal-section">
                 <div class="modal-section-title">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7C4.79086 3 3 4.79086 3 7V17C3 19.2091 4.79086 21 7 21H17C19.2091 21 21 19.2091 21 17V7C21 4.79086 19.2091 3 17 3ZM19 17C19 18.1046 18.1046 19 17 19H7C5.89543 19 5 18.1046 5 17V7C5 5.89543 5.89543 5 7 5H17C18.1046 5 19 5.89543 19 7V17ZM15.2929 9.29289L11 13.5858L8.70711 11.2929L7.29289 12.7071L11 16.4142L16.7071 10.7071L15.2929 9.29289Z"></path></svg>
-                    <h4>Registros y Documentos</h4>
+                     <h4>Registros y Documentos</h4>
                 </div>
                 <div class="modal-grid">
                     <div class="modal-field"><span class="modal-label">N° Microchip:</span><span class="modal-value" id="modalMicrochip"></span></div>
@@ -167,19 +167,19 @@ function build_pagination_url($page, $searchTerm) {
                 </div>
                 <div class="modal-docs">
                     <label class="custom-checkbox-container">Pasaporte / DIE
-                        <input type="checkbox" id="modalDocPasaporte" disabled><span class="checkmark"></span>
+                         <input type="checkbox" id="modalDocPasaporte" disabled><span class="checkmark"></span>
                         <a href="#" target="_blank" class="view-doc-icon" id="modalDocPasaporteView" title="Ver Documento">👁️</a>
                     </label>
                     <label class="custom-checkbox-container">Resultado de ADN
-                        <input type="checkbox" id="modalDocAdn" disabled><span class="checkmark"></span>
+                         <input type="checkbox" id="modalDocAdn" disabled><span class="checkmark"></span>
                         <a href="#" target="_blank" class="view-doc-icon" id="modalDocAdnView" title="Ver Documento">👁️</a>
                     </label>
                     <label class="custom-checkbox-container">Certificado de Inscripción LG
-                        <input type="checkbox" id="modalDocLg" disabled><span class="checkmark"></span>
+                         <input type="checkbox" id="modalDocLg" disabled><span class="checkmark"></span>
                         <a href="#" target="_blank" class="view-doc-icon" id="modalDocLgView" title="Ver Documento">👁️</a>
                     </label>
                     <label class="custom-checkbox-container">Foto de Identificación
-                        <input type="checkbox" id="modalDocFoto" disabled><span class="checkmark"></span>
+                         <input type="checkbox" id="modalDocFoto" disabled><span class="checkmark"></span>
                         <a href="#" target="_blank" class="view-doc-icon" id="modalDocFotoView" title="Ver Documento">👁️</a>
                     </label>
                 </div>
@@ -188,140 +188,4 @@ function build_pagination_url($page, $searchTerm) {
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Lógica para el modal de información
-    const modal = document.getElementById('infoModal');
-    if (modal) {
-        const closeButton = modal.querySelector('.close-button');
-        const rows = document.querySelectorAll('.clickable-row');
-
-        const modalNombre = document.getElementById('modalNombre');
-        const modalCodigo = document.getElementById('modalCodigo');
-        const modalSocio = document.getElementById('modalSocio');
-        const modalSexo = document.getElementById('modalSexo');
-        const modalFechaNacimiento = document.getElementById('modalFechaNacimiento');
-        const modalRaza = document.getElementById('modalRaza');
-        const modalCapa = document.getElementById('modalCapa');
-        const modalMicrochip = document.getElementById('modalMicrochip');
-        const modalCertificado = document.getElementById('modalCertificado');
-        const modalEstado = document.getElementById('modalEstado');
-
-        const modalDocPasaporte = document.getElementById('modalDocPasaporte');
-        const modalDocAdn = document.getElementById('modalDocAdn');
-        const modalDocLg = document.getElementById('modalDocLg');
-        const modalDocFoto = document.getElementById('modalDocFoto');
-        const modalDocPasaporteView = document.getElementById('modalDocPasaporteView');
-        const modalDocAdnView = document.getElementById('modalDocAdnView');
-        const modalDocLgView = document.getElementById('modalDocLgView');
-        const modalDocFotoView = document.getElementById('modalDocFotoView');
-
-        rows.forEach(row => {
-            row.addEventListener('click', function(event) {
-                if (event.target.closest('.action-buttons')) {
-                    return;
-                }
-
-                // Llenar datos generales
-                modalNombre.textContent = this.dataset.nombre;
-                modalCodigo.textContent = this.dataset.codigo;
-                modalSocio.textContent = this.dataset.socio;
-                modalSexo.textContent = this.dataset.sexo;
-                modalFechaNacimiento.textContent = this.dataset.fechaNacimiento;
-                modalRaza.textContent = this.dataset.raza;
-                modalCapa.textContent = this.dataset.capa;
-                modalMicrochip.textContent = this.dataset.microchip;
-                modalCertificado.textContent = this.dataset.certificado;
-                modalEstado.textContent = this.dataset.estado;
-
-                // Checkboxes
-                modalDocPasaporte.checked = this.dataset.docPasaporteId !== '0';
-                modalDocAdn.checked = this.dataset.docAdnId !== '0';
-                modalDocLg.checked = this.dataset.docLgId !== '0';
-                modalDocFoto.checked = this.dataset.docFotoId !== '0';
-
-                // Lógica para los íconos
-                let docPasaporteId = this.dataset.docPasaporteId;
-                if (docPasaporteId && docPasaporteId !== '0') {
-                    modalDocPasaporteView.href = `index.php?route=documento_download&id=${docPasaporteId}`;
-                    modalDocPasaporteView.style.display = 'inline-block';
-                } else {
-                    modalDocPasaporteView.style.display = 'none';
-                }
-
-                let docAdnId = this.dataset.docAdnId;
-                if (docAdnId && docAdnId !== '0') {
-                    modalDocAdnView.href = `index.php?route=documento_download&id=${docAdnId}`;
-                    modalDocAdnView.style.display = 'inline-block';
-                } else {
-                    modalDocAdnView.style.display = 'none';
-                }
-                
-                let docLgId = this.dataset.docLgId;
-                if (docLgId && docLgId !== '0') {
-                    modalDocLgView.href = `index.php?route=documento_download&id=${docLgId}`;
-                    modalDocLgView.style.display = 'inline-block';
-                } else {
-                    modalDocLgView.style.display = 'none';
-                }
-                
-                let docFotoId = this.dataset.docFotoId;
-                if (docFotoId && docFotoId !== '0') {
-                    modalDocFotoView.href = `index.php?route=documento_download&id=${docFotoId}`;
-                    modalDocFotoView.style.display = 'inline-block';
-                } else {
-                    modalDocFotoView.style.display = 'none';
-                }
-                
-                modal.style.display = 'block';
-            });
-        });
-
-        closeButton.addEventListener('click', function() {
-            modal.style.display = 'none';
-        });
-
-        window.addEventListener('click', function(event) {
-            if (event.target == modal) {
-                modal.style.display = 'none';
-            }
-        });
-    }
-});
-
-function confirmDeactivation(ejemplarId, ejemplarName) {
-    Swal.fire({
-        title: '¿Estás seguro?',
-        text: `Se desactivará al ejemplar: ${ejemplarName}`,
-        icon: 'warning',
-        input: 'textarea',
-        inputLabel: 'Razón de la desactivación',
-        inputPlaceholder: 'Escribe el motivo aquí...',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sí, desactivar',
-        cancelButtonText: 'Cancelar',
-        inputValidator: (value) => {
-            if (!value) {
-                return '¡Necesitas escribir una razón para la desactivación!'
-            }
-        }
-    }).then((result) => {
-        if (result.isConfirmed && result.value) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `index.php?route=ejemplares_delete&id=${ejemplarId}`;
-
-            const reasonInput = document.createElement('input');
-            reasonInput.type = 'hidden';
-            reasonInput.name = 'razon';
-            reasonInput.value = result.value;
-            form.appendChild(reasonInput);
-
-            document.body.appendChild(form);
-            form.submit();
-        }
-    });
-}
-</script>
+<script src="<?php echo BASE_URL; ?>/assets/js/ejemplares-index.js"></script>

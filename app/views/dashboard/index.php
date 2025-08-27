@@ -20,7 +20,7 @@ $periodo = $_GET['periodo'] ?? 'all_time';
         </div>
         <div class="stat-card-info">
             <span class="stat-card-title">Servicios en Proceso</span>
-            <span class="stat-card-number"><?php echo $totalServiciosActivos; ?></span>
+           <span class="stat-card-number"><?php echo $totalServiciosActivos; ?></span>
         </div>
     </div>
     <div class="stat-card border-success">
@@ -38,14 +38,14 @@ $periodo = $_GET['periodo'] ?? 'all_time';
         </div>
         <div class="stat-card-info">
             <span class="stat-card-title">Pendientes Docs/Pago</span>
-            <span class="stat-card-number"><?php echo $statsServicios['pendientes_docs_pago']; ?></span>
+             <span class="stat-card-number"><?php echo $statsServicios['pendientes_docs_pago']; ?></span>
         </div>
     </div>
     <div class="stat-card border-warning">
         <div class="stat-card-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2ZM12 4C7.58 4 4 7.58 4 12C4 16.42 7.58 20 12 20C16.42 20 20 16.42 20 12C20 7.58 16.42 4 12 4ZM11 8H13V13H11V8ZM11 15H13V17H11V15Z"></path></svg>
         </div>
-        <div class="stat-card-info">
+             <div class="stat-card-info">
             <span class="stat-card-title">Tiempo Prom. Resolución</span>
             <span class="stat-card-number"><?php echo number_format($statsServicios['promedio_resolucion_dias'], 1); ?>d</span>
         </div>
@@ -57,14 +57,19 @@ $periodo = $_GET['periodo'] ?? 'all_time';
     <div class="dashboard-chart-container">
         <h3 class="dashboard-section-title">Distribución de Servicios (Periodo)</h3>
         <div class="chart-wrapper">
-            <canvas id="serviciosEstadoChart"></canvas>
+            <canvas id="serviciosEstadoChart" 
+                    data-labels='<?php echo $doughnutChartLabelsJSON; ?>' 
+                    data-data='<?php echo $doughnutChartDataJSON; ?>'></canvas>
         </div>
     </div>
     
     <div class="dashboard-chart-container">
         <h3 class="dashboard-section-title">Productividad (Últimos 12 Meses)</h3>
         <div class="chart-wrapper">
-             <canvas id="serviciosMensualesChart"></canvas>
+             <canvas id="serviciosMensualesChart"
+                     data-labels='<?php echo $lineChartLabelsJSON; ?>'
+                     data-creados='<?php echo $lineChartCreadosJSON; ?>'
+                     data-completados='<?php echo $lineChartCompletadosJSON; ?>'></canvas>
         </div>
     </div>
 
@@ -74,12 +79,12 @@ $periodo = $_GET['periodo'] ?? 'all_time';
             <thead><tr><th>Servicio</th><th>Socio</th><th>Días Sin Actividad</th></tr></thead>
             <tbody>
                 <?php if (!empty($serviciosAtencion)): ?>
-                     <?php foreach($serviciosAtencion as $servicio): ?>
+                    <?php foreach($serviciosAtencion as $servicio): ?>
                         <tr>
                              <td><a href="index.php?route=servicios/edit&id=<?php echo $servicio['id_servicio']; ?>" class="btn-id" title="Ver/Editar Servicio"><?php echo $servicio['id_servicio']; ?></a></td>
                             <td><?php echo htmlspecialchars($servicio['socio_nombre'] . ' ' . $servicio['socio_apPaterno']); ?></td>
                             <td><span class="badge-danger"><?php echo $servicio['dias_sin_actualizar']; ?> días</span></td>
-                         </tr>
+                        </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
                     <tr><td colspan="3" class="text-center">¡Excelente! No hay servicios con retrasos.</td></tr>
@@ -149,81 +154,4 @@ $periodo = $_GET['periodo'] ?? 'all_time';
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // --- GRÁFICA DE DONA (ESTADOS) ---
-    const doughnutCtx = document.getElementById('serviciosEstadoChart');
-    if (doughnutCtx) {
-        const doughnutLabels = <?php echo $doughnutChartLabelsJSON; ?>;
-        const doughnutData = <?php echo $doughnutChartDataJSON; ?>;
-        new Chart(doughnutCtx, {
-             type: 'doughnut',
-            data: {
-                labels: doughnutLabels,
-                datasets: [{
-                    label: 'Servicios',
-                    data: doughnutData,
-                    backgroundColor: ['rgba(255, 99, 132, 0.7)','rgba(54, 162, 235, 0.7)','rgba(255, 206, 86, 0.7)','rgba(75, 192, 192, 0.7)','rgba(153, 102, 255, 0.7)','rgba(255, 159, 64, 0.7)','rgba(99, 255, 132, 0.7)'],
-                    borderColor: ['rgba(255, 99, 132, 1)','rgba(54, 162, 235, 1)','rgba(255, 206, 86, 1)','rgba(75, 192, 192, 1)','rgba(153, 102, 255, 1)','rgba(255, 159, 64, 1)','rgba(99, 255, 132, 1)'],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'top' } }
-             }
-        });
-    }
-
-    // --- GRÁFICA DE LÍNEAS (MENSUAL) ---
-    const lineCtx = document.getElementById('serviciosMensualesChart');
-    if (lineCtx) {
-        const lineLabels = <?php echo $lineChartLabelsJSON; ?>;
-        const creadosData = <?php echo $lineChartCreadosJSON; ?>;
-        const completadosData = <?php echo $lineChartCompletadosJSON; ?>;
-        new Chart(lineCtx, {
-            type: 'line',
-            data: {
-                labels: lineLabels,
-                datasets: [
-                    {
-                         label: 'Servicios Creados',
-                        data: creadosData,
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                         fill: true,
-                        tension: 0.1
-                    },
-                    {
-                         label: 'Servicios Completados',
-                        data: completadosData,
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                         fill: true,
-                        tension: 0.1
-                    }
-                ]
-            },
-            options: {
-                 responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                         ticks: {
-                           stepSize: 1 
-                        }
-                    }
-                 },
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    }
-                 }
-            }
-        });
-    }
-});
-</script>
+<script src="<?php echo BASE_URL; ?>/assets/js/dashboard-charts.js"></script>

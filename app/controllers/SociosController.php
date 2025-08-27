@@ -3,9 +3,12 @@
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
+// Incluimos solo el Validador aquí, las reglas se cargarán dentro de cada método.
+require_once __DIR__ . '/../../core/Validator.php';
+
 require_once __DIR__ . '/../models/Socio.php';
 require_once __DIR__ . '/../models/Documento.php';
-require_once __DIR__ . '/../models/Auditoria.php'; // <-- 1. INCLUIMOS EL NUEVO MODELO
+require_once __DIR__ . '/../models/Auditoria.php'; 
 require_once __DIR__ . '/../../config/config.php';
 
 class SociosController {
@@ -48,15 +51,14 @@ class SociosController {
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $records_per_page = 15;
         $offset = ($page - 1) * $records_per_page;
+        
         $total_records = Socio::countAll($searchTerm);
         $total_pages = ceil($total_records / $records_per_page);
 
         $socios = Socio::getAll($searchTerm, $records_per_page, $offset);
-        // INICIO DE LA MODIFICACIÓN: Obtener el estado de los documentos para cada socio
         foreach ($socios as $key => $socio) {
             $socios[$key]['document_status'] = Documento::getDocumentStatusForSocio($socio['id_socio']);
         }
-        // FIN DE LA MODIFICACIÓN
 
         $pageTitle = 'Listado de Socios';
         $currentRoute = 'socios_index';
@@ -74,6 +76,7 @@ class SociosController {
         $sheet = $spreadsheet->getActiveSheet();
 
         $sheet->setCellValue('A1', 'ID')->setCellValue('B1', 'Nombre')->setCellValue('C1', 'Apellido Paterno')->setCellValue('D1', 'Apellido Materno')->setCellValue('E1', 'Nombre Ganadería')->setCellValue('F1', 'Dirección')->setCellValue('G1', 'Código Ganadero')->setCellValue('H1', 'Teléfono')->setCellValue('I1', 'Email')->setCellValue('J1', 'Fecha Registro')->setCellValue('K1', 'Estado')->setCellValue('L1', 'RFC');
+        
         $row = 2;
         foreach ($socios as $socio) {
             $sheet->setCellValue('A' . $row, $socio['id_socio'])->setCellValue('B' . $row, $socio['nombre'])->setCellValue('C' . $row, $socio['apellido_paterno'])->setCellValue('D' . $row, $socio['apellido_materno'])->setCellValue('E' . $row, $socio['nombre_ganaderia'])->setCellValue('F' . $row, $socio['direccion'])->setCellValue('G' . $row, $socio['codigoGanadero'])->setCellValue('H' . $row, $socio['telefono'])->setCellValue('I' . $row, $socio['email'])->setCellValue('J' . $row, $socio['fechaRegistro'])->setCellValue('K' . $row, ucfirst($socio['estado']))->setCellValue('L' . $row, $socio['identificacion_fiscal_titular']);
@@ -91,8 +94,9 @@ class SociosController {
 
     public function create() {
         check_permission();
+        $errors = $_SESSION['errors'] ?? [];
         $formData = $_SESSION['form_data'] ?? [];
-        unset($_SESSION['form_data']);
+        unset($_SESSION['errors'], $_SESSION['form_data']);
 
         $pageTitle = 'Registrar Nuevo Socio';
         $currentRoute = 'socios/create';
@@ -102,29 +106,40 @@ class SociosController {
 
     public function store() {
         check_permission();
-        $_SESSION['form_data'] = $_POST;
-        if(isset($_POST)) {
-            $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''), 'apellido_materno' => trim($_POST['apellido_materno'] ?? ''), 'nombre_ganaderia' => trim($_POST['nombre_ganaderia'] ?? ''), 'direccion' => trim($_POST['direccion'] ?? ''), 'codigoGanadero' => trim($_POST['codigoGanadero'] ?? ''), 'telefono' => trim($_POST['telefono'] ?? ''), 'email' => trim($_POST['email'] ?? ''), 'fechaRegistro' => trim($_POST['fechaRegistro'] ?? date('Y-m-d')), 'estado' => trim($_POST['estado'] ?? 'activo'), 'id_usuario' => $_SESSION['user']['id_usuario'], 'identificacion_fiscal_titular' => trim($_POST['identificacion_fiscal_titular'] ?? '') ];
-            $socioId = Socio::store($data);
-            if($socioId !== false) {
-                // --- 2. REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
-                $descripcion = "Se creó el socio: " . $data['nombre'] . " " . $data['apellido_paterno'] . " con Cód. Ganadero: " . $data['codigoGanadero'];
-                Auditoria::registrar('CREACIÓN DE SOCIO', $socioId, 'Socio', $descripcion);
+        // --- CORRECCIÓN: Cargar las reglas desde el archivo ---
+        $rules = require __DIR__ . '/../../config/validation_rules.php';
 
-                $_SESSION['message'] = "Socio registrado exitosamente con ID: " . $socioId . ".";
-                unset($_SESSION['form_data']);
-                $this->handleSocioDocumentUpload('id_oficial_file', $socioId, 'ID_OFICIAL_TITULAR', $data['id_usuario']);
-                $this->handleSocioDocumentUpload('rfc_file', $socioId, 'CONSTANCIA_FISCAL', $data['id_usuario']);
-                $this->handleSocioDocumentUpload('domicilio_file', $socioId, 'COMPROBANTE_DOM_GANADERIA', $data['id_usuario']);
-                $this->handleSocioDocumentUpload('titulo_propiedad_file', $socioId, 'TITULO_PROPIEDAD_RANCHO', $data['id_usuario']);
-                header("Location: index.php?route=socios_index");
-                exit;
-            } else {
-                $_SESSION['error'] = "Error al registrar el socio: " . ($_SESSION['error_details'] ?? 'Error desconocido.');
-                unset($_SESSION['error_details']);
-                header("Location: index.php?route=socios/create");
-                exit;
-            }
+        $errors = Validator::validate($_POST, $rules['crear_socio']);
+
+        if (!empty($errors)) {
+            $_SESSION['errors'] = $errors;
+            $_SESSION['form_data'] = $_POST;
+            header("Location: index.php?route=socios/create");
+            exit;
+        }
+
+        $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''), 'apellido_materno' => trim($_POST['apellido_materno'] ?? ''), 'nombre_ganaderia' => trim($_POST['nombre_ganaderia'] ?? ''), 'direccion' => trim($_POST['direccion'] ?? ''), 'codigoGanadero' => trim($_POST['codigoGanadero'] ?? ''), 'telefono' => trim($_POST['telefono'] ?? ''), 'email' => trim($_POST['email'] ?? ''), 'fechaRegistro' => trim($_POST['fechaRegistro'] ?? date('Y-m-d')), 'estado' => trim($_POST['estado'] ?? 'activo'), 'id_usuario' => $_SESSION['user']['id_usuario'], 'identificacion_fiscal_titular' => trim($_POST['identificacion_fiscal_titular'] ?? '') ];
+        
+        $socioId = Socio::store($data);
+        if($socioId !== false) {
+            $descripcion = "Se creó el socio: " . $data['nombre'] . " " . $data['apellido_paterno'] . " con Cód. Ganadero: " . $data['codigoGanadero'];
+            Auditoria::registrar('CREACIÓN DE SOCIO', $socioId, 'Socio', $descripcion);
+            
+            $_SESSION['message'] = "Socio registrado exitosamente con ID: " . $socioId . ".";
+            
+            $this->handleSocioDocumentUpload('id_oficial_file', $socioId, 'ID_OFICIAL_TITULAR', $data['id_usuario']);
+            $this->handleSocioDocumentUpload('rfc_file', $socioId, 'CONSTANCIA_FISCAL', $data['id_usuario']);
+            $this->handleSocioDocumentUpload('domicilio_file', $socioId, 'COMPROBANTE_DOM_GANADERIA', $data['id_usuario']);
+            $this->handleSocioDocumentUpload('titulo_propiedad_file', $socioId, 'TITULO_PROPIEDAD_RANCHO', $data['id_usuario']);
+
+            header("Location: index.php?route=socios_index");
+            exit;
+        } else {
+            $_SESSION['form_data'] = $_POST;
+            $_SESSION['error'] = "Error al registrar el socio: " . ($_SESSION['error_details'] ?? 'Error desconocido.');
+            unset($_SESSION['error_details']);
+            header("Location: index.php?route=socios/create");
+            exit;
         }
     }
     
@@ -134,9 +149,12 @@ class SociosController {
         if($socioId) {
             $socio = Socio::getById($socioId);
             if($socio) {
+                $errors = $_SESSION['errors'] ?? [];
                 $formData = $_SESSION['form_data'] ?? $socio;
-                unset($_SESSION['form_data']);
+                unset($_SESSION['errors'], $_SESSION['form_data']);
+                
                 $documentosSocio = Documento::getByEntityId('socio', $socioId, true);
+                
                 $pageTitle = 'Editar Socio'; 
                 $currentRoute = 'socios/edit';
                 $contentView = __DIR__ . '/../views/socios/edit.php';
@@ -151,6 +169,9 @@ class SociosController {
 
     public function update() {
         check_permission();
+        // --- CORRECCIÓN: Cargar las reglas desde el archivo ---
+        $rules = require __DIR__ . '/../../config/validation_rules.php';
+
         $id = filter_input(INPUT_POST, 'id_socio', FILTER_VALIDATE_INT);
         if (!$id) { 
             $_SESSION['error'] = "ID de socio inválido.";
@@ -158,28 +179,40 @@ class SociosController {
             exit;
         }
 
-        $_SESSION['form_data'] = $_POST;
-        if(isset($_POST)) {
-            $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''), 'apellido_materno' => trim($_POST['apellido_materno'] ?? ''), 'nombre_ganaderia' => trim($_POST['nombre_ganaderia'] ?? ''), 'direccion' => trim($_POST['direccion'] ?? ''), 'codigoGanadero' => trim($_POST['codigoGanadero'] ?? ''), 'telefono' => trim($_POST['telefono'] ?? ''), 'email' => trim($_POST['email'] ?? ''), 'fechaRegistro' => trim($_POST['fechaRegistro'] ?? ''), 'estado' => trim($_POST['estado'] ?? 'activo'), 'id_usuario' => $_SESSION['user']['id_usuario'], 'identificacion_fiscal_titular' => trim($_POST['identificacion_fiscal_titular'] ?? '') ];
-            if(Socio::update($id, $data)) {
-                // --- 3. REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
-                $descripcion = "Se modificaron los datos del socio: " . $data['nombre'] . " " . $data['apellido_paterno'];
-                Auditoria::registrar('MODIFICACIÓN DE SOCIO', $id, 'Socio', $descripcion);
+        $updateRules = $rules['actualizar_socio'];
+        $updateRules['email'] .= "|unique:socios,email," . $id;
+        $updateRules['codigoGanadero'] .= "|unique:socios,codigoGanadero," . $id;
 
-                $_SESSION['message'] = "Socio actualizado exitosamente.";
-                unset($_SESSION['form_data']);
-                $this->handleSocioDocumentUpload('id_oficial_file', $id, 'ID_OFICIAL_TITULAR', $data['id_usuario']);
-                $this->handleSocioDocumentUpload('rfc_file', $id, 'CONSTANCIA_FISCAL', $data['id_usuario']);
-                $this->handleSocioDocumentUpload('domicilio_file', $id, 'COMPROBANTE_DOM_GANADERIA', $data['id_usuario']);
-                $this->handleSocioDocumentUpload('titulo_propiedad_file', $id, 'TITULO_PROPIEDAD_RANCHO', $data['id_usuario']);
-                header("Location: index.php?route=socios_index");
-                exit;
-            } else {
-                $_SESSION['error'] = "Error al actualizar el socio: " . ($_SESSION['error_details'] ?? 'Error desconocido.');
-                unset($_SESSION['error_details']);
-                header("Location: index.php?route=socios/edit&id=" . $id);
-                exit;
-            }
+        $errors = Validator::validate($_POST, $updateRules);
+
+        if (!empty($errors)) {
+            $_SESSION['errors'] = $errors;
+            $_SESSION['form_data'] = $_POST;
+            header("Location: index.php?route=socios/edit&id=" . $id);
+            exit;
+        }
+
+        $data = [ 'nombre' => trim($_POST['nombre'] ?? ''), 'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''), 'apellido_materno' => trim($_POST['apellido_materno'] ?? ''), 'nombre_ganaderia' => trim($_POST['nombre_ganaderia'] ?? ''), 'direccion' => trim($_POST['direccion'] ?? ''), 'codigoGanadero' => trim($_POST['codigoGanadero'] ?? ''), 'telefono' => trim($_POST['telefono'] ?? ''), 'email' => trim($_POST['email'] ?? ''), 'fechaRegistro' => trim($_POST['fechaRegistro'] ?? ''), 'estado' => trim($_POST['estado'] ?? 'activo'), 'id_usuario' => $_SESSION['user']['id_usuario'], 'identificacion_fiscal_titular' => trim($_POST['identificacion_fiscal_titular'] ?? '') ];
+        
+        if(Socio::update($id, $data)) {
+            $descripcion = "Se modificaron los datos del socio: " . $data['nombre'] . " " . $data['apellido_paterno'];
+            Auditoria::registrar('MODIFICACIÓN DE SOCIO', $id, 'Socio', $descripcion);
+
+            $_SESSION['message'] = "Socio actualizado exitosamente.";
+
+            $this->handleSocioDocumentUpload('id_oficial_file', $id, 'ID_OFICIAL_TITULAR', $data['id_usuario']);
+            $this->handleSocioDocumentUpload('rfc_file', $id, 'CONSTANCIA_FISCAL', $data['id_usuario']);
+            $this->handleSocioDocumentUpload('domicilio_file', $id, 'COMPROBANTE_DOM_GANADERIA', $data['id_usuario']);
+            $this->handleSocioDocumentUpload('titulo_propiedad_file', $id, 'TITULO_PROPIEDAD_RANCHO', $data['id_usuario']);
+            
+            header("Location: index.php?route=socios_index");
+            exit;
+        } else {
+            $_SESSION['form_data'] = $_POST;
+            $_SESSION['error'] = "Error al actualizar el socio: " . ($_SESSION['error_details'] ?? 'Error desconocido.');
+            unset($_SESSION['error_details']);
+            header("Location: index.php?route=socios/edit&id=" . $id);
+            exit;
         }
     }
 
@@ -195,8 +228,7 @@ class SociosController {
 
         if($socioId) {
             if(Socio::delete($socioId, $razon)) {
-                // --- 4. REGISTRAMOS LA ACCIÓN EN LA AUDITORÍA ---
-                $socio = Socio::getById($socioId); // Obtenemos datos para la descripción
+                $socio = Socio::getById($socioId);
                 $nombreSocio = $socio ? $socio['nombre'] . ' ' . $socio['apellido_paterno'] : 'ID ' . $socioId;
                 $descripcion = "Se desactivó al socio: " . $nombreSocio . ". Razón: " . $razon;
                 Auditoria::registrar('DESACTIVACIÓN DE SOCIO', $socioId, 'Socio', $descripcion);

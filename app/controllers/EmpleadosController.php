@@ -4,9 +4,13 @@
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
+// Incluimos el Validador. Las reglas se cargarán dentro de cada método.
+require_once __DIR__ . '/../../core/Validator.php';
+
 require_once __DIR__ . '/../models/Empleado.php';
 require_once __DIR__ . '/../models/Auditoria.php'; 
 require_once __DIR__ . '/../../config/config.php';
+
 class EmpleadosController {
 
     public function index() {
@@ -19,7 +23,7 @@ class EmpleadosController {
         $total_pages = ceil($total_records / $records_per_page);
 
         $empleados = Empleado::getAll($searchTerm, $records_per_page, $offset);
-
+        
         $pageTitle = 'Listado de Empleados';
         $currentRoute = 'empleados_index';
         $contentView = __DIR__ . '/../views/empleados/index.php';
@@ -33,20 +37,21 @@ class EmpleadosController {
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-
+        
         $sheet->setCellValue('A1', 'ID')->setCellValue('B1', 'Nombre')->setCellValue('C1', 'Apellido Paterno')->setCellValue('D1', 'Apellido Materno')->setCellValue('E1', 'Email')->setCellValue('F1', 'Dirección')->setCellValue('G1', 'Teléfono')->setCellValue('H1', 'Puesto')->setCellValue('I1', 'Fecha Ingreso')->setCellValue('J1', 'Estado');
+        
         $row = 2;
         foreach ($empleados as $empleado) {
             $sheet->setCellValue('A' . $row, $empleado['id_empleado'])
                   ->setCellValue('B' . $row, $empleado['nombre'])
                   ->setCellValue('C' . $row, $empleado['apellido_paterno'])
                   ->setCellValue('D' . $row, $empleado['apellido_materno'])
-                   ->setCellValue('E' . $row, $empleado['email'])
+                  ->setCellValue('E' . $row, $empleado['email'])
                   ->setCellValue('F' . $row, $empleado['direccion'])
                   ->setCellValue('G' . $row, $empleado['telefono'])
                   ->setCellValue('H' . $row, $empleado['puesto'])
                   ->setCellValue('I' . $row, !empty($empleado['fecha_ingreso']) ? date('d/m/Y', strtotime($empleado['fecha_ingreso'])) : '-')
-                   ->setCellValue('J' . $row, ucfirst($empleado['estado']));
+                  ->setCellValue('J' . $row, ucfirst($empleado['estado']));
             $row++;
         }
 
@@ -61,8 +66,9 @@ class EmpleadosController {
 
     public function create() {
         check_permission();
+        $errors = $_SESSION['errors'] ?? [];
         $formData = $_SESSION['form_data'] ?? [];
-        unset($_SESSION['form_data']); 
+        unset($_SESSION['errors'], $_SESSION['form_data']);
 
         $pageTitle = 'Registrar Nuevo Empleado';
         $currentRoute = 'empleados/create';
@@ -72,37 +78,43 @@ class EmpleadosController {
 
     public function store() {
         check_permission();
-        $_SESSION['form_data'] = $_POST;
-        if(isset($_POST)) {
-            $data = [
-                'nombre' => trim($_POST['nombre'] ?? ''),
-                'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''),
-                'apellido_materno' => trim($_POST['apellido_materno'] ?? ''),
-                'email' => trim($_POST['email'] ?? ''),
-                 'direccion' => trim($_POST['direccion'] ?? ''),
-                'telefono' => trim($_POST['telefono'] ?? ''),
-                'puesto' => trim($_POST['puesto'] ?? ''),
-                'estado' => trim($_POST['estado'] ?? 'activo'), 
-                'fecha_ingreso' => trim($_POST['fecha_ingreso'] ?? '')
-             ];
-            
-            // --- INICIO DE MODIFICACIÓN: Usar el ID devuelto por el método store ---
-            $newId = Empleado::store($data);
-            if($newId) {
-                $descripcion = "Se creó el empleado: " . $data['nombre'] . " " . $data['apellido_paterno'];
-                Auditoria::registrar('CREACIÓN DE EMPLEADO', $newId, 'Empleado', $descripcion);
-            // --- FIN DE MODIFICACIÓN ---
+        $rules = require __DIR__ . '/../../config/validation_rules.php';
 
-                $_SESSION['message'] = "Empleado creado exitosamente.";
-                unset($_SESSION['form_data']);
-                header("Location: index.php?route=empleados_index");
-                exit;
-            } else {
-                $_SESSION['error'] = "Error al crear el empleado: " . ($_SESSION['error_details'] ?? 'Error desconocido.');
-                unset($_SESSION['error_details']);
-                header("Location: index.php?route=empleados/create"); 
-                exit;
-            }
+        $errors = Validator::validate($_POST, $rules['crear_empleado']);
+
+        if (!empty($errors)) {
+            $_SESSION['errors'] = $errors;
+            $_SESSION['form_data'] = $_POST;
+            header("Location: index.php?route=empleados/create");
+            exit;
+        }
+
+        $data = [
+            'nombre' => trim($_POST['nombre'] ?? ''),
+            'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''),
+            'apellido_materno' => trim($_POST['apellido_materno'] ?? ''),
+            'email' => trim($_POST['email'] ?? ''),
+            'direccion' => trim($_POST['direccion'] ?? ''),
+            'telefono' => trim($_POST['telefono'] ?? ''),
+            'puesto' => trim($_POST['puesto'] ?? ''),
+            'estado' => trim($_POST['estado'] ?? 'activo'), 
+            'fecha_ingreso' => trim($_POST['fecha_ingreso'] ?? '')
+        ];
+
+        $newId = Empleado::store($data);
+        if($newId) {
+            $descripcion = "Se creó el empleado: " . $data['nombre'] . " " . $data['apellido_paterno'];
+            Auditoria::registrar('CREACIÓN DE EMPLEADO', $newId, 'Empleado', $descripcion);
+
+            $_SESSION['message'] = "Empleado creado exitosamente.";
+            header("Location: index.php?route=empleados_index");
+            exit;
+        } else {
+            $_SESSION['form_data'] = $_POST;
+            $_SESSION['error'] = "Error al crear el empleado: " . ($_SESSION['error_details'] ?? 'Error desconocido.');
+            unset($_SESSION['error_details']);
+            header("Location: index.php?route=empleados/create"); 
+            exit;
         }
     }
 
@@ -112,8 +124,9 @@ class EmpleadosController {
         if($empleadoId) {
             $empleado = Empleado::getById($empleadoId);
             if($empleado) {
+                $errors = $_SESSION['errors'] ?? [];
                 $formData = $_SESSION['form_data'] ?? $empleado; 
-                unset($_SESSION['form_data']); 
+                unset($_SESSION['errors'], $_SESSION['form_data']);
                 
                 $pageTitle = 'Editar Empleado';
                 $currentRoute = 'empleados/edit';
@@ -129,6 +142,8 @@ class EmpleadosController {
 
     public function update() {
         check_permission();
+        $rules = require __DIR__ . '/../../config/validation_rules.php';
+
         $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
         if (!$id) { 
             $_SESSION['error'] = "ID de empleado inválido.";
@@ -136,33 +151,43 @@ class EmpleadosController {
             exit;
         }
         
-        $_SESSION['form_data'] = $_POST;
-        if(isset($_POST)) {
-            $data = [
-                'nombre' => trim($_POST['nombre'] ?? ''), 
-                'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''), 
-                'apellido_materno' => trim($_POST['apellido_materno'] ?? ''),
-                'email' => trim($_POST['email'] ?? ''), 
-                 'direccion' => trim($_POST['direccion'] ?? ''), 
-                'telefono' => trim($_POST['telefono'] ?? ''),
-                'puesto' => trim($_POST['puesto'] ?? ''), 
-                'estado' => trim($_POST['estado'] ?? 'activo'),
-                'fecha_ingreso' => trim($_POST['fecha_ingreso'] ?? '')
-            ];
-            if(Empleado::update($id, $data)) {
-                $descripcion = "Se modificaron los datos del empleado: " . $data['nombre'] . " " . $data['apellido_paterno'];
-                Auditoria::registrar('MODIFICACIÓN DE EMPLEADO', $id, 'Empleado', $descripcion);
+        $updateRules = $rules['actualizar_empleado'];
+        $updateRules['email'] .= "|unique:empleados,email," . $id;
 
-                $_SESSION['message'] = "Empleado actualizado exitosamente.";
-                unset($_SESSION['form_data']);
-                header("Location: index.php?route=empleados_index"); 
-                exit;
-            } else {
-                $_SESSION['error'] = "Error al actualizar el empleado: " . ($_SESSION['error_details'] ?? 'Error desconocido.');
-                unset($_SESSION['error_details']);
-                header("Location: index.php?route=empleados/edit&id=" . $id); 
-                exit;
-            }
+        $errors = Validator::validate($_POST, $updateRules);
+
+        if (!empty($errors)) {
+            $_SESSION['errors'] = $errors;
+            $_SESSION['form_data'] = $_POST;
+            header("Location: index.php?route=empleados/edit&id=" . $id);
+            exit;
+        }
+        
+        $data = [
+            'nombre' => trim($_POST['nombre'] ?? ''), 
+            'apellido_paterno' => trim($_POST['apellido_paterno'] ?? ''), 
+            'apellido_materno' => trim($_POST['apellido_materno'] ?? ''),
+            'email' => trim($_POST['email'] ?? ''), 
+            'direccion' => trim($_POST['direccion'] ?? ''), 
+            'telefono' => trim($_POST['telefono'] ?? ''),
+            'puesto' => trim($_POST['puesto'] ?? ''), 
+            'estado' => trim($_POST['estado'] ?? 'activo'),
+            'fecha_ingreso' => trim($_POST['fecha_ingreso'] ?? '')
+        ];
+        
+        if(Empleado::update($id, $data)) {
+            $descripcion = "Se modificaron los datos del empleado: " . $data['nombre'] . " " . $data['apellido_paterno'];
+            Auditoria::registrar('MODIFICACIÓN DE EMPLEADO', $id, 'Empleado', $descripcion);
+
+            $_SESSION['message'] = "Empleado actualizado exitosamente.";
+            header("Location: index.php?route=empleados_index");
+            exit;
+        } else {
+            $_SESSION['form_data'] = $_POST;
+            $_SESSION['error'] = "Error al actualizar el empleado: " . ($_SESSION['error_details'] ?? 'Error desconocido.');
+            unset($_SESSION['error_details']);
+            header("Location: index.php?route=empleados/edit&id=" . $id); 
+            exit;
         }
     }
 
@@ -177,7 +202,7 @@ class EmpleadosController {
         }
 
         if($empleadoId) {
-            $empleado = Empleado::getById($empleadoId); // Se obtiene el empleado ANTES de desactivarlo
+            $empleado = Empleado::getById($empleadoId);
             if(Empleado::delete($empleadoId, $razon)) {
                 $nombreEmpleado = $empleado ? $empleado['nombre'] . ' ' . $empleado['apellido_paterno'] : 'ID ' . $empleadoId;
                 $descripcion = "Se desactivó al empleado: " . $nombreEmpleado . ". Razón: " . $razon;
