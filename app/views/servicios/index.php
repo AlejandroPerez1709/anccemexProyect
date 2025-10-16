@@ -14,10 +14,12 @@ $export_filters = [];
 if (isset($_GET['filtro_estado'])) $export_filters['filtro_estado'] = $_GET['filtro_estado'];
 if (!empty($_GET['filtro_socio_id'])) $export_filters['filtro_socio_id'] = $_GET['filtro_socio_id'];
 if (!empty($_GET['filtro_tipo_id'])) $export_filters['filtro_tipo_id'] = $_GET['filtro_tipo_id'];
-// --- AÑADIMOS NUEVOS FILTROS A LA URL DE EXPORTACIÓN ---
 if (!empty($_GET['filtro_medico_id'])) $export_filters['filtro_medico_id'] = $_GET['filtro_medico_id'];
 if (!empty($_GET['filtro_fecha_inicio'])) $export_filters['filtro_fecha_inicio'] = $_GET['filtro_fecha_inicio'];
 if (!empty($_GET['filtro_fecha_fin'])) $export_filters['filtro_fecha_fin'] = $_GET['filtro_fecha_fin'];
+if (!empty($_GET['filtro_salud'])) $export_filters['filtro_salud'] = $_GET['filtro_salud'];
+
+$filtro_salud_activo = $_GET['filtro_salud'] ?? '';
 ?>
 
 <div class="page-title-container">
@@ -26,11 +28,24 @@ if (!empty($_GET['filtro_fecha_fin'])) $export_filters['filtro_fecha_fin'] = $_G
 
 <div class="table-header-controls">
     <a href="index.php?route=servicios/create" class="btn btn-primary">Registrar Nuevo Servicio</a>
+    
     <a href="index.php?route=servicios_export_excel&<?php echo http_build_query($export_filters); ?>" class="btn btn-secondary">Exportar a Excel</a>
 </div>
 
+
+
 <form action="index.php" method="GET" class="filter-form">
      <input type="hidden" name="route" value="servicios_index">
+     <div class="health-status-filters">
+        <a href="index.php?route=servicios_index&filtro_salud=retrasado" 
+        class="btn-filter filter-retrasado <?php echo ($filtro_salud_activo === 'retrasado') ? 'active' : ''; ?>">
+        🔴 Mostrar Retrasados
+        </a>
+        <a href="index.php?route=servicios_index&filtro_salud=advertencia" 
+        class="btn-filter filter-advertencia <?php echo ($filtro_salud_activo === 'advertencia') ? 'active' : ''; ?>">
+        🟡 Próximos a Vencer
+        </a>
+    </div>
      <div class="filter-controls">
          <div class="filter-item">
              <label for="filtro_estado" class="filter-label">Estado:</label>
@@ -106,6 +121,7 @@ if (!empty($_GET['filtro_fecha_fin'])) $export_filters['filtro_fecha_fin'] = $_G
                <a href="index.php?route=servicios_index" class="btn btn-primary btn-sm">Limpiar</a>
            </div>
         </div>
+        
 </form>
 
 <?php if (isset($total_pages) && $total_pages > 1): ?>

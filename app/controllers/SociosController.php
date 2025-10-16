@@ -106,7 +106,7 @@ class SociosController {
 
     public function store() {
         check_permission();
-        // --- CORRECCIÓN: Cargar las reglas desde el archivo ---
+        // ---  Cargar las reglas desde el archivo ---
         $rules = require __DIR__ . '/../../config/validation_rules.php';
 
         $errors = Validator::validate($_POST, $rules['crear_socio']);
@@ -169,7 +169,7 @@ class SociosController {
 
     public function update() {
         check_permission();
-        // --- CORRECCIÓN: Cargar las reglas desde el archivo ---
+        // --- Cargar las reglas desde el archivo ---
         $rules = require __DIR__ . '/../../config/validation_rules.php';
 
         $id = filter_input(INPUT_POST, 'id_socio', FILTER_VALIDATE_INT);

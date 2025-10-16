@@ -1,7 +1,6 @@
 <?php
 // app/controllers/TiposServiciosController.php
 
-// Usamos la librería que instalamos con Composer
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -20,13 +19,11 @@ class TiposServiciosController {
 
     public function exportToExcel() {
         check_permission('superusuario');
-
         $tiposServicios = TipoServicio::getAll();
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-
-        // Encabezados
+        
         $sheet->setCellValue('A1', 'ID');
         $sheet->setCellValue('B1', 'Nombre');
         $sheet->setCellValue('C1', 'Código de Servicio');
@@ -34,7 +31,6 @@ class TiposServiciosController {
         $sheet->setCellValue('E1', 'Requiere Médico');
         $sheet->setCellValue('F1', 'Estado');
 
-        // Llenar datos
         $row = 2;
         foreach ($tiposServicios as $tipo) {
             $sheet->setCellValue('A' . $row, $tipo['id_tipo_servicio']);
@@ -46,7 +42,6 @@ class TiposServiciosController {
             $row++;
         }
 
-        // Encabezados para la descarga
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="Reporte_Tipos_de_Servicio.xlsx"');
         header('Cache-Control: max-age=0');
@@ -90,13 +85,13 @@ class TiposServiciosController {
         check_permission('superusuario');
         $tipoId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if (!$tipoId) { 
-            $_SESSION['error'] = "ID inválido."; 
+            $_SESSION['error'] = "ID inválido.";
             header("Location: index.php?route=tipos_servicios_index"); 
             exit; 
         }
         $tipoServicio = TipoServicio::getById($tipoId);
         if (!$tipoServicio) { 
-            $_SESSION['error'] = "Tipo de servicio no encontrado."; 
+            $_SESSION['error'] = "Tipo de servicio no encontrado.";
             header("Location: index.php?route=tipos_servicios_index"); 
             exit; 
         }
@@ -132,10 +127,11 @@ class TiposServiciosController {
          check_permission('superusuario');
          $tipoId = $id ?? filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
          if ($tipoId) {
+             // --- CÓDIGO MODIFICADO ---
              if (TipoServicio::delete($tipoId)) {
-                 $_SESSION['message'] = "Tipo de servicio eliminado exitosamente.";
+                 $_SESSION['message'] = "Tipo de servicio desactivado exitosamente.";
              } else {
-                  $_SESSION['error'] = "Error al eliminar. " . ($_SESSION['error_details'] ?? '');
+                  $_SESSION['error'] = "Error al desactivar. " . ($_SESSION['error_details'] ?? '');
              }
          }
          header("Location: index.php?route=tipos_servicios_index");

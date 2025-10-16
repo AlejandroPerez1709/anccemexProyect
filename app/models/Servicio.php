@@ -6,6 +6,11 @@ class Servicio {
 
     private static function buildWhereClause($filters, &$params, &$types) {
         $whereClauses = [];
+        // MODIFICACIÓN: Si se filtra por salud, solo buscar servicios en proceso.
+        if (!empty($filters['filtro_salud'])) {
+            $whereClauses[] = "s.estado NOT IN ('Completado', 'Rechazado', 'Cancelado')";
+        }
+
         if (!empty($filters['estado'])) {
             $whereClauses[] = "s.estado = ?";
             $params[] = $filters['estado'];
@@ -81,7 +86,15 @@ class Servicio {
     public static function countAll($filters = []) {
         $conn = dbConnect();
         if (!$conn) return 0;
-
+    
+        // Si se filtra por salud, el conteo debe hacerse en PHP después de filtrar.
+        if (!empty($filters['filtro_salud'])) {
+            // Obtenemos TODOS los servicios que coincidan con los otros filtros de BD
+            $all_services = self::getAll($filters, -1, 0); // -1 para sin límite
+            return count($all_services); // El conteo final es el de la lista ya filtrada por salud
+        }
+    
+        // Conteo normal por base de datos si no hay filtro de salud
         $params = [];
         $types = "";
         $whereSql = self::buildWhereClause($filters, $params, $types);
@@ -108,7 +121,9 @@ class Servicio {
         $conn = dbConnect();
         $servicios = []; 
         if (!$conn) return $servicios;
-
+    
+        $isHealthFilter = !empty($filters['filtro_salud']);
+    
         $sql = "SELECT s.*, 
                        ts.nombre as tipo_servicio_nombre, ts.codigo_servicio, ts.flujo_trabajo,
                        so.nombre as socio_nombre, so.apellido_paterno as socio_apPaterno, so.codigoGanadero as socio_codigo_ganadero, 
@@ -126,7 +141,9 @@ class Servicio {
         $whereSql = self::buildWhereClause($filters, $params, $types);
         $sql .= $whereSql;
         $orderBy = " ORDER BY s.fechaSolicitud DESC, s.id_servicio DESC";
-        if ($limit != -1) {
+    
+        // Si no hay filtro de salud, aplicamos paginación en la BD (eficiente)
+        if (!$isHealthFilter && $limit != -1) {
             $sql .= $orderBy . " LIMIT ? OFFSET ?";
             $params[] = $limit;
             $params[] = $offset;
@@ -153,6 +170,22 @@ class Servicio {
         
         $stmt->close(); 
         $conn->close();
+    
+        // Si hay filtro de salud, filtramos el resultado completo en PHP
+        if ($isHealthFilter) {
+            $filtered_services = [];
+            foreach ($servicios as $servicio) {
+                if ($servicio['health_status'] === $filters['filtro_salud']) {
+                    $filtered_services[] = $servicio;
+                }
+            }
+            // Si la paginación es necesaria, la aplicamos al array filtrado
+            if ($limit != -1) {
+                return array_slice($filtered_services, $offset, $limit);
+            }
+            return $filtered_services;
+        }
+    
         return $servicios;
     }
 
@@ -182,25 +215,20 @@ class Servicio {
          return $servicio;
     }
 
-    /**
-     * Actualiza solo los campos descriptivos/informativos de un servicio.
-     * El cambio de estado y fechas de flujo se gestiona EXCLUSIVAMENTE en updateStatus.
-     */
     public static function update($id, $data) {
         $conn = dbConnect();
         if (!$conn) return false;
         
-        // Comprobar si el estado ha cambiado. Si es así, llamar a updateStatus.
         $servicioActual = self::getById($id);
         if (!$servicioActual) {
             $_SESSION['error_details'] = "Servicio no encontrado para actualizar.";
             return false;
         }
+
         if ($servicioActual['estado'] !== $data['estado']) {
              self::updateStatus($id, $data['estado'], $data['motivo_rechazo'] ?? null, $data['id_usuario_ultima_mod']);
         }
 
-        // Actualizar solo los campos que no son fechas de flujo
         $sql = "UPDATE servicios SET 
                     medico_id = ?, 
                     descripcion = ?, 
@@ -442,10 +470,6 @@ class Servicio {
         return array_slice($servicios_atencion, 0, $limit);
     }
     
-    /**
-     * Gestiona el cambio de estado de un servicio, actualiza las fechas clave automáticamente
-     * y registra el cambio en el historial. Es transaccional.
-     */
     public static function updateStatus($servicioId, $nuevoEstado, $motivoRechazo, $userId) {
         $conn = dbConnect();
         if (!$conn) {
@@ -465,7 +489,6 @@ class Servicio {
             $estadoAnterior = $servicioActual['estado'];
             $stmt_get->close();
 
-            // Si el estado no cambia, solo registra en historial y sale.
             if ($estadoAnterior === $nuevoEstado) {
                 if ($estadoAnterior !== null) {
                      $comentarios = "Actualización manual sin cambio de estado.";
@@ -480,7 +503,6 @@ class Servicio {
                 return true;
             }
 
-            // Lógica para actualizar fechas basado en el nuevo estado
             $sql_parts = ["estado = ?", "id_usuario_ultima_mod = ?"];
             $params = [$nuevoEstado, $userId];
             $types = "si";
@@ -532,7 +554,6 @@ class Servicio {
             }
             $stmt_update->close();
 
-            // Registrar en el historial
             $comentarios = ($nuevoEstado === 'Rechazado') ? "Motivo: " . $motivoRechazo : null;
             $stmt_historial = $conn->prepare("INSERT INTO servicios_historial (servicio_id, usuario_id, estado_anterior, estado_nuevo, comentarios) VALUES (?, ?, ?, ?, ?)");
             if (!$stmt_historial) throw new Exception("Error al preparar el registro del historial.");

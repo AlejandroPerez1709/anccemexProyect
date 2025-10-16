@@ -121,8 +121,11 @@ class Router {
                         }
                          call_user_func_array([$controllerInstance, $methodName], $params);
                     } else { $this->notFound("Método no encontrado: " . $methodName); }
+                    
                 } else { $this->notFound("Clase no encontrada: " . $controllerName); }
+
             } else { $this->notFound("Archivo controlador no encontrado: " . $controllerFile); }
+
         } else { $this->notFound("Ruta no definida: " . $requestedRoute); }
     }
 

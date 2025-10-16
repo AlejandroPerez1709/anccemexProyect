@@ -50,7 +50,13 @@
                         <td>
                              <div class="action-buttons">
                                 <a href="index.php?route=tipos_servicios/edit&id=<?php echo $tipo['id_tipo_servicio']; ?>" class="btn btn-warning">Editar</a>
-                                <a href="index.php?route=tipos_servicios_delete&id=<?php echo $tipo['id_tipo_servicio']; ?>" class="btn btn-danger" onclick="return confirm('¿Estás seguro de eliminar este tipo de servicio?')">Eliminar</a>
+                                <?php if ($tipo['estado'] == 'activo'): ?>
+                                    <a href="index.php?route=tipos_servicios_delete&id=<?php echo $tipo['id_tipo_servicio']; ?>" 
+                                       class="btn btn-danger" 
+                                       onclick="confirmDeactivation(event, <?php echo $tipo['id_tipo_servicio']; ?>, '<?php echo htmlspecialchars(addslashes($tipo['nombre'])); ?>')">
+                                       Desactivar
+                                    </a>
+                                <?php endif; ?>
                              </div>
                         </td>
                     </tr>

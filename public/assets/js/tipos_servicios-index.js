@@ -1,7 +1,7 @@
 /*
-    public/assets/js/tipos_servicios-index.js
     Lógica de JavaScript para la vista de listado de Tipos de Servicio.
     - Manejo del modal de vista rápida.
+    - Confirmación de desactivación de tipo de servicio.
 */
 document.addEventListener('DOMContentLoaded', function() {
     // Referencias a los elementos del DOM
@@ -50,3 +50,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// --- NUEVA FUNCIÓN AÑADIDA ---
+function confirmDeactivation(event, tipoId, tipoName) {
+    event.preventDefault(); // Prevenir la navegación del enlace
+    event.stopPropagation(); // Prevenir que se abra el modal
+    
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: `Se desactivará el tipo de servicio: "${tipoName}". No podrás usarlo para nuevos servicios.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, desactivar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Si el usuario confirma, redirigir a la URL de desactivación
+            window.location.href = event.currentTarget.href;
+        }
+    });
+}

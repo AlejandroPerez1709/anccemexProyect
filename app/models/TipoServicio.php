@@ -9,7 +9,7 @@ class TipoServicio {
      * @param string $orderBy Columna por la cual ordenar.
      * @return array Lista de tipos de servicio.
      */
-    public static function getAll($orderBy = 'nombre') {
+    public static function getAll($orderBy = 'id_tipo_servicio') {
         $conn = dbConnect();
         $tipos = [];
         if (!$conn) {
@@ -17,10 +17,9 @@ class TipoServicio {
             return $tipos;
         }
         $allowedOrderBy = ['id_tipo_servicio', 'nombre', 'codigo_servicio', 'estado'];
-        $orderBy = in_array($orderBy, $allowedOrderBy) ? $orderBy : 'nombre'; // Asegurar que el orden sea una columna válida
-        
-        // CORREGIDO: Ordenar por id_tipo_servicio ASC para reflejar el orden de captura (número)
-        $query = "SELECT id_tipo_servicio, nombre, codigo_servicio, descripcion, requiere_medico, documentos_requeridos, estado FROM tipos_servicios ORDER BY id_tipo_servicio ASC"; 
+        $orderBy = in_array($orderBy, $allowedOrderBy) ? $orderBy : 'id_tipo_servicio';
+
+        $query = "SELECT id_tipo_servicio, nombre, codigo_servicio, descripcion, requiere_medico, documentos_requeridos, estado FROM tipos_servicios ORDER BY {$orderBy} ASC";
         $result = $conn->query($query);
         if($result) {
             while($row = $result->fetch_assoc()){
@@ -80,14 +79,14 @@ class TipoServicio {
             return false;
         }
         $sql = "INSERT INTO tipos_servicios (nombre, codigo_servicio, descripcion, requiere_medico, documentos_requeridos, estado)
-                VALUES (?, ?, ?, ?, ?, ?)"; // 6 placeholders
+                VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
               error_log("Error al preparar la consulta (TipoServicio store): " . $conn->error);
               $_SESSION['error_details'] = 'Error interno al preparar la inserción del tipo de servicio.';
               $conn->close();
               return false;
-         }
+        }
 
         $nombre = $data['nombre'];
         $codigo = $data['codigo_servicio'] ?: null;
@@ -95,20 +94,20 @@ class TipoServicio {
         $reqMedico = !empty($data['requiere_medico']) ? 1 : 0;
         $docsReq = $data['documentos_requeridos'] ?: null;
         $estado = $data['estado'];
-
-        $types = "sssiss"; // 6 datos
+        $types = "sssiss";
         $stmt->bind_param($types,
             $nombre, $codigo, $descripcion, $reqMedico, $docsReq, $estado
         );
+        
         $result = false;
         $newId = false;
         try {
             $result = $stmt->execute();
             if ($result) { 
-                $newId = $conn->insert_id; 
+                $newId = $conn->insert_id;
             } else { 
                 error_log("Error al ejecutar (TipoServicio store): " . $stmt->error);
-                if ($conn->errno == 1062) { // Error de duplicado (si nombre o codigo_servicio fueran UNIQUE)
+                if ($conn->errno == 1062) {
                     $_SESSION['error_details'] = 'El Nombre o Código de Servicio ya existe.';
                 } else {
                     $_SESSION['error_details'] = 'Error de base de datos al guardar el tipo de servicio: ' . $stmt->error;
@@ -139,14 +138,14 @@ class TipoServicio {
         $sql = "UPDATE tipos_servicios SET
                 nombre = ?, codigo_servicio = ?, descripcion = ?, requiere_medico = ?,
                 documentos_requeridos = ?, estado = ?
-                WHERE id_tipo_servicio = ?"; // 6 placeholders + ID
+                WHERE id_tipo_servicio = ?";
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
               error_log("Error al preparar la consulta (TipoServicio update): " . $conn->error);
               $_SESSION['error_details'] = 'Error interno al preparar la actualización del tipo de servicio.';
               $conn->close();
               return false;
-         }
+        }
 
         $nombre = $data['nombre'];
         $codigo = $data['codigo_servicio'] ?: null;
@@ -156,7 +155,7 @@ class TipoServicio {
         $estado = $data['estado'];
         $tipoId = $id;
 
-        $types = "sssissi"; // 6 datos + ID
+        $types = "sssissi";
         $stmt->bind_param($types,
             $nombre, $codigo, $descripcion, $reqMedico, $docsReq, $estado, $tipoId
         );
@@ -165,7 +164,7 @@ class TipoServicio {
             $result = $stmt->execute();
             if (!$result) { 
                 error_log("Error al ejecutar (TipoServicio update): " . $stmt->error);
-                if ($conn->errno == 1062) { // Error de duplicado
+                if ($conn->errno == 1062) {
                     $_SESSION['error_details'] = 'El Nombre o Código de Servicio ya existe para otro tipo.';
                 } else {
                     $_SESSION['error_details'] = 'Error de base de datos al actualizar el tipo de servicio: ' . $stmt->error;
@@ -182,41 +181,47 @@ class TipoServicio {
     }
 
     /**
-     * Elimina un tipo de servicio por su ID.
-     * @param int $id ID del tipo de servicio a eliminar.
-     * @return bool True si se eliminó correctamente, False en caso contrario.
+     * Desactiva un tipo de servicio (borrado lógico).
+     * @param int $id ID del tipo de servicio a desactivar.
+     * @return bool True si se desactivó correctamente, False en caso contrario.
      */
     public static function delete($id) {
         $conn = dbConnect();
         if (!$conn) {
-            $_SESSION['error_details'] = 'Error de conexión a la base de datos al intentar eliminar el tipo de servicio.';
+            $_SESSION['error_details'] = 'Error de conexión a la base de datos.';
             return false;
         }
-        $sql = "DELETE FROM tipos_servicios WHERE id_tipo_servicio = ?";
+        
+        // --- CÓDIGO MODIFICADO ---
+        // Cambiamos DELETE por UPDATE para hacer un borrado lógico
+        $sql = "UPDATE tipos_servicios SET estado = 'inactivo' WHERE id_tipo_servicio = ?";
+        
         $stmt = $conn->prepare($sql);
         if (!$stmt) { 
-            error_log("Error al preparar la consulta (TipoServicio delete): " . $conn->error); 
-            $_SESSION['error_details'] = 'Error interno al preparar la eliminación del tipo de servicio.'; 
+            error_log("Error al preparar la consulta (TipoServicio delete): " . $conn->error);
+            $_SESSION['error_details'] = 'Error interno al preparar la desactivación del tipo de servicio.'; 
             $conn->close(); 
             return false;
         }
+        
         $stmt->bind_param("i", $id);
         $result = false;
         try {
              $result = $stmt->execute();
-            if (!$result) {
+             if (!$result) {
                   error_log("Error al ejecutar (TipoServicio delete): " . $stmt->error);
-                  if ($conn->errno == 1451) { // Código de error para FK
-                      $_SESSION['error_details'] = 'No se puede eliminar el tipo de servicio, está siendo usado por servicios existentes.';
+                  if ($conn->errno == 1451) {
+                      $_SESSION['error_details'] = 'No se puede desactivar, está siendo usado por servicios existentes.';
                   } else {
-                      $_SESSION['error_details'] = 'Error de base de datos al eliminar el tipo de servicio: ' . $stmt->error;
+                      $_SESSION['error_details'] = 'Error de base de datos al desactivar el tipo de servicio: ' . $stmt->error;
                   }
               }
          } catch (mysqli_sql_exception $e) {
-             error_log("Excepción al eliminar tipo servicio ID $id: " . $e->getMessage());
-             $_SESSION['error_details'] = 'Error de base de datos al eliminar el tipo de servicio (' . $e->getCode() . '): ' . $e->getMessage();
+             error_log("Excepción al desactivar tipo servicio ID $id: " . $e->getMessage());
+             $_SESSION['error_details'] = 'Error de base de datos (' . $e->getCode() . '): ' . $e->getMessage();
              $result = false;
          }
+         
         $stmt->close();
         $conn->close();
         return $result;
@@ -236,7 +241,7 @@ class TipoServicio {
         $query = "SELECT id_tipo_servicio, nombre, codigo_servicio
                   FROM tipos_servicios
                   WHERE estado = 'activo'
-                  ORDER BY nombre ASC"; // Mantener orden alfabético para select
+                  ORDER BY nombre ASC";
         $result = $conn->query($query);
         if($result) {
             while($row = $result->fetch_assoc()){
